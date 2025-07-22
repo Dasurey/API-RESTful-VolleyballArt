@@ -1,6 +1,7 @@
 import express from 'express';
 import config from 'dotenv/config';
 import cors from 'cors';
+import bodyParser from 'body-parser';
 
 import productsRoutes from './routes/products.routes.js';
 import authRoutes from './routes/auth.routes.js';
@@ -18,7 +19,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-app.use(express.json());
+app.use(bodyParser.json());
 
 app.use('/api/auth', authRoutes);
 

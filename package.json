@@ -7,10 +7,11 @@
     "start": "nodemon ./src/index.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Dario Asurey",
   "license": "ISC",
   "description": "Este proyecto fue desarrollado como parte del **programa Talento Tech** en la especialización de **Back End con Node.js**. Consiste en la construcción de una API RESTful capaz de gestionar productos y autenticar usuarios mediante tokens JWT, con persistencia en **Firebase Firestore** y despliegue en **Vercel**.",
   "dependencies": {
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
