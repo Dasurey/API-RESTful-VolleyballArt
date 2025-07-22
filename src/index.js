@@ -1,7 +1,6 @@
 import express from 'express';
 import config from 'dotenv/config';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 
 import productsRoutes from './routes/products.routes.js';
 import authRoutes from './routes/auth.routes.js';
