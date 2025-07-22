@@ -1,7 +1,7 @@
 import productsService from '../services/products.service.js';
 import { validateProductData } from '../utils/validateProductData.js';
 
-export const getProducts = (req, res) => {
+export const getAllProducts = (req, res) => {
   try {
     const products = productService.getAll();
     if (products.length === 0)
