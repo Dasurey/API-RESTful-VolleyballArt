@@ -28,7 +28,8 @@ export const getProductById = async (id) => {
 };
 
 export const createProduct = async (product) => {
-  return addDoc(productsCollection, product);
+  const docRef = await addDoc(productsCollection, product);
+  return { id: docRef.id, ...product };
 };
 
 export const updateProduct = async (id, data) => {
