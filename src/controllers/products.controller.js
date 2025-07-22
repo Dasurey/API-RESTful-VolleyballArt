@@ -5,9 +5,7 @@ export const getAllProducts = async (req, res) => {
   try {
     const products = await productsService.getAllProducts();
     console.log('Productos obtenidos:', products); // Para debugging
-    if (products.length === 0)
-      return res.status(200).json({ message: "No datos disponibles" });
-
+    
     res.status(200).json({ message: "Listado de productos", payload: products });
   } catch (error) {
     console.error('Error al obtener productos:', error);
