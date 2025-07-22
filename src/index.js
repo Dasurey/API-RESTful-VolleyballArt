@@ -40,6 +40,24 @@ app.use('/api/auth', authRoutes);
 // app.use('/api/products', authentication, productsRoutes);
 app.use('/api/products', productsRoutes);
 
+// Redirigir la ruta raíz a /api/products
+app.get('/', (req, res) => {
+  res.redirect('/api/products');
+});
+
+/*
+app.use((req, res, next) => {
+  res.status(404).json({ message: 'Recurso no encontrado o ruta invalida' });
+});
+
+ó
+
+app.use((req, res, next) => {
+  app.get('/', getAllProducts);
+});
+
+*/
+
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Recurso no encontrado o ruta invalida' });
 });
