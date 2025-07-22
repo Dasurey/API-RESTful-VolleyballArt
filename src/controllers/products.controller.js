@@ -1,12 +1,17 @@
 import productsService from '../services/products.service.js';
 import { validateProductData } from '../utils/validateProductData.js';
 
-export const getAllProducts = async (req, res) => {
+export const getProducts = (req, res) => {
   try {
-    const products = await productsService.getAllProducts();
-    res.json(products);
+    const products = productService.getAll();
+    if (products.length === 0)
+      return res.status(200).json({ message: "No datos disponibles" });
+
+    res.status(200).json({ message: "Listado de productos", payload: products });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error interno del servidor", error: error.message });
   }
 };
 

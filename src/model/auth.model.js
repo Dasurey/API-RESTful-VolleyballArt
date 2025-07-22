@@ -1,4 +1,4 @@
-import { db } from '../data/data.js';
+import { db } from '../config/db.js';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export const loginUser = async ({ email, password }) => {

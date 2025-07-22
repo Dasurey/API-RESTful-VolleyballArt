@@ -1,4 +1,6 @@
-import { getFirestore } from 'firebase/firestore';
+import { config } from "dotenv";
+config();
+import { getFirestore } from "firebase/firestore";
 
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
@@ -17,4 +19,6 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+const db = getFirestore(app);
+export { db };

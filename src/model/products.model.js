@@ -1,4 +1,4 @@
-import { db } from '../data/data.js';
+import { db } from '../config/db.js';
 import {
   addDoc,
   collection,
