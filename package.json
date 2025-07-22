@@ -1,0 +1,31 @@
+{
+  "name": "proyecto-final",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "nodemon ./src/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Este proyecto fue desarrollado como parte del **programa Talento Tech** en la especialización de **Back End con Node.js**. Consiste en la construcción de una API RESTful capaz de gestionar productos y autenticar usuarios mediante tokens JWT, con persistencia en **Firebase Firestore** y despliegue en **Vercel**.",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "firebase": "^11.10.0",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dasurey/proyecto-final-talento-tech-backend-nodejs-api-rest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dasurey/proyecto-final-talento-tech-backend-nodejs-api-rest/issues"
+  },
+  "homepage": "https://github.com/Dasurey/proyecto-final-talento-tech-backend-nodejs-api-rest#readme"
+}
