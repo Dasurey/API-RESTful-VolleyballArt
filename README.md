@@ -14,7 +14,7 @@ Este proyecto fue desarrollado como parte del **programa Talento Tech** en la es
 
 ### 2. Instalación de dependencias
 Instalé las siguientes dependencias necesarias para el desarrollo del backend:
-``` npm install express cors dotenv firebase jsonwebtoken ```
+``` npm install express cors dotenv firebase jsonwebtoken ``` ó, si tienes el package-lock.json, ``` npm i && npm i -D ```
 
 ### 3. Configuración del servidor
 - Configuré Express en index.js para crear el servidor y para interpretar JSON en los cuerpos de las peticiones.
