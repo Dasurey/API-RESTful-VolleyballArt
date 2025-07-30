@@ -1,13 +1,11 @@
 import authService from '../services/auth.service.js';
 
 export const loginUser = async (req, res) => {
-  try {
-    const user = req.body;
-    const token = await authService.loginUser(user);
-    res.json({ token });
-  } catch (error) {
-    return res
-      .status(error.statusCode || 500)
-      .json({ error: error.message || 'Error interno del servidor' });
-  }
+  const { email, password } = req.body;
+  return authService.loginUser(req, res, email, password);
+};
+
+export const registerUser = async (req, res) => {
+  const { email, password } = req.body;
+  return authService.registerUser(req, res, email, password);
 };

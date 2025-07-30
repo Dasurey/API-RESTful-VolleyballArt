@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 config();
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
@@ -21,4 +22,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
-export { db };
+const auth = getAuth(app);
+
+export { db, auth };

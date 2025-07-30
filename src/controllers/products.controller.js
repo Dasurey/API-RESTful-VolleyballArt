@@ -1,17 +1,28 @@
 import productsService from '../services/products.service.js';
 import { validateProductData } from '../utils/validateProductData.js';
+import Logger from '../config/logger.js';
 
 export const getAllProducts = async (req, res) => {
   try {
     const products = await productsService.getAllProducts();
-    console.log('Productos obtenidos:', products); // Para debugging
+    
+    Logger.info('📋 Listado de productos obtenido', {
+      totalProducts: products.length,
+      timestamp: new Date().toISOString()
+    });
     
     res.status(200).json({ message: "Listado de productos", payload: products });
   } catch (error) {
-    console.error('Error al obtener productos:', error);
-    res
-      .status(500)
-      .json({ message: "Error interno del servidor", error: error.message });
+    Logger.error('🚨 Error al obtener productos', {
+      error: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(500).json({ 
+      message: "Error interno del servidor", 
+      error: error.message 
+    });
   }
 };
 
@@ -33,20 +44,16 @@ export const getProductById = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-  try {
-    const data = req.body;
-    const error = validateProductData(data);
-    if (error) {
-      return res.status(400).json({ error });
-    }
-
-    const newProduct = await productsService.createProduct(data);
-    res.status(201).json({
-      message: `Producto creado correctamente con el ID: ${newProduct.id}`,
+  const data = req.body;
+  const error = validateProductData(data);
+  if (error) {
+    return res.status(400).json({ 
+      message: 'Datos del producto inválidos',
+      error: error 
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
+
+  return productsService.createProduct(req, res, data);
 };
 
 export const updateProduct = async (req, res) => {

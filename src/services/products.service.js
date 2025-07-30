@@ -6,8 +6,8 @@ const getProductById = (id) => {
   return productsModel.getProductById(id);
 };
 
-const createProduct = async (product) => {
-  return productsModel.createProduct(product);
+const createProduct = async (req, res, product) => {
+  return productsModel.createProduct(req, res, product);
 };
 
 const updateProduct = async (id, product) => {

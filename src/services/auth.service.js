@@ -1,9 +1,12 @@
 import * as authModel from '../model/auth.model.js';
 import { generateToken } from '../utils/tokenGenerator.js';
 
-const loginUser = async (user) => {
-  const userData = await authModel.loginUser(user);
-  return generateToken(userData);
+const loginUser = async (req, res, email, password) => {
+  return authModel.loginUser(req, res, email, password);
 };
 
-export default { loginUser };
+const registerUser = async (req, res, email, password) => {
+  return authModel.registerUser(req, res, email, password);
+};
+
+export default { loginUser, registerUser };
