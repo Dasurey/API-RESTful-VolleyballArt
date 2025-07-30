@@ -1,9 +1,90 @@
-import express from 'express';
-import { loginUser, registerUser } from '../controllers/auth.controller.js';
+const express = require('express');
+const { loginUser, registerUser } = require('../controllers/auth.controller.js');
+const { validate } = require('../middlewares/validation.middleware.js');
+const { loginSchema, registerSchema } = require('../schemas/auth.schema.js');
 
 const router = express.Router();
 
-router.post('/login', loginUser);
-router.post('/register', registerUser);
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Iniciar sesión
+ *     description: Autentica un usuario y devuelve un token JWT
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AuthRequest'
+ *           examples:
+ *             admin:
+ *               summary: Usuario administrador
+ *               value:
+ *                 email: admin@volleyballart.com
+ *                 password: admin123
+ *     responses:
+ *       200:
+ *         description: Login exitoso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         description: Datos de entrada inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Credenciales incorrectas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/login', validate(loginSchema), loginUser);
 
-export default router;
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Registrar nuevo usuario
+ *     description: Crea una nueva cuenta de usuario
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AuthRequest'
+ *     responses:
+ *       201:
+ *         description: Usuario registrado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: Datos de entrada inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: El usuario ya existe
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post('/register', validate(registerSchema), registerUser);
+
+module.exports = router;;

@@ -1,71 +1,74 @@
-# 🎓 Proyecto Integrador - Backend con Node.js, Express y Firebase
+# � VolleyballArt API - Proyecto Backend
 
-Este proyecto fue desarrollado como parte del **programa Talento Tech** en la especialización de **Back End con Node.js**. Consiste en la construcción de una API RESTful capaz de gestionar productos y autenticar usuarios mediante tokens JWT, con persistencia en **Firebase Firestore** y despliegue en **Vercel**.
+> **Proyecto educativo** desarrollado como parte del programa **Talento Tech** en la especialización **Backend con Node.js**. 
+
+Esta es una API RESTful robusta y escalable para la gestión de productos y autenticación de usuarios, construida con tecnologías modernas y mejores prácticas de desarrollo.
 
 ---
 
-## ✅ Requerimientos implementados
+## 🚀 Características Principales
 
-### 1. Configuración Inicial
-- Creé un directorio para alojar el proyecto con un archivo `index.js` como punto de entrada.
-- Inicialicé Node.js con `npm init -y`.
-- Agregué `"type": "module"` al `package.json` para habilitar ESModules.
-- Definí un script llamado `start` para ejecutar el servidor con `npm run start`.
+- ✅ **API RESTful** completa con operaciones CRUD
+- 🔐 **Autenticación JWT** segura  
+- 🛡️ **Sistema de seguridad** avanzado (headers, rate limiting, sanitización)
+- 📊 **Logging profesional** con Winston
+- ✅ **Validación de datos** con Joi
+- 🔄 **Versionado de API** automático
+- 🔥 **Firebase Firestore** como base de datos
+- ☁️ **Desplegado en Vercel**
 
-### 2. Instalación de dependencias
-Instalé las siguientes dependencias necesarias para el desarrollo del backend:
-``` npm install express cors dotenv firebase jsonwebtoken ``` ó, si tienes el package-lock.json, ``` npm i && npm i -D ```
+## 🛠️ Tecnologías
 
-### 3. Configuración del servidor
-- Configuré Express en index.js para crear el servidor y para interpretar JSON en los cuerpos de las peticiones.
-- Habilité CORS para permitir peticiones desde orígenes externos.
-- Agregué un middleware global para manejar rutas desconocidas con estado 404.
-- Incorporé un archivo .env para gestionar variables de entorno sensibles.
+- **Backend:** Node.js + Express
+- **Base de datos:** Firebase Firestore
+- **Autenticación:** JWT
+- **Validación:** Joi 
+- **Logging:** Winston + Morgan
+- **Seguridad:** Helmet + Rate Limiting
+- **Despliegue:** Vercel
 
-### 4. Rutas
-Dividí las rutas en dos archivos principales: <br>
-```products.routes.js```
-- ``` GET /api/products``` Lista todos los productos.
-- ``` GET /api/products/:id``` Devuelve un producto por ID.
-- ``` POST /api/products/create``` Crea un nuevo producto.
-- ``` PUT /api/products/:id``` Actualiza un producto por ID.
-- ``` DELETE /api/products/:id``` Elimina un producto por ID.
+## 📋 Endpoints Disponibles
 
-
-```auth.routes.js ```
-- ``` POST /auth/login``` Recibe credenciales y devuelve un token JWT si son válidas.
-
-### 5. Controladores y Servicios
-- Implementé una capa de controladores que maneja la lógica de las rutas.
-- Separé la lógica de negocio en una capa de servicios, para una mejor organización y reutilización del código.
-
-### 6. Acceso a los datos
-- Creé un proyecto en Firebase Firestore y configuré una colección para los productos.
-- Añadí un documento inicial para definir la estructura y tipos de datos.
-- Escribí funciones en la capa de modelos para interactuar con la base de datos.
-- Enlacé los modelos con los servicios para completar el flujo de datos.
-
-### 7. Protección de rutas
-- Configuré JWT en el proyecto.
-- Implementé un middleware que protege rutas sensibles.
-- En el controlador de login, validé credenciales y devolví un Bearer Token si son válidas.
-
-### 8. Despliegue a producción
-- Configuré el archivo vercel.json.
-- Subí el proyecto a Vercel.
-- Realicé el despliegue a producción exitosamente.
-
-🛠 Tecnologías utilizadas
-- Node.js
-- Express
-- Firebase (Firestore)
-- JSON Web Tokens (JWT)
-- dotenv
-- CORS
-- Vercel
-
-🚀 Ejecutar en desarrollo
+### Productos
 ```
-npm install
-npm run start
+GET    /api/v1/products       - Listar productos
+GET    /api/v1/products/:id   - Obtener producto por ID
+POST   /api/v1/products/create - Crear producto (requiere auth)
+PUT    /api/v1/products/:id   - Actualizar producto (requiere auth)  
+DELETE /api/v1/products/:id   - Eliminar producto (requiere auth)
 ```
+
+### Autenticación
+```
+POST   /auth/login            - Login (obtener token JWT)
+```
+
+### Información
+```
+GET    /api                   - Info general de la API
+GET    /api/health            - Estado de salud del servidor
+GET    /api/v1/docs           - Documentación de versión
+```
+
+## 🏃‍♂️ Ejecución Rápida
+
+```bash
+# Instalar dependencias
+npm i && npm i -D
+
+# Ejecutar en desarrollo
+npm start
+```
+
+## 📚 Documentación Adicional
+
+Para información técnica detallada, consulta:
+
+- **[SECURITY_FEATURES.md](./SECURITY_FEATURES.md)** - Características de seguridad implementadas
+- Ver carpeta `/src` para la arquitectura del código
+- Endpoints de documentación en `/api/docs` cuando el servidor esté ejecutándose
+
+---
+
+**Desarrollado por:** @Dasurey
+**Programa:** Talento Tech - Back-end / Node.js

@@ -1,11 +1,11 @@
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { db } from '../config/dataBase.js';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { generateToken } from '../utils/tokenGenerator.js';
+const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = require('firebase/auth');
+const { db } = require('../config/dataBase.js');
+const { doc, setDoc, getDoc } = require('firebase/firestore');
+const { generateToken } = require('../config/jwt.js');
 
 const auth = getAuth();
 
-export const loginUser = async (req, res, email, password) => {
+const loginUser = async (req, res, email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -35,7 +35,7 @@ export const loginUser = async (req, res, email, password) => {
   }
 };
 
-export const registerUser = async (req, res, email, password) => {
+const registerUser = async (req, res, email, password) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -83,4 +83,10 @@ export const registerUser = async (req, res, email, password) => {
       error: error.message
     });
   }
+};
+
+
+module.exports = {
+  loginUser,
+  registerUser
 };

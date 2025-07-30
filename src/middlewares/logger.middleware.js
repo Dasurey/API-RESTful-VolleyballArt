@@ -1,5 +1,5 @@
-import morgan from 'morgan';
-import Logger from '../config/logger.js';
+const morgan = require('morgan');
+const Logger = require('../config/logger.js');
 
 // Formato personalizado para Morgan que incluye más información útil
 const customFormat = ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" - :response-time ms';
@@ -16,18 +16,18 @@ const skip = (req, res) => {
 };
 
 // Configurar Morgan con nuestro logger personalizado
-export const httpLogger = morgan(customFormat, {
+const httpLogger = morgan(customFormat, {
   stream: Logger.stream,
   skip,
 });
 
 // Morgan para desarrollo con formato más simple y colorido
-export const devLogger = morgan('dev', {
+const devLogger = morgan('dev', {
   stream: Logger.stream,
 });
 
 // Middleware personalizado para capturar información adicional de requests
-export const requestLogger = (req, res, next) => {
+const requestLogger = (req, res, next) => {
   const startTime = Date.now();
   
   // Información básica del request
@@ -60,4 +60,11 @@ export const requestLogger = (req, res, next) => {
   };
   
   next();
+};
+
+
+module.exports = {
+  httpLogger,
+  devLogger,
+  requestLogger
 };

@@ -1,35 +1,74 @@
-import winston from 'winston';
+const winston = require('winston');
+const path = require('path');
 
-// Configuración simple de colores
+// Configuración de colores para el desarrollo
 const colors = {
   error: 'red',
-  warn: 'yellow', 
+  warn: 'yellow',
   info: 'green',
-  debug: 'blue'
+  http: 'magenta',
+  debug: 'white',
 };
 
 winston.addColors(colors);
 
-// Crear el logger con configuración simple
-const Logger = winston.createLogger({
-  level: 'info', // Nivel básico
-  format: winston.format.combine(
-    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.colorize(),
-    winston.format.printf(({ timestamp, level, message }) => {
-      return `${timestamp} [${level}]: ${message}`;
-    })
+// Función para determinar el nivel de log según el entorno
+const level = () => {
+  const env = process.env.NODE_ENV || 'development';
+  const isDevelopment = env === 'development';
+  return isDevelopment ? 'debug' : 'warn';
+};
+
+// Formato personalizado para logs legibles
+const format = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
+  winston.format.colorize({ all: true }),
+  winston.format.printf(
+    (info) => `${info.timestamp} ${info.level}: ${info.message}`,
   ),
-  transports: [
-    // Solo consola para desarrollo
-    new winston.transports.Console(),
-    // Archivo solo para errores
-    new winston.transports.File({ 
-      filename: 'logs/error.log', 
-      level: 'error',
-      format: winston.format.json()
-    })
-  ]
+);
+
+// Transports (donde se guardan los logs)
+const transports = [
+  // Console transport para desarrollo
+  new winston.transports.Console({
+    format: format,
+    level: level(),
+  }),
+  
+  // File transport para errores (siempre activo)
+  new winston.transports.File({
+    filename: 'logs/error.log',
+    level: 'error',
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.json()
+    ),
+  }),
+  
+  // File transport para todos los logs (solo en producción)
+  new winston.transports.File({
+    filename: 'logs/combined.log',
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.json()
+    ),
+  }),
+];
+
+// Crear el logger
+const Logger = winston.createLogger({
+  level: level(),
+  levels: winston.config.npm.levels,
+  format: winston.format.json(),
+  transports,
+  // No salir del proceso en caso de error no manejado
+  exitOnError: false,
 });
 
-export default Logger;
+// Stream para Morgan (middleware de logging HTTP)
+Logger.stream = {
+  write: (message) => Logger.http(message.trim()),
+};
+
+module.exports = Logger;

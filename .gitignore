@@ -1,4 +1,6 @@
 .env
+.env.local
 node_modules
 logs/*.log
 logs/*.json
+coverage/

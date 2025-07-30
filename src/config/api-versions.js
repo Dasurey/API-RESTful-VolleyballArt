@@ -1,6 +1,6 @@
 // Configuración centralizada de versiones de la API
 
-export const API_CONFIG = {
+const API_CONFIG = {
   currentVersion: 'v1',
   supportedVersions: ['v1'],
   deprecatedVersions: [],
@@ -73,7 +73,7 @@ export const API_CONFIG = {
 };
 
 // Función para obtener información de versión
-export const getVersionInfo = (version = null) => {
+const getVersionInfo = (version = null) => {
   if (version) {
     return API_CONFIG.versions[version] || null;
   }
@@ -83,4 +83,9 @@ export const getVersionInfo = (version = null) => {
     deprecated: API_CONFIG.deprecatedVersions,
     versions: API_CONFIG.versions
   };
+};
+
+module.exports = {
+  API_CONFIG,
+  getVersionInfo
 };

@@ -1,9 +1,9 @@
-import jwt from 'jsonwebtoken';
-import Logger from '../config/logger.js';
+const jwt = require('jsonwebtoken');
+const Logger = require('../config/logger.js');
 
 const secret_key = process.env.JWT_SECRET_KEY;
 
-export const authentication = (req, res, next) => {
+const authentication = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   
   if (!authHeader) {
@@ -63,4 +63,9 @@ export const authentication = (req, res, next) => {
     req.user = decoded; // Guardamos la info del usuario decodificada
     next();
   });
+};
+
+
+module.exports = {
+  authentication
 };

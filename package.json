@@ -2,27 +2,47 @@
   "name": "proyecto-final",
   "version": "1.0.0",
   "main": "src/index.js",
-  "type": "module",
   "scripts": {
     "start": "nodemon ./src/index.js",
-    "dev": "NODE_ENV=development nodemon ./src/index.js",
-    "prod": "NODE_ENV=production node ./src/index.js"
+    "dev": "nodemon ./src/index.js",
+    "prod": "node ./src/index.js",
+    "build:prod": "npm run clean:logs && npm run prod",
+    "clean:logs": "echo 'Limpiando logs para producción...'",
+    "optimize:vercel": "cp package.optimized.json package.json && npm install --production",
+    "restore:dev": "git checkout package.json && npm install",
+    "test": "jest --env=node",
+    "test:watch": "jest --watch --env=node",
+    "test:coverage": "jest --coverage --env=node",
+    "test:ci": "jest --ci --coverage --watchAll=false --env=node"
   },
   "keywords": [],
   "author": "Dario Asurey",
   "license": "ISC",
   "description": "Este proyecto fue desarrollado como parte del **programa Talento Tech** en la especialización de **Back End con Node.js**. Consiste en la construcción de una API RESTful capaz de gestionar productos y autenticar usuarios mediante tokens JWT, con persistencia en **Firebase Firestore** y despliegue en **Vercel**.",
   "dependencies": {
+    "compression": "^1.8.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
+    "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "firebase": "^11.10.0",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.0.1",
+    "express-slow-down": "^2.1.0",
+    "express-validator": "^7.2.1",
+    "firebase": "^12.0.0",
+    "helmet": "^8.1.0",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
+    "node-cache": "^5.1.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@babel/preset-env": "^7.28.0",
+    "jest": "^30.0.5",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   },
   "repository": {
     "type": "git",

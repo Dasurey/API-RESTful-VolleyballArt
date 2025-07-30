@@ -1,10 +1,9 @@
-import productsService from '../services/products.service.js';
-import { validateProductData } from '../utils/validateProductData.js';
-import Logger from '../config/logger.js';
+const productsService = require('../services/products.service.js');
+const Logger = require('../config/logger.js');
 
-export const getAllProducts = async (req, res) => {
+const getAllProducts = async (req, res) => {
   try {
-    const products = await productsService.getAllProducts();
+    const products = await productsService.getAllProducts(res);
     
     Logger.info('📋 Listado de productos obtenido', {
       totalProducts: products.length,
@@ -26,10 +25,10 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
-export const getProductById = async (req, res) => {
+const getProductById = async (req, res) => {
   try {
     const id = req.params.id;
-    const product = await productsService.getProductById(id);
+    const product = await productsService.getProductById(id, res);
 
     if (product) {
       return res.json(product);
@@ -43,42 +42,39 @@ export const getProductById = async (req, res) => {
   }
 };
 
-export const createProduct = async (req, res) => {
+const createProduct = async (req, res) => {
+  // Los datos ya están validados por Joi middleware
   const data = req.body;
-  const error = validateProductData(data);
-  if (error) {
-    return res.status(400).json({ 
-      message: 'Datos del producto inválidos',
-      error: error 
-    });
-  }
-
   return productsService.createProduct(req, res, data);
 };
 
-export const updateProduct = async (req, res) => {
+const updateProduct = async (req, res) => {
   try {
     const id = req.params.id;
+    // Los datos ya están validados por Joi middleware
     const product = req.body;
 
-    const error = validateProductData(product);
-    if (error) {
-      return res.status(400).json({ error });
-    }
-
-    const updatedProduct = await productsService.updateProduct(id, product);
+    const updatedProduct = await productsService.updateProduct(id, product, res);
     res.json({ message: 'Producto actualizado correctamente', updatedProduct });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const deleteProduct = async (req, res) => {
+const deleteProduct = async (req, res) => {
   try {
     const id = req.params.id;
-    await productsService.deleteProduct(id);
+    await productsService.deleteProduct(id, res);
     res.sendStatus(204);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+};
+
+module.exports = {
+  getAllProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct
 };

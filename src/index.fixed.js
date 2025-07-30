@@ -1,6 +1,9 @@
 const express = require('express');
-require('dotenv').config();
+const config = require('dotenv');
 const cors = require('cors');
+const { fileURLToPath } = require('url');
+const { dirname } = require('path');
+const path = require('path');
 
 // 📊 Sistema de logging
 const Logger = require('./config/logger.js');
@@ -12,17 +15,17 @@ const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require('./
 const { sanitizeInput, sanitizeHtml } = require('./middlewares/sanitization.middleware.js');
 
 // ⚡ Sistema de cache y optimización
-const {
-  compressionMiddleware,
-  optimizeResponse,
-  minifyJson,
-  performanceHeaders
+const { 
+  compressionMiddleware, 
+  optimizeResponse, 
+  minifyJson, 
+  performanceHeaders 
 } = require('./config/optimization.js');
 const { getCacheStats, resetCacheStats } = require('./config/cache.js');
-const {
-  performanceMonitor,
-  getPerformanceMetrics,
-  healthCheckWithMetrics
+const { 
+  performanceMonitor, 
+  getPerformanceMetrics, 
+  healthCheckWithMetrics 
 } = require('./middlewares/performance.middleware.js');
 
 // 📚 Sistema de documentación
@@ -35,11 +38,12 @@ const { authentication } = require('./middlewares/authentication.js');
 const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware.js');
 const { getVersionInfo } = require('./config/api-versions.js');
 
-// 🔧 Utilidades para URLs y paths
-const { getBaseUrl, getProjectPath } = require('./utils/url.utils.js');
-
 // 🌐 Configuración de variables de entorno
-// Ya configurado con require('dotenv').config() arriba
+config.config();
+
+// 🔧 Configuración de rutas del proyecto
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
@@ -142,7 +146,7 @@ registerVersionInfoEndpoints(app);
 app.get('/api', (req, res) => {
   const versionInfo = getVersionInfo();
   const baseUrl = getBaseUrl(req);
-
+  
   res.json({
     message: 'Endpoint de información de la API RESTful VolleyballArt',
     payload: {
@@ -270,12 +274,38 @@ app.use(notFoundHandler);
 // 🚨 Middleware global de manejo de errores (debe ir al final)
 app.use(errorHandler);
 
+// 🌐 Función para generar URL base según el entorno
+const getBaseUrl = (req = null) => {
+  if (process.env.NODE_ENV === 'production') {
+    // En producción (Vercel), usar la URL del deployment
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+    // Si hay un request, usar el host del request
+    if (req) {
+      const protocol = req.headers['x-forwarded-proto'] || (req.connection.encrypted ? 'https' : 'http');
+      return `${protocol}://${req.get('host')}`;
+    }
+    // URL por defecto para producción
+    return `https://volleyball-art-api.vercel.app`;
+  } else {
+    // En desarrollo, usar localhost con puerto dinámico
+    const PORT = process.env.PORT || 5000;
+    return `http://localhost:${PORT}`;
+  }
+};
+
+// 📁 Función para obtener rutas de archivos locales (usando __dirname)
+const getProjectPath = (relativePath = '') => {
+  return path.join(__dirname, '..', relativePath);
+};
+
 const PORT = process.env.PORT || 5000;
 
 // 🎧 Iniciar servidor
 app.listen(PORT, () => {
   const baseUrl = getBaseUrl();
-
+  
   Logger.info(`✅ Servidor iniciado exitosamente`, {
     port: PORT,
     url: baseUrl,
@@ -283,7 +313,7 @@ app.listen(PORT, () => {
     pid: process.pid,
     timestamp: new Date().toISOString()
   });
-
+  
   // Mostrar URLs según el entorno
   console.log(`🌐 Server running on ${baseUrl}`);
   console.log(`📚 API Documentation: ${baseUrl}/api`);
@@ -292,7 +322,7 @@ app.listen(PORT, () => {
   console.log(`📊 Performance Metrics: ${baseUrl}/api/metrics`);
   console.log(`🗄️ Cache Stats: ${baseUrl}/api/cache/stats`);
   console.log(`📄 OpenAPI Spec: ${baseUrl}/api/swagger.json`);
-
+  
   // Información adicional en desarrollo
   if (process.env.NODE_ENV !== 'production') {
     console.log(`\n🔧 Development Mode:`);

@@ -1,10 +1,10 @@
-import Logger from '../config/logger.js';
+const Logger = require('../config/logger.js');
 
 /**
  * Middleware global para manejo de errores
  * Captura todos los errores no manejados y los logea apropiadamente
  */
-export const errorHandler = (error, req, res, next) => {
+const errorHandler = (error, req, res, next) => {
   // Log del error completo
   Logger.error(`🚨 [ERROR] ${error.message}`, {
     error: error.message,
@@ -63,7 +63,7 @@ export const errorHandler = (error, req, res, next) => {
 /**
  * Middleware para capturar errores de JSON malformado
  */
-export const jsonErrorHandler = (error, req, res, next) => {
+const jsonErrorHandler = (error, req, res, next) => {
   if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
     Logger.warn(`⚠️ [JSON_ERROR] JSON malformado desde ${req.ip}`, {
       error: error.message,
@@ -90,7 +90,7 @@ export const jsonErrorHandler = (error, req, res, next) => {
 /**
  * Middleware para rutas no encontradas (404)
  */
-export const notFoundHandler = (req, res, next) => {
+const notFoundHandler = (req, res, next) => {
   Logger.warn(`🔍 [404] Ruta no encontrada: ${req.method} ${req.originalUrl}`, {
     method: req.method,
     url: req.originalUrl,
@@ -108,4 +108,11 @@ export const notFoundHandler = (req, res, next) => {
     method: req.method,
     suggestion: 'Verifica la URL y el método HTTP. Consulta /api para ver endpoints disponibles.'
   });
+};
+
+
+module.exports = {
+  errorHandler,
+  jsonErrorHandler,
+  notFoundHandler
 };

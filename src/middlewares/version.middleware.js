@@ -1,4 +1,4 @@
-import { API_CONFIG, getVersionInfo } from '../config/api-versions.js';
+const { API_CONFIG, getVersionInfo } = require('../config/api-versions.js');
 
 /**
  * Extrae la versión de la URL
@@ -46,7 +46,7 @@ const setVersionInfo = (req, version) => {
 /**
  * Middleware principal para manejar versiones de API
  */
-export const versionMiddleware = (req, res, next) => {
+const versionMiddleware = (req, res, next) => {
   const requestedVersion = extractVersionFromUrl(req.path);
   
   if (requestedVersion) {
@@ -75,11 +75,11 @@ export const versionMiddleware = (req, res, next) => {
 /**
  * Registra rutas para todas las versiones soportadas
  */
-export const registerVersionedRoutes = (app, basePath, routes) => {
+const registerVersionedRoutes = (app, basePath, routes, additionalMiddlewares = []) => {
   // Caso especial: auth solo debe estar sin versión
   if (basePath === '/auth') {
     console.log(`✅ Registrando ruta (auth): ${basePath}`);
-    app.use(basePath, routes);
+    app.use(basePath, ...additionalMiddlewares, routes);
     return;
   }
   
@@ -87,19 +87,19 @@ export const registerVersionedRoutes = (app, basePath, routes) => {
   API_CONFIG.supportedVersions.forEach(version => {
     const versionPath = `/api/${version}${basePath}`;
     console.log(`✅ Registrando ruta: ${versionPath}`);
-    app.use(versionPath, routes);
+    app.use(versionPath, ...additionalMiddlewares, routes);
   });
   
   // Registrar sin versión con prefijo /api
   const compatibilityPath = `/api${basePath}`;
   console.log(`✅ Registrando ruta (sin versión): ${compatibilityPath}`);
-  app.use(compatibilityPath, routes);
+  app.use(compatibilityPath, ...additionalMiddlewares, routes);
 };
 
 /**
  * Registra endpoints de información para cada versión
  */
-export const registerVersionInfoEndpoints = (app) => {
+const registerVersionInfoEndpoints = (app) => {
   console.log('\n📋 Registrando endpoints de información de versiones:');
   
   API_CONFIG.supportedVersions.forEach(version => {
@@ -133,4 +133,11 @@ export const registerVersionInfoEndpoints = (app) => {
   });
   
   console.log('');
+};
+
+
+module.exports = {
+  versionMiddleware,
+  registerVersionedRoutes,
+  registerVersionInfoEndpoints
 };
