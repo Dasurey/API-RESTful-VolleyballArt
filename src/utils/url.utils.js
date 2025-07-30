@@ -4,7 +4,7 @@
  * 
  * ⚡ DETECCIÓN AUTOMÁTICA:
  * En producción, el servidor detecta automáticamente su URL desde el request HTTP.
- * Funciona con cualquier dominio (fulanino.com, api.miempresa.net, etc.) 
+ * Funciona con cualquier dominio (dasurey.com, api.miempresa.net, etc.) 
  * sin necesidad de configurar variables de entorno.
  * 
  * ✅ Funciona automáticamente con:
@@ -13,7 +13,7 @@
  * - Railway (proyecto.railway.app)
  * - Render (proyecto.onrender.com)
  * - Heroku (proyecto.herokuapp.com)
- * - Tu dominio personalizado (fulanino.com)
+ * - Tu dominio personalizado (dasurey.com)
  * - Cualquier proveedor de hosting
  * 
  * 🔧 Solo en casos especiales necesitarías configurar:
