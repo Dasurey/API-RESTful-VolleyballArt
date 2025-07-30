@@ -260,8 +260,7 @@ app.post('/api/cache/clear', authentication, (req, res) => {
 
 // Redirigir la ruta raíz a la documentación de la API
 app.get('/', (req, res) => {
-  Logger.info('🏠 Acceso a ruta raíz, redirigiendo a /api');
-  res.redirect('/api');
+  
 });
 
 // 🚫 Middleware para rutas no encontradas (debe ir antes del error handler)

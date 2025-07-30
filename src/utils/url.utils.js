@@ -29,12 +29,7 @@ const getBaseUrl = (req = null) => {
             const protocol = req.headers['x-forwarded-proto'] || req.headers['x-forwarded-ssl'] === 'on' ? 'https' : req.connection.encrypted ? 'https' : 'http';
             return `${protocol}://${req.get('host')}`;
         }
-
-        // Solo si NO hay request disponible, usar variables de entorno como fallback
-        if (process.env.VERCEL_URL) {
-            return `https://${process.env.VERCEL_URL}`;
-        }
-
+        
         // Último recurso: detectar desde variables del sistema
         const domain = process.env.DOMAIN || process.env.HOST || 'localhost';
         return `https://${domain}`;
