@@ -2,7 +2,12 @@ const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
 
-// 📊 Sistema de logging
+// � Configuración de entorno para Vercel
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = process.env.VERCEL ? 'production' : 'development';
+}
+
+// �📊 Sistema de logging
 const Logger = require('./config/logger.js');
 const { httpLogger, devLogger, requestLogger } = require('./middlewares/logger.middleware.js');
 const { errorHandler, jsonErrorHandler, notFoundHandler } = require('./middlewares/error.middleware.js');
@@ -43,7 +48,18 @@ const { getBaseUrl, getProjectPath } = require('./utils/url.utils.js');
 
 const app = express();
 
-// 📊 Iniciar logging del sistema
+// � Manejador de errores no capturados (especialmente importante en Vercel)
+process.on('uncaughtException', (err) => {
+  console.error('🚨 Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// �📊 Iniciar logging del sistema
 Logger.info('🚀 Iniciando servidor VolleyballArt API...', {
   nodeVersion: process.version,
   environment: process.env.NODE_ENV,
@@ -94,6 +110,15 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOpti
 app.get('/api/swagger.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
+});
+
+// 🧪 Endpoint de test simple para Vercel
+app.get('/test', (req, res) => {
+  res.json({ 
+    message: '✅ Servidor funcionando correctamente',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown'
+  });
 });
 
 // Registrar rutas de forma dinámica para todas las versiones soportadas
@@ -260,7 +285,31 @@ app.post('/api/cache/clear', authentication, (req, res) => {
 
 // Redirigir la ruta raíz a la documentación de la API
 app.get('/', (req, res) => {
-  
+  try {
+    Logger.info('🏠 Acceso a ruta raíz, redirigiendo a /api');
+    res.redirect('/api');
+  } catch (error) {
+    console.error('Error en ruta raíz:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// 🔍 Endpoint de debug para Vercel
+app.get('/debug', (req, res) => {
+  try {
+    res.json({
+      message: 'Debug info for Vercel',
+      nodeVersion: process.version,
+      environment: process.env.NODE_ENV,
+      isVercel: !!process.env.VERCEL,
+      vercelUrl: process.env.VERCEL_URL,
+      timestamp: new Date().toISOString(),
+      headers: req.headers
+    });
+  } catch (error) {
+    console.error('Error en debug:', error);
+    res.status(500).json({ error: 'Error en debug endpoint' });
+  }
 });
 
 // 🚫 Middleware para rutas no encontradas (debe ir antes del error handler)

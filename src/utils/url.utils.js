@@ -26,10 +26,17 @@ const getBaseUrl = (req = null) => {
     if (process.env.NODE_ENV === 'production') {
         // En producción: SIEMPRE detectar automáticamente desde el request
         if (req) {
-            const protocol = req.headers['x-forwarded-proto'] || req.headers['x-forwarded-ssl'] === 'on' ? 'https' : req.connection.encrypted ? 'https' : 'http';
+            const protocol = req.headers['x-forwarded-proto'] || 
+                           req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 
+                           req.connection?.encrypted ? 'https' : 'https'; // Default https en producción
             return `${protocol}://${req.get('host')}`;
         }
         
+        // En Vercel, usar la URL del deployment automático
+        if (process.env.VERCEL_URL) {
+            return `https://${process.env.VERCEL_URL}`;
+        }
+
         // Último recurso: detectar desde variables del sistema
         const domain = process.env.DOMAIN || process.env.HOST || 'localhost';
         return `https://${domain}`;
