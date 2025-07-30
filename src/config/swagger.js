@@ -1,7 +1,8 @@
 const swaggerJSDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const path = require('path');
-const { getBaseUrl } = require('../utils/url.utils.js');
+const { __dirname: projectDir, join, getBaseUrl } = require('../utils/url.utils.js');
+
+// Configuración básica de Swagger (URL se actualiza dinámicamente)
 
 // Configuración básica de Swagger
 const swaggerOptions = {
@@ -177,8 +178,8 @@ const swaggerOptions = {
     ]
   },
   apis: [
-    path.join(__dirname, '../routes/*.js'),
-    path.join(__dirname, '../index.js')
+    join(projectDir, 'routes/*.js'),
+    join(projectDir, 'index.js')
   ]
 };
 
@@ -196,4 +197,4 @@ const swaggerUiOptions = {
   }
 };
 
-module.exports = {  swaggerSpec, swaggerUi, swaggerUiOptions  };;
+module.exports = {  swaggerSpec, swaggerUi, swaggerUiOptions  };

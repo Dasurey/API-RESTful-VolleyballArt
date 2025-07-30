@@ -4,7 +4,7 @@ const cors = require('cors');
 
 // � Configuración de entorno para Vercel
 if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = process.env.VERCEL ? 'production' : 'development';
+  process.env.NODE_ENV = process.env.NODE_ENV ? 'production' : 'development';
 }
 
 // �📊 Sistema de logging
@@ -40,8 +40,8 @@ const { authentication } = require('./middlewares/authentication.js');
 const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware.js');
 const { getVersionInfo } = require('./config/api-versions.js');
 
-// 🔧 Utilidades para URLs y paths
-const { getBaseUrl, getProjectPath } = require('./utils/url.utils.js');
+// 🔧 Utilidades para URLs y paths (incluyendo middleware dinámico para Swagger)
+const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl, PORT } = require('./utils/url.utils.js');
 
 // 🌐 Configuración de variables de entorno
 // Ya configurado con require('dotenv').config() arriba
@@ -87,6 +87,9 @@ app.use(minifyJson); // Minificación de JSON en producción
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// 📁 Archivos estáticos usando utilidades CommonJS
+app.use(express.static(join(projectDir, "public")));
+
 // 🧹 Middlewares de sanitización
 app.use(sanitizeInput); // Prevenir NoSQL injection
 app.use(sanitizeHtml); // Limpiar HTML/XSS
@@ -102,6 +105,9 @@ app.use(cors(corsOptions));
 
 // Aplicar middleware de versioning
 app.use(versionMiddleware);
+
+// 🌐 Middleware para actualizar URL de Swagger dinámicamente usando req.headers.host
+app.use('/api/docs', updateSwaggerUrl);
 
 // 📚 Configurar documentación Swagger
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
@@ -163,10 +169,11 @@ registerVersionInfoEndpoints(app);
  *                     health:
  *                       type: string
  *                       example: https://api.example.com/api/health
- */
+ */ 
+
 app.get('/api', (req, res) => {
   const versionInfo = getVersionInfo();
-  const baseUrl = getBaseUrl(req);
+  const baseUrl = getBaseUrl();
 
   res.json({
     message: 'Endpoint de información de la API RESTful VolleyballArt',
@@ -287,7 +294,7 @@ app.post('/api/cache/clear', authentication, (req, res) => {
 app.get('/', (req, res) => {
   try {
     Logger.info('🏠 Acceso a ruta raíz, redirigiendo a /api');
-    res.redirect('/api');
+    //res.redirect('/api');
   } catch (error) {
     console.error('Error en ruta raíz:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -301,8 +308,7 @@ app.get('/debug', (req, res) => {
       message: 'Debug info for Vercel',
       nodeVersion: process.version,
       environment: process.env.NODE_ENV,
-      isVercel: !!process.env.VERCEL,
-      vercelUrl: process.env.VERCEL_URL,
+      baseUrl: getBaseUrl(),
       timestamp: new Date().toISOString(),
       headers: req.headers
     });
@@ -317,8 +323,6 @@ app.use(notFoundHandler);
 
 // 🚨 Middleware global de manejo de errores (debe ir al final)
 app.use(errorHandler);
-
-const PORT = process.env.PORT || 5000;
 
 // 🎧 Iniciar servidor
 app.listen(PORT, () => {

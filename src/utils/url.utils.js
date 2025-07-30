@@ -1,59 +1,56 @@
+const { dirname, join } = require("path");
+require('dotenv').config();
+
+// Equivalente CommonJS a:
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = join(dirname(__filename), "..");
+const projectDir = join(dirname(__filename), "..");
+const PORT = process.env.PORT || 5000;
+
 /**
- * Utilidades para manejo de URLs dinámicas
- * Centraliza la lógica de generación de URLs base para toda la aplicación
- * 
- * ⚡ DETECCIÓN AUTOMÁTICA:
- * En producción, el servidor detecta automáticamente su URL desde el request HTTP.
- * Funciona con cualquier dominio (dasurey.com, api.miempresa.net, etc.) 
- * sin necesidad de configurar variables de entorno.
- * 
- * ✅ Funciona automáticamente con:
- * - Vercel (api-proyecto.vercel.app)
- * - Netlify (proyecto.netlify.app) 
- * - Railway (proyecto.railway.app)
- * - Render (proyecto.onrender.com)
- * - Heroku (proyecto.herokuapp.com)
- * - Tu dominio personalizado (dasurey.com)
- * - Cualquier proveedor de hosting
- * 
- * 🔧 Solo en casos especiales necesitarías configurar:
- * VERCEL_URL - Se configura automáticamente en Vercel
- * DOMAIN - Solo si el servidor no puede detectar el dominio
+ * Función para obtener la URL base desde .env o localhost con puerto del .env
+ * @returns {string} URL base completa
  */
+function getBaseUrl() {
+  // Si BASE_DOMAIN está definida en .env, usarla
+  if (process.env.BASE_DOMAIN) {
+    return process.env.BASE_DOMAIN;
+  }
+  
+  // Si no, construir localhost con el puerto del .env
+  return `http://localhost:${PORT}`;
+}
 
-// 🌐 Función para generar URL base según el entorno (Detección automática)
-const getBaseUrl = (req = null) => {
-    if (process.env.NODE_ENV === 'production') {
-        // En producción: SIEMPRE detectar automáticamente desde el request
-        if (req) {
-            const protocol = req.headers['x-forwarded-proto'] || 
-                           req.headers['x-forwarded-ssl'] === 'on' ? 'https' : 
-                           req.connection?.encrypted ? 'https' : 'https'; // Default https en producción
-            return `${protocol}://${req.get('host')}`;
-        }
-        
-        // En Vercel, usar la URL del deployment automático
-        if (process.env.VERCEL_URL) {
-            return `https://${process.env.VERCEL_URL}`;
-        }
-
-        // Último recurso: detectar desde variables del sistema
-        const domain = process.env.DOMAIN || process.env.HOST || 'localhost';
-        return `https://${domain}`;
-    } else {
-        // En desarrollo, usar localhost con puerto dinámico
-        const PORT = process.env.PORT || 5000;
-        return `http://localhost:${PORT}`;
+/**
+ * Middleware para actualizar dinámicamente la URL de Swagger
+ * @param {Object} req - Request object de Express
+ * @param {Object} res - Response object de Express  
+ * @param {Function} next - Next function
+ */
+function updateSwaggerUrl(req, res, next) {
+  try {
+    // Importar swaggerSpec de forma lazy para evitar dependencias circulares
+    const { swaggerSpec } = require('../config/swagger.js');
+    
+    // Usar la URL base desde .env
+    const baseUrl = getBaseUrl();
+    
+    // Actualizar la configuración de Swagger
+    if (swaggerSpec && swaggerSpec.servers && swaggerSpec.servers[0]) {
+      swaggerSpec.servers[0].url = baseUrl;
     }
-};
+    
+    next();
+  } catch (error) {
+    console.error('Error actualizando URL de Swagger:', error);
+    next();
+  }
+}
 
-// 📁 Función para obtener rutas de archivos usando __dirname nativo
-const getProjectPath = (baseDir, relativePath = '') => {
-    const path = require('path');
-    return path.join(baseDir, '..', relativePath);
-};
-
-module.exports = {
-    getBaseUrl,
-    getProjectPath
+module.exports = { 
+  __dirname: projectDir, 
+  join,
+  getBaseUrl,
+  updateSwaggerUrl,
+  PORT
 };
