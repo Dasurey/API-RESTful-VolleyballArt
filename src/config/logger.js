@@ -14,7 +14,7 @@ winston.addColors(colors);
 
 // Función para determinar el nivel de log según el entorno
 const level = () => {
-  const env = process.env.NODE_ENV || 'development';
+  const env = process.env.NODE_ENV;
   const isDevelopment = env === 'development';
   return isDevelopment ? 'debug' : 'warn';
 };

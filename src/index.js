@@ -46,7 +46,7 @@ const app = express();
 // 📊 Iniciar logging del sistema
 Logger.info('🚀 Iniciando servidor VolleyballArt API...', {
   nodeVersion: process.version,
-  environment: process.env.NODE_ENV || 'development',
+  environment: process.env.NODE_ENV,
   timestamp: new Date().toISOString()
 });
 
@@ -278,7 +278,7 @@ app.listen(PORT, () => {
   Logger.info(`✅ Servidor iniciado exitosamente`, {
     port: PORT,
     url: baseUrl,
-    environment: process.env.NODE_ENV || 'development',
+    environment: process.env.NODE_ENV,
     pid: process.pid,
     timestamp: new Date().toISOString()
   });
