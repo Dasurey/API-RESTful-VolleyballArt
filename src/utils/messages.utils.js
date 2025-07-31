@@ -88,6 +88,28 @@ const AUTH_MESSAGES = {
   OPERATION_REGISTER: "register"
 };
 
+const VERSION_MESSAGES = {
+  // Mensajes de error
+  VERSION_NOT_SUPPORTED: "Versión de API no soportada:",
+  VERSION_INFO_NOT_FOUND: "Información de versión",
+  VERSION_INFO_NOT_FOUND_SUFFIX: "no encontrada",
+  
+  // Mensajes de deprecación
+  VERSION_DEPRECATED_PREFIX: "Version",
+  VERSION_DEPRECATED_SUFFIX: "is deprecated",
+  
+  // Mensajes de documentación
+  API_DOCUMENTATION_PREFIX: "Documentación de la API para la versión",
+  
+  // Mensajes de registro de rutas
+  REGISTER_ROUTE_AUTH: "✅ Registrando ruta (auth):",
+  REGISTER_ROUTE_VERSIONED: "✅ Registrando ruta:",
+  REGISTER_ROUTE_NO_VERSION: "✅ Registrando ruta (sin versión):",
+  REGISTER_VERSION_ENDPOINTS: "\n📋 Registrando endpoints de información de versiones:",
+  REGISTER_DOCS_FOR: "✅",
+  REGISTER_DOCS_SUFFIX: "- Documentación de"
+};
+
 const GENERAL_MESSAGES = {
   INTERNAL_ERROR: "🚨 Error interno del servidor",
   VALIDATION_ERROR: "📝 Datos inválidos",
@@ -156,6 +178,62 @@ const SYSTEM_MESSAGES = {
 
   // URL y Swagger
   ERROR_UPDATING_SWAGGER_URL: "🚨 Error actualizando URL de Swagger",
+
+  // Mensajes de modelo de productos
+  PRODUCT_FROM_CACHE: "📦 Producto obtenido desde cache",
+  PRODUCTS_FROM_CACHE: "📦 Productos obtenidos desde cache",
+  PRODUCT_NOT_FOUND_FIREBASE: "📦 Producto no encontrado en Firebase",
+  PRODUCTS_FROM_FIREBASE_CACHED: "📦 Productos obtenidos desde Firebase y cacheados",
+  PRODUCT_FROM_FIREBASE_CACHED: "📦 Producto obtenido desde Firebase y cacheado",
+  PRODUCT_CREATED_SUCCESS: "✅ Producto creado exitosamente en modelo",
+  PRODUCT_UPDATED_SUCCESS: "✅ Producto actualizado exitosamente",
+  PRODUCT_DELETED_SUCCESS: "✅ Producto eliminado exitosamente",
+  ERROR_GETTING_PRODUCT_FIREBASE: "🚨 Error al obtener producto de Firebase",
+  ERROR_GETTING_PRODUCTS_FIREBASE: "🚨 Error al obtener productos de Firebase",
+  ERROR_CREATING_PRODUCT_DATABASE: "🚨 Error creando producto en la base de datos",
+  ERROR_CREATING_PRODUCT_PREFIX: "Error al crear el producto en la base de datos:",
+
+  // Constantes de colecciones y cache
+  COLLECTION_PRODUCTS: "products",
+  COLLECTION_CATEGORY: "category",
+  CACHE_KEY_ALL_PRODUCTS: "all_products",
+  CACHE_KEY_PRODUCT_PREFIX: "product_",
+  OPERATION_GENERATE_ID: "generateSequentialId",
+  OPERATION_GENERATE_ID_KEY: "generateId",
+  OPERATION_GENERATE_CATEGORY_ID: "generateParentCategoryId",
+  OPERATION_GENERATE_CATEGORY_ID_KEY: "generateCategoryId",
+  OPERATION_GENERATE_SUBCATEGORY_ID: "generateSubcategoryId",
+  OPERATION_GENERATE_SUBCATEGORY_ID_KEY: "generateSubcategoryId",
+  PRODUCT_ID_PREFIX: "VA-",
+  PRODUCT_ID_INITIAL: "VA-0000001",
+  CATEGORY_ID_PREFIX: "CAT-",
+  CATEGORY_ID_SUFFIX: "-0000",
+  CATEGORY_ID_SEPARATOR: "-",
+  CATEGORY_ID_INITIAL: "CAT-0001-0000",
+  PADDING_ZERO: "0",
+
+  // Mensajes de categorías
+  CATEGORIES_PARENT_OBTAINED: "📋 Categorías padre obtenidas",
+  CATEGORY_WITH_SUBCATEGORIES: "📂 Categoría obtenida con subcategoria",
+  SUBCATEGORIES_OBTAINED: "📂 Subcategorías obtenidas",
+  CATEGORY_PARENT_CREATED: "✅ Categoría padre creada exitosamente",
+  SUBCATEGORY_CREATED: "✅ Subcategoría creada exitosamente",
+  CATEGORY_UPDATED: "✅ Categoría actualizada exitosamente",
+  SUBCATEGORIES_DELETED: "🗑️ Subcategorías eliminadas",
+  CATEGORY_DELETED: "✅ Categoría eliminada exitosamente",
+  CATEGORY_HIERARCHY_OBTAINED: "🌳 Jerarquía de categoria obtenida",
+  ERROR_GETTING_CATEGORIES_FIREBASE: "🚨 Error al obtener categorías de Firebase",
+  ERROR_GETTING_CATEGORY_FIREBASE: "🚨 Error al obtener categoría de Firebase",
+  ERROR_GETTING_SUBCATEGORIES_FIREBASE: "🚨 Error al obtener subcategorías de Firebase",
+  ERROR_UPDATING_CATEGORY_FIREBASE: "🚨 Error al actualizar categoría de Firebase",
+  ERROR_DELETING_CATEGORY_FIREBASE: "🚨 Error al eliminar categoría de Firebase",
+  ERROR_GETTING_HIERARCHY_FIREBASE: "🚨 Error al obtener jerarquía de categorías de Firebase",
+  CATEGORY_NOT_FOUND_PREFIX: "Categoría no encontrada con ID:",
+
+  // Constantes para log levels (ya incluye 'info', 'error', etc.)
+  LOG_LEVEL_INFO: "info",
+  LOG_LEVEL_ERROR: "error",
+  LOG_LEVEL_WARN: "warn",
 
   // Mensajes de middleware
   MIDDLEWARE_REQUEST_INCOMING: "📨 Request incoming",
@@ -272,22 +350,6 @@ const FIREBASE_CONSTANTS = {
   COLLECTION_USERS: "users"
 };
 
-const HTTP_STATUS = {
-  // Códigos de éxito
-  OK: 200,
-  CREATED: 201,
-
-  // Códigos de error del cliente
-  BAD_REQUEST: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  UNPROCESSABLE_ENTITY: 422,
-
-  // Códigos de error del servidor
-  INTERNAL_SERVER_ERROR: 500
-};
-
 const VALIDATION_MESSAGES = {
   // Validaciones de categorías
   CATEGORY_TITLE_REQUIRED: "El título de la categoría es requerido",
@@ -330,7 +392,45 @@ const VALIDATION_MESSAGES = {
 
   PRODUCT_SUBCATEGORY_NUMBER: "La subcategoría debe ser un número",
   PRODUCT_SUBCATEGORY_INTEGER: "La subcategoría debe ser un número entero",
-  PRODUCT_SUBCATEGORY_MIN: "La subcategoría debe ser mayor a 0"
+  PRODUCT_SUBCATEGORY_MIN: "La subcategoría debe ser mayor a 0",
+
+  // Validaciones comunes de esquemas
+  ID_FORMAT_INVALID: "El ID debe tener el formato VA-0000001",
+  ID_REQUIRED: "El ID es obligatorio",
+  PARAM_INVALID: "Parámetro inválido",
+  QUERY_PARAM_INVALID: "Query parameter inválido",
+
+  // Validaciones específicas de categorías
+  CATEGORY_TITLE_REQUIRED: "El título de la categoría es requerido",
+  SUBCATEGORY_TITLE_REQUIRED: "El título de la subcategoría es requerido",
+  TITLE_MIN_2_CHARS: "El título debe tener al menos 2 caracteres",
+  TITLE_MAX_100_CHARS: "El título no puede exceder 100 caracteres",
+  TITLE_CANNOT_BE_EMPTY: "El título no puede estar vacío",
+  TEXT_MAX_5000_CHARS: "El texto no puede exceder 5000 caracteres",
+  IMAGE_URL_INVALID: "La URL de la imagen debe ser válida",
+  IMAGE_URL_REQUIRED: "La URL de la imagen es requerida",
+  ALT_TEXT_REQUIRED: "El texto alternativo es requerido",
+  ALT_TEXT_MAX_200_CHARS: "El texto alternativo no puede exceder 200 caracteres",
+  MAX_10_IMAGES: "No se pueden agregar más de 10 imágenes",
+  PROVIDE_AT_LEAST_ONE_FIELD: "Debe proporcionar al menos un campo para actualizar",
+  CATEGORY_ID_FORMAT_INVALID: "El ID de categoría debe tener el formato CAT-XXXX-YYYY",
+  CATEGORY_ID_REQUIRED: "El ID de categoría es requerido",
+  PARENT_CATEGORY_ID_FORMAT_INVALID: "El ID de categoría padre debe tener el formato CAT-XXXX-0000",
+  PARENT_CATEGORY_ID_REQUIRED: "El ID de categoría padre es requerido",
+  SUBCATEGORY_ID_FORMAT_INVALID: "El ID de subcategoría debe tener el formato CAT-XXXX-YYYY",
+  SUBCATEGORY_ID_REQUIRED: "El ID de subcategoría es requerido",
+  ID_CANNOT_END_0000: "El ID no puede terminar en -0000 (es un ID de categoría padre)",
+  DELETE_SUBCATEGORY_VALID_VALUES: "deleteSubcategory debe ser \"true\" o \"false\"",
+  
+  // Validaciones de autenticación
+  EMAIL_REQUIRED: "El email es obligatorio",
+  EMAIL_INVALID: "Debe ser un email válido",
+  PASSWORD_REQUIRED: "La contraseña es obligatoria",
+  PASSWORD_MIN_6_CHARS: "La contraseña debe tener al menos 6 caracteres",
+  PASSWORD_MAX_50_CHARS: "La contraseña no puede tener más de 50 caracteres",
+  PASSWORD_PATTERN_INVALID: "La contraseña debe tener al menos: 1 minúscula, 1 mayúscula y 1 número",
+  PASSWORD_CONFIRMATION_REQUIRED: "Confirma tu contraseña",
+  PASSWORDS_DO_NOT_MATCH: "Las contraseñas no coinciden"
 };
 
 const CONTROLLER_MESSAGES = {
@@ -360,18 +460,181 @@ const CONTROLLER_MESSAGES = {
   DELETED_FLAG: true
 };
 
+const SERVICE_MESSAGES = {
+  // Mensajes de log para servicios
+  SERVICE_CATEGORIES_GET_SUCCESS: "📋 Servicio: Categorías obtenidas exitosamente",
+  SERVICE_CATEGORY_GET_SUCCESS: "📂 Servicio: Categoría obtenida exitosamente", 
+  SERVICE_SUBCATEGORIES_GET_SUCCESS: "📂 Servicio: Subcategoria obtenidas exitosamente",
+  SERVICE_CATEGORY_CREATE_SUCCESS: "✅ Servicio: Categoría creada exitosamente",
+  SERVICE_SUBCATEGORY_CREATE_SUCCESS: "✅ Servicio: Subcategoría creada exitosamente",
+  SERVICE_CATEGORY_UPDATE_SUCCESS: "✅ Servicio: Categoría actualizada exitosamente",
+  SERVICE_CATEGORY_DELETE_SUCCESS: "✅ Servicio: Categoría eliminada exitosamente",
+  SERVICE_HIERARCHY_GET_SUCCESS: "🌳 Servicio: Jerarquía de categoria obtenida exitosamente",
+  
+  // Mensajes de error para servicios
+  SERVICE_CATEGORIES_GET_ERROR: "🚨 Error en servicio al obtener categoria",
+  SERVICE_CATEGORY_GET_ERROR: "🚨 Error en servicio al obtener categoría por ID", 
+  SERVICE_SUBCATEGORIES_GET_ERROR: "🚨 Error en servicio al obtener subcategoria",
+  SERVICE_CATEGORY_CREATE_ERROR: "🚨 Error en servicio al crear categoría",
+  SERVICE_SUBCATEGORY_CREATE_ERROR: "🚨 Error en servicio al crear subcategoría",
+  SERVICE_CATEGORY_UPDATE_ERROR: "🚨 Error en servicio al actualizar categoría",
+  SERVICE_CATEGORY_DELETE_ERROR: "🚨 Error en servicio al eliminar categoría",
+  SERVICE_HIERARCHY_GET_ERROR: "🚨 Error en servicio al obtener jerarquía de categoria",
+  
+  // Mensajes de validación para servicios
+  NO_UPDATE_DATA_ERROR: "No hay datos para actualizar",
+  NO_TITLE_DEFAULT: "Sin título",
+  
+  // Campos específicos para servicios
+  SERVICE_NAME_CATEGORY: "category",
+  
+  // Patrones de validación
+  PARENT_CATEGORY_SUFFIX: "-0000",
+  EMPTY_STRING: "",
+  
+  // Patrones de regex para categorías
+  PARENT_CATEGORY_ID_PATTERN: /^CAT-\d{4}-0000$/,
+  SUBCATEGORY_ID_PATTERN: /^CAT-\d{4}-\d{4}$/,
+  
+  // Patrón de regex para IDs de productos
+  PRODUCT_ID_PATTERN: /^VA-\d{7}$/,
+  
+  // Patrón de regex para validación de contraseñas
+  PASSWORD_PATTERN: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+  
+  // Referencias de campos
+  PASSWORD_FIELD: "password",
+  
+  // Valores booleanos como string
+  TRUE_STRING: "true",
+  FALSE_STRING: "false",
+  
+  // Campos de log para servicios
+  TOTAL_CATEGORY_FIELD: "totalCategory",
+  TOTAL_SUBCATEGORY_FIELD: "totalSubcategory", 
+  TOTAL_PARENT_CATEGORY_FIELD: "totalParentCategory",
+  HAS_SUBCATEGORY_FIELD: "hasSubcategory",
+  CATEGORY_ID_FIELD: "categoryId",
+  SUBCATEGORY_ID_FIELD: "subcategoryId",
+  PARENT_CATEGORY_ID_FIELD: "parentCategoryId",
+  UPDATED_FIELDS_FIELD: "updatedFields",
+  DELETED_SUBCATEGORY_FIELD: "deletedSubcategory",
+  CATEGORY_DATA_FIELD: "categoryData",
+  SUBCATEGORY_DATA_FIELD: "subcategoryData",
+  UPDATE_DATA_FIELD: "updateData",
+  OPTIONS_FIELD: "options",
+  TITLE_FIELD: "title",
+  SERVICE_FIELD: "service"
+};
+
+// Claves de error de Joi
+const JOI_ERROR_KEYS = {
+  STRING_EMPTY: 'string.empty',
+  STRING_MIN: 'string.min',
+  STRING_MAX: 'string.max',
+  STRING_URI: 'string.uri',
+  STRING_PATTERN_BASE: 'string.pattern.base',
+  NUMBER_BASE: 'number.base',
+  NUMBER_MIN: 'number.min',
+  BOOLEAN_BASE: 'boolean.base',
+  ARRAY_BASE: 'array.base',
+  ARRAY_MIN: 'array.min',
+  ARRAY_MAX: 'array.max',
+  NUMBER_INTEGER: 'number.integer',
+  ANY_REQUIRED: 'any.required',
+  ANY_ONLY: 'any.only',
+  ANY_INVALID: 'any.invalid',
+  OBJECT_MIN: 'object.min',
+  STRING_EMAIL: 'string.email'
+};
+
+// Mensajes de validación para esquemas Joi
+const JOI_VALIDATION_MESSAGES = {
+  // Mensajes de productos para Joi
+  PRODUCT_TITLE_REQUIRED: VALIDATION_MESSAGES.PRODUCT_TITLE_REQUIRED,
+  PRODUCT_TITLE_MIN: VALIDATION_MESSAGES.PRODUCT_TITLE_MIN,
+  PRODUCT_TITLE_MAX: VALIDATION_MESSAGES.PRODUCT_TITLE_MAX,
+  
+  PRODUCT_IMAGE_URL_INVALID: VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_INVALID,
+  PRODUCT_IMAGE_URL_REQUIRED: VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_REQUIRED,
+  PRODUCT_IMAGE_ALT_REQUIRED: VALIDATION_MESSAGES.PRODUCT_IMAGE_ALT_REQUIRED,
+  PRODUCT_IMAGE_CAROUSEL_BOOLEAN: VALIDATION_MESSAGES.PRODUCT_IMAGE_CAROUSEL_BOOLEAN,
+  PRODUCT_IMAGES_MIN: VALIDATION_MESSAGES.PRODUCT_IMAGES_MIN,
+  PRODUCT_IMAGES_ARRAY: VALIDATION_MESSAGES.PRODUCT_IMAGES_ARRAY,
+  
+  PRODUCT_PRICE_NEGATIVE: VALIDATION_MESSAGES.PRODUCT_PRICE_NEGATIVE,
+  PRODUCT_PRICE_NUMBER: VALIDATION_MESSAGES.PRODUCT_PRICE_NUMBER,
+  PRODUCT_PREVIOUS_PRICE_NEGATIVE: VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NEGATIVE,
+  PRODUCT_PREVIOUS_PRICE_NUMBER: VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NUMBER,
+  
+  PRODUCT_DESCRIPTION_REQUIRED: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_REQUIRED,
+  PRODUCT_DESCRIPTION_MIN: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MIN,
+  PRODUCT_DESCRIPTION_MAX: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MAX,
+  
+  PRODUCT_CATEGORY_NUMBER: VALIDATION_MESSAGES.PRODUCT_CATEGORY_NUMBER,
+  PRODUCT_CATEGORY_INTEGER: VALIDATION_MESSAGES.PRODUCT_CATEGORY_INTEGER,
+  PRODUCT_CATEGORY_MIN: VALIDATION_MESSAGES.PRODUCT_CATEGORY_MIN,
+  
+  PRODUCT_SUBCATEGORY_NUMBER: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_NUMBER,
+  PRODUCT_SUBCATEGORY_INTEGER: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_INTEGER,
+  PRODUCT_SUBCATEGORY_MIN: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_MIN,
+  
+  PRODUCT_OUTSTANDING_BOOLEAN: VALIDATION_MESSAGES.PRODUCT_OUTSTANDING_BOOLEAN,
+
+  // Mensajes de validación común para esquemas
+  ID_FORMAT_INVALID: VALIDATION_MESSAGES.ID_FORMAT_INVALID,
+  ID_REQUIRED: VALIDATION_MESSAGES.ID_REQUIRED,
+  PARAM_INVALID: VALIDATION_MESSAGES.PARAM_INVALID,
+  QUERY_PARAM_INVALID: VALIDATION_MESSAGES.QUERY_PARAM_INVALID,
+
+  // Mensajes de validación de categorías
+  CATEGORY_TITLE_REQUIRED: VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED,
+  SUBCATEGORY_TITLE_REQUIRED: VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED,
+  TITLE_MIN_2_CHARS: VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+  TITLE_MAX_100_CHARS: VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
+  TITLE_CANNOT_BE_EMPTY: VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
+  TEXT_MAX_5000_CHARS: VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS,
+  IMAGE_URL_INVALID: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
+  IMAGE_URL_REQUIRED: VALIDATION_MESSAGES.IMAGE_URL_REQUIRED,
+  ALT_TEXT_REQUIRED: VALIDATION_MESSAGES.ALT_TEXT_REQUIRED,
+  ALT_TEXT_MAX_200_CHARS: VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
+  IMAGES_MAX_10: VALIDATION_MESSAGES.IMAGES_MAX_10,
+  PROVIDE_AT_LEAST_ONE_FIELD: VALIDATION_MESSAGES.PROVIDE_AT_LEAST_ONE_FIELD,
+  CATEGORY_ID_FORMAT_INVALID: VALIDATION_MESSAGES.CATEGORY_ID_FORMAT_INVALID,
+  CATEGORY_ID_REQUIRED: VALIDATION_MESSAGES.CATEGORY_ID_REQUIRED,
+  PARENT_CATEGORY_ID_FORMAT_INVALID: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
+  PARENT_CATEGORY_ID_REQUIRED: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED,
+  SUBCATEGORY_ID_FORMAT_INVALID: VALIDATION_MESSAGES.SUBCATEGORY_ID_FORMAT_INVALID,
+  SUBCATEGORY_ID_REQUIRED: VALIDATION_MESSAGES.SUBCATEGORY_ID_REQUIRED,
+  ID_CANNOT_END_0000: VALIDATION_MESSAGES.ID_CANNOT_END_0000,
+  DELETE_SUBCATEGORY_VALID_VALUES: VALIDATION_MESSAGES.DELETE_SUBCATEGORY_VALID_VALUES,
+  
+  // Mensajes de autenticación para Joi
+  EMAIL_REQUIRED: VALIDATION_MESSAGES.EMAIL_REQUIRED,
+  EMAIL_INVALID: VALIDATION_MESSAGES.EMAIL_INVALID,
+  PASSWORD_REQUIRED: VALIDATION_MESSAGES.PASSWORD_REQUIRED,
+  PASSWORD_MIN_6_CHARS: VALIDATION_MESSAGES.PASSWORD_MIN_6_CHARS,
+  PASSWORD_MAX_50_CHARS: VALIDATION_MESSAGES.PASSWORD_MAX_50_CHARS,
+  PASSWORD_PATTERN_INVALID: VALIDATION_MESSAGES.PASSWORD_PATTERN_INVALID,
+  PASSWORD_CONFIRMATION_REQUIRED: VALIDATION_MESSAGES.PASSWORD_CONFIRMATION_REQUIRED,
+  PASSWORDS_DO_NOT_MATCH: VALIDATION_MESSAGES.PASSWORDS_DO_NOT_MATCH
+};
+
 module.exports = {
   PRODUCTS_MESSAGES,
-  CATEGORIES_MESSAGES,
+  CATEGORIES_MESSAGES, 
   AUTH_MESSAGES,
   GENERAL_MESSAGES,
   VALIDATION_MESSAGES,
   CONTROLLER_MESSAGES,
+  SERVICE_MESSAGES,
   LOG_MESSAGES,
   SWAGGER_DESCRIPTIONS,
   SYSTEM_CONSTANTS,
   SYSTEM_MESSAGES,
   RESPONSE_FIELDS,
   FIREBASE_CONSTANTS,
-  HTTP_STATUS
+  JOI_ERROR_KEYS,
+  JOI_VALIDATION_MESSAGES,
+  VERSION_MESSAGES
 };

@@ -1,4 +1,6 @@
-const Joi = require('joi');
+const { EXTERNAL_PACKAGES } = require('../config/paths.js');
+const { JOI_ERROR_KEYS, JOI_VALIDATION_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const Joi = require(EXTERNAL_PACKAGES.JOI);
 
 /**
  * Esquema de validación para crear categoría padre
@@ -10,10 +12,10 @@ const createCategorySchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      'string.empty': 'El título de la categoría es requerido',
-      'string.min': 'El título debe tener al menos 2 caracteres',
-      'string.max': 'El título no puede exceder 100 caracteres',
-      'any.required': 'El título de la categoría es requerido'
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED,
+      [JOI_ERROR_KEYS.STRING_MIN]: JOI_VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED
     })
 });
 
@@ -27,10 +29,10 @@ const createSubcategorySchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      'string.empty': 'El título de la subcategoría es requerido',
-      'string.min': 'El título debe tener al menos 2 caracteres',
-      'string.max': 'El título no puede exceder 100 caracteres',
-      'any.required': 'El título de la subcategoría es requerido'
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED,
+      [JOI_ERROR_KEYS.STRING_MIN]: JOI_VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED
     }),
     
   text: Joi.string()
@@ -39,7 +41,7 @@ const createSubcategorySchema = Joi.object({
     .allow('', null)
     .optional()
     .messages({
-      'string.max': 'El texto no puede exceder 5000 caracteres'
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
     }),
     
   img: Joi.array()
@@ -49,23 +51,23 @@ const createSubcategorySchema = Joi.object({
           .uri()
           .required()
           .messages({
-            'string.uri': 'La URL de la imagen debe ser válida',
-            'any.required': 'La URL de la imagen es requerida'
+            [JOI_ERROR_KEYS.STRING_URI]: JOI_VALIDATION_MESSAGES.IMAGE_URL_INVALID,
+            [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
           }),
         alt: Joi.string()
           .trim()
           .max(200)
           .required()
           .messages({
-            'string.max': 'El texto alternativo no puede exceder 200 caracteres',
-            'any.required': 'El texto alternativo es requerido'
+            [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
+            [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
           })
       })
     )
     .max(10)
     .optional()
     .messages({
-      'array.max': 'No se pueden agregar más de 10 imágenes'
+      [JOI_ERROR_KEYS.ARRAY_MAX]: JOI_VALIDATION_MESSAGES.MAX_10_IMAGES
     })
 });
 
@@ -79,12 +81,12 @@ const updateCategorySchema = Joi.object({
     .max(100)
     .optional()
     .messages({
-      'string.empty': 'El título no puede estar vacío',
-      'string.min': 'El título debe tener al menos 2 caracteres',
-      'string.max': 'El título no puede exceder 100 caracteres'
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
+      [JOI_ERROR_KEYS.STRING_MIN]: JOI_VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
     })
 }).min(1).messages({
-  'object.min': 'Debe proporcionar al menos un campo para actualizar'
+  [JOI_ERROR_KEYS.OBJECT_MIN]: JOI_VALIDATION_MESSAGES.PROVIDE_AT_LEAST_ONE_FIELD
 });
 
 /**
@@ -97,9 +99,9 @@ const updateSubcategorySchema = Joi.object({
     .max(100)
     .optional()
     .messages({
-      'string.empty': 'El título no puede estar vacío',
-      'string.min': 'El título debe tener al menos 2 caracteres',
-      'string.max': 'El título no puede exceder 100 caracteres'
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
+      [JOI_ERROR_KEYS.STRING_MIN]: JOI_VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
     }),
     
   text: Joi.string()
@@ -108,7 +110,7 @@ const updateSubcategorySchema = Joi.object({
     .allow('', null)
     .optional()
     .messages({
-      'string.max': 'El texto no puede exceder 5000 caracteres'
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
     }),
     
   img: Joi.array()
@@ -118,26 +120,26 @@ const updateSubcategorySchema = Joi.object({
           .uri()
           .required()
           .messages({
-            'string.uri': 'La URL de la imagen debe ser válida',
-            'any.required': 'La URL de la imagen es requerida'
+            [JOI_ERROR_KEYS.STRING_URI]: JOI_VALIDATION_MESSAGES.IMAGE_URL_INVALID,
+            [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
           }),
         alt: Joi.string()
           .trim()
           .max(200)
           .required()
           .messages({
-            'string.max': 'El texto alternativo no puede exceder 200 caracteres',
-            'any.required': 'El texto alternativo es requerido'
+            [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
+            [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
           })
       })
     )
     .max(10)
     .optional()
     .messages({
-      'array.max': 'No se pueden agregar más de 10 imágenes'
+      [JOI_ERROR_KEYS.ARRAY_MAX]: JOI_VALIDATION_MESSAGES.MAX_10_IMAGES
     })
 }).min(1).messages({
-  'object.min': 'Debe proporcionar al menos un campo para actualizar'
+  [JOI_ERROR_KEYS.OBJECT_MIN]: JOI_VALIDATION_MESSAGES.PROVIDE_AT_LEAST_ONE_FIELD
 });
 
 /**
@@ -145,11 +147,11 @@ const updateSubcategorySchema = Joi.object({
  */
 const categoryIdSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^CAT-\d{4}-\d{4}$/)
+    .pattern(SERVICE_MESSAGES.SUBCATEGORY_ID_PATTERN)
     .required()
     .messages({
-      'string.pattern.base': 'El ID de categoría debe tener el formato CAT-XXXX-YYYY',
-      'any.required': 'El ID de categoría es requerido'
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: JOI_VALIDATION_MESSAGES.CATEGORY_ID_FORMAT_INVALID,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.CATEGORY_ID_REQUIRED
     })
 });
 
@@ -158,11 +160,11 @@ const categoryIdSchema = Joi.object({
  */
 const parentCategoryIdSchema = Joi.object({
   parentId: Joi.string()
-    .pattern(/^CAT-\d{4}-0000$/)
+    .pattern(SERVICE_MESSAGES.PARENT_CATEGORY_ID_PATTERN)
     .required()
     .messages({
-      'string.pattern.base': 'El ID de categoría padre debe tener el formato CAT-XXXX-0000',
-      'any.required': 'El ID de categoría padre es requerido'
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: JOI_VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
     })
 });
 
@@ -171,11 +173,11 @@ const parentCategoryIdSchema = Joi.object({
  */
 const categoryParentIdSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^CAT-\d{4}-0000$/)
+    .pattern(SERVICE_MESSAGES.PARENT_CATEGORY_ID_PATTERN)
     .required()
     .messages({
-      'string.pattern.base': 'El ID de categoría padre debe tener el formato CAT-XXXX-0000',
-      'any.required': 'El ID de categoría padre es requerido'
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: JOI_VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
     })
 });
 
@@ -184,26 +186,26 @@ const categoryParentIdSchema = Joi.object({
  */
 const categorySubcategoryParamsSchema = Joi.object({
   categoryId: Joi.string()
-    .pattern(/^CAT-\d{4}-0000$/)
+    .pattern(SERVICE_MESSAGES.PARENT_CATEGORY_ID_PATTERN)
     .required()
     .messages({
-      'string.pattern.base': 'El ID de categoría debe tener el formato CAT-XXXX-0000',
-      'any.required': 'El ID de categoría es requerido'
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: JOI_VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.CATEGORY_ID_REQUIRED
     }),
   subcategoryId: Joi.string()
-    .pattern(/^CAT-\d{4}-\d{4}$/)
+    .pattern(SERVICE_MESSAGES.SUBCATEGORY_ID_PATTERN)
     .custom((value, helpers) => {
       // Validar que no termine en -0000 (eso sería una categoría padre)
-      if (value.endsWith('-0000')) {
-        return helpers.error('any.invalid');
+      if (value.endsWith(SERVICE_MESSAGES.PARENT_CATEGORY_SUFFIX)) {
+        return helpers.error(JOI_ERROR_KEYS.ANY_INVALID);
       }
       return value;
     })
     .required()
     .messages({
-      'string.pattern.base': 'El ID de subcategoría debe tener el formato CAT-XXXX-YYYY',
-      'any.required': 'El ID de subcategoría es requerido',
-      'any.invalid': 'El ID no puede terminar en -0000 (es un ID de categoría padre)'
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: JOI_VALIDATION_MESSAGES.SUBCATEGORY_ID_FORMAT_INVALID,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.SUBCATEGORY_ID_REQUIRED,
+      [JOI_ERROR_KEYS.ANY_INVALID]: JOI_VALIDATION_MESSAGES.ID_CANNOT_END_0000
     })
 });
 
@@ -217,10 +219,10 @@ const createSubcategorySimpleSchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      'string.empty': 'El título de la subcategoría es requerido',
-      'string.min': 'El título debe tener al menos 2 caracteres',
-      'string.max': 'El título no puede exceder 100 caracteres',
-      'any.required': 'El título de la subcategoría es requerido'
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED,
+      [JOI_ERROR_KEYS.STRING_MIN]: JOI_VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
+      [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED
     }),
     
   text: Joi.string()
@@ -229,7 +231,7 @@ const createSubcategorySimpleSchema = Joi.object({
     .allow('', null)
     .optional()
     .messages({
-      'string.max': 'El texto no puede exceder 5000 caracteres'
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
     }),
     
   img: Joi.array()
@@ -239,8 +241,8 @@ const createSubcategorySimpleSchema = Joi.object({
           .uri()
           .required()
           .messages({
-            'string.uri': 'La URL de la imagen debe ser válida',
-            'any.required': 'La URL de la imagen es requerida'
+            [JOI_ERROR_KEYS.STRING_URI]: JOI_VALIDATION_MESSAGES.IMAGE_URL_INVALID,
+            [JOI_ERROR_KEYS.ANY_REQUIRED]: JOI_VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
           }),
         alt: Joi.string()
           .trim()
@@ -248,7 +250,7 @@ const createSubcategorySimpleSchema = Joi.object({
           .allow('', null)
           .optional()
           .messages({
-            'string.max': 'El texto alternativo no puede exceder 200 caracteres'
+            [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS
           })
       })
     )
@@ -256,7 +258,7 @@ const createSubcategorySimpleSchema = Joi.object({
     .optional()
     .default([])
     .messages({
-      'array.max': 'No se pueden agregar más de 10 imágenes'
+      [JOI_ERROR_KEYS.ARRAY_MAX]: JOI_VALIDATION_MESSAGES.MAX_10_IMAGES
     })
 });
 
@@ -265,10 +267,10 @@ const createSubcategorySimpleSchema = Joi.object({
  */
 const deleteQuerySchema = Joi.object({
   deleteSubcategory: Joi.string()
-    .valid('true', 'false')
+    .valid(SERVICE_MESSAGES.TRUE_STRING, SERVICE_MESSAGES.FALSE_STRING)
     .optional()
     .messages({
-      'any.only': 'deleteSubcategory debe ser "true" o "false"'
+      [JOI_ERROR_KEYS.ANY_ONLY]: JOI_VALIDATION_MESSAGES.DELETE_SUBCATEGORY_VALID_VALUES
     })
 });
 

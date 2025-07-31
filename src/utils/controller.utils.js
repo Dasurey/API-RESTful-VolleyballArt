@@ -1,5 +1,5 @@
-const { RELATIVE_PATHS, LOG_LEVELS } = require('../config/paths.js');
-const { LOG_MESSAGES, CONTROLLER_MESSAGES, SYSTEM_MESSAGES, HTTP_STATUS } = require('./messages.utils.js');
+const { RELATIVE_PATHS, LOG_LEVELS, HTTP_STATUS } = require('../config/paths.js');
+const { LOG_MESSAGES, CONTROLLER_MESSAGES, SYSTEM_MESSAGES } = require('./messages.utils.js');
 const { logMessage, successResponse, errorResponse } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
 
 /**

@@ -1,13 +1,15 @@
-const Joi = require('joi');
+const { EXTERNAL_PACKAGES, HTTP_STATUS } = require('../config/paths.js');
+const { JOI_ERROR_KEYS, JOI_VALIDATION_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const Joi = require(EXTERNAL_PACKAGES.JOI);
 
 // Validación para parámetros de ID
 const idParamSchema = Joi.object({
   id: Joi.string()
-    .pattern(/^VA-\d{7}$/)
+    .pattern(SERVICE_MESSAGES.PRODUCT_ID_PATTERN)
     .required()
     .messages({
-      'string.pattern.base': 'El ID debe tener el formato VA-0000001',
-      'string.empty': 'El ID es obligatorio'
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: JOI_VALIDATION_MESSAGES.ID_FORMAT_INVALID,
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.ID_REQUIRED
     })
 });
 
@@ -26,8 +28,8 @@ const validateParams = (schema) => {
     const { error, value } = schema.validate(req.params);
     
     if (error) {
-      return res.status(400).json({
-        message: 'Parámetro inválido',
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        message: JOI_VALIDATION_MESSAGES.PARAM_INVALID,
         error: error.details[0].message
       });
     }
@@ -43,8 +45,8 @@ const validateQuery = (schema) => {
     const { error, value } = schema.validate(req.query);
     
     if (error) {
-      return res.status(400).json({
-        message: 'Query parameter inválido',
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        message: JOI_VALIDATION_MESSAGES.QUERY_PARAM_INVALID,
         error: error.details[0].message
       });
     }

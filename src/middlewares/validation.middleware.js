@@ -1,3 +1,6 @@
+const { HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.js');
+const { GENERAL_MESSAGES } = require('../utils/messages.utils.js');
+
 // Middleware para validar datos con Joi
 const validate = (schema) => {
   return (req, res, next) => {
@@ -7,8 +10,8 @@ const validate = (schema) => {
       // Extraer solo el primer error para simplicidad
       const errorMessage = error.details[0].message;
       
-      return res.status(400).json({
-        message: 'Datos inválidos',
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        message: GENERAL_MESSAGES.VALIDATION_ERROR,
         error: errorMessage,
         field: error.details[0].path[0] // Campo que falló
       });

@@ -1,6 +1,7 @@
-const { Router } = require('express');
-const categoryController = require('../controllers/category.controller.js');
-const { validate } = require('../middlewares/validation.middleware.js');
+const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, VALIDATION_TYPES } = require('../config/paths.js');
+const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
+const categoryController = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_CATEGORY);
+const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
 const {
   createCategorySchema,
   createSubcategorySchema,
@@ -12,7 +13,7 @@ const {
   categoryParentIdSchema,
   categorySubcategoryParamsSchema,
   deleteQuerySchema
-} = require('../schemas/category.schema.js');
+} = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_CATEGORY);
 
 const router = Router();
 
@@ -134,7 +135,7 @@ const router = Router();
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/', categoryController.getAllCategory);
+router.get(API_ENDPOINTS.CATEGORY_ROOT, categoryController.getAllCategory);
 
 /**
  * @swagger
@@ -160,7 +161,7 @@ router.get('/', categoryController.getAllCategory);
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/hierarchy', categoryController.getCategoryHierarchy);
+router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoryController.getCategoryHierarchy);
 
 /**
  * @swagger
@@ -194,7 +195,7 @@ router.get('/hierarchy', categoryController.getCategoryHierarchy);
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/:id', validate(categoryIdSchema, 'params'), categoryController.getCategoryById);
+router.get(API_ENDPOINTS.CATEGORY_BY_ID, validate(categoryIdSchema, VALIDATION_TYPES.PARAMS), categoryController.getCategoryById);
 
 /**
  * @swagger
@@ -293,8 +294,8 @@ router.get('/:id', validate(categoryIdSchema, 'params'), categoryController.getC
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/:id/subcategory/create',
-  validate(categoryParentIdSchema, 'params'),
+router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY_CREATE,
+  validate(categoryParentIdSchema, VALIDATION_TYPES.PARAMS),
   validate(createSubcategorySimpleSchema),
   categoryController.createSubcategorySimple
 );
@@ -333,7 +334,7 @@ router.post('/:id/subcategory/create',
  *       500:
  *         description: Error interno del servidor
  */
-router.get('/:parentId/subcategory', validate(parentCategoryIdSchema, 'params'), categoryController.getSubcategoryByParent);
+router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY, validate(parentCategoryIdSchema, VALIDATION_TYPES.PARAMS), categoryController.getSubcategoryByParent);
 
 /**
  * @swagger
@@ -365,7 +366,7 @@ router.get('/:parentId/subcategory', validate(parentCategoryIdSchema, 'params'),
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/', validate(createCategorySchema), categoryController.createCategory);
+router.post(API_ENDPOINTS.CATEGORY_ROOT, validate(createCategorySchema), categoryController.createCategory);
 
 /**
  * @swagger
@@ -397,10 +398,10 @@ router.post('/', validate(createCategorySchema), categoryController.createCatego
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/create', validate(createCategorySchema), categoryController.createCategory);
+router.post(API_ENDPOINTS.CATEGORY_CREATE, validate(createCategorySchema), categoryController.createCategory);
 
-router.put('/:id/update',
-  // validate(categoryParentIdSchema, 'params'),
+router.put(API_ENDPOINTS.CATEGORY_UPDATE,
+  // validate(categoryParentIdSchema, VALIDATION_TYPES.PARAMS),
   validate(updateCategorySchema),
   categoryController.updateCategorySpecific
 );
@@ -462,15 +463,15 @@ router.put('/:id/update',
  *       500:
  *         description: Error interno del servidor
  */
-router.put('/:categoryId/subcategory/:subcategoryId',
-  // validate(categorySubcategoryParamsSchema, 'params'),
+router.put(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
+  // validate(categorySubcategoryParamsSchema, VALIDATION_TYPES.PARAMS),
   validate(updateSubcategorySchema),
   categoryController.updateSubcategorySpecific
 );
 
-router.delete('/:id/delete',
-  // validate(categoryParentIdSchema, 'params'),
-  validate(deleteQuerySchema, 'query'),
+router.delete(API_ENDPOINTS.CATEGORY_DELETE,
+  // validate(categoryParentIdSchema, VALIDATION_TYPES.PARAMS),
+  validate(deleteQuerySchema, VALIDATION_TYPES.QUERY),
   categoryController.deleteCategorySpecific
 );
 
@@ -513,8 +514,8 @@ router.delete('/:id/delete',
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/:categoryId/subcategory/:subcategoryId',
-  // validate(categorySubcategoryParamsSchema, 'params'),
+router.delete(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
+  // validate(categorySubcategoryParamsSchema, VALIDATION_TYPES.PARAMS),
   categoryController.deleteSubcategorySpecific
 );
 
@@ -620,8 +621,8 @@ router.delete('/:categoryId/subcategory/:subcategoryId',
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/:parentId/subcategory',
-  validate(parentCategoryIdSchema, 'params'),
+router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
+  validate(parentCategoryIdSchema, VALIDATION_TYPES.PARAMS),
   validate(createSubcategorySchema),
   categoryController.createSubcategory
 );
@@ -670,8 +671,8 @@ router.post('/:parentId/subcategory',
  *       500:
  *         description: Error interno del servidor
  */
-router.put('/:id',
-  // validate(categoryIdSchema, 'params'),
+router.put(API_ENDPOINTS.CATEGORY_BY_ID,
+  // validate(categoryIdSchema, VALIDATION_TYPES.PARAMS),
   validate(updateCategorySchema),
   categoryController.updateCategory
 );
@@ -723,9 +724,9 @@ router.put('/:id',
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/:id',
-  validate(categoryIdSchema, 'params'),
-  validate(deleteQuerySchema, 'query'),
+router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
+  validate(categoryIdSchema, VALIDATION_TYPES.PARAMS),
+  validate(deleteQuerySchema, VALIDATION_TYPES.QUERY),
   categoryController.deleteCategory
 );
 

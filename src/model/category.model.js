@@ -1,4 +1,35 @@
-const { db } = require('../config/dataBase.js');
+const { RELATIVE_PATHS, EXTERNAL_PACKAGES } = require('../config/paths.js');
+const { 
+  CATEGORIES_MESSAGES,
+  LOG_LEVEL_INFO,
+  LOG_LEVEL_ERROR,
+  COLLECTION_CATEGORY,
+  CATEGORY_ID_PREFIX,
+  CATEGORY_ID_SUFFIX,
+  CATEGORY_ID_SEPARATOR,
+  CATEGORY_ID_INITIAL,
+  PADDING_ZERO,
+  OPERATION_GENERATE_CATEGORY_ID,
+  OPERATION_GENERATE_CATEGORY_ID_KEY,
+  OPERATION_GENERATE_SUBCATEGORY_ID_KEY,
+  CATEGORIES_PARENT_OBTAINED,
+  CATEGORY_WITH_SUBCATEGORIES,
+  SUBCATEGORIES_OBTAINED,
+  CATEGORY_PARENT_CREATED,
+  SUBCATEGORY_CREATED,
+  CATEGORY_UPDATED,
+  SUBCATEGORIES_DELETED,
+  CATEGORY_DELETED,
+  CATEGORY_HIERARCHY_OBTAINED,
+  ERROR_GETTING_CATEGORIES_FIREBASE,
+  ERROR_GETTING_CATEGORY_FIREBASE,
+  ERROR_GETTING_SUBCATEGORIES_FIREBASE,
+  ERROR_UPDATING_CATEGORY_FIREBASE,
+  ERROR_DELETING_CATEGORY_FIREBASE,
+  ERROR_GETTING_HIERARCHY_FIREBASE,
+  CATEGORY_NOT_FOUND_PREFIX
+} = require('../utils/messages.utils.js');
+const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
 const { 
   getAllDocuments, 
   getDocumentById, 
@@ -7,9 +38,8 @@ const {
   deleteDocument,
   executeFirebaseFunction,
   executeFirebaseOperation
-} = require('../utils/firebase.utils.js');
-const { CATEGORIES_MESSAGES } = require('../utils/messages.utils.js');
-const { logMessage } = require('../utils/response.utils.js');
+} = require(RELATIVE_PATHS.FROM_MODEL.UTILS_FIREBASE);
+const { logMessage } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_RESPONSE);
 const {
   collection,
   doc,
@@ -17,9 +47,9 @@ const {
   getDocs,
   setDoc,
   deleteDoc,
-} = require('firebase/firestore');
+} = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
 
-const COLLECTION_NAME = 'category';
+const COLLECTION_NAME = COLLECTION_CATEGORY;
 
 /**
  * Generar el próximo ID para categoría padre
@@ -32,15 +62,15 @@ const generateNextCategoryId = async () => {
       const snapshot = await getDocs(categoryCollection);
       
       if (snapshot.empty) {
-        return 'CAT-0001-0000';
+        return CATEGORY_ID_INITIAL;
       }
       
       // Obtener todas las categoria padre (terminan en -0000)
       let maxNumber = 0;
       snapshot.forEach((doc) => {
         const id = doc.id;
-        if (id.startsWith('CAT-') && id.endsWith('-0000')) {
-          const number = parseInt(id.split('-')[1]);
+        if (id.startsWith(CATEGORY_ID_PREFIX) && id.endsWith(CATEGORY_ID_SUFFIX)) {
+          const number = parseInt(id.split(CATEGORY_ID_SEPARATOR)[1]);
           if (number > maxNumber) {
             maxNumber = number;
           }
@@ -48,11 +78,11 @@ const generateNextCategoryId = async () => {
       });
       
       const nextNumber = maxNumber + 1;
-      return `CAT-${nextNumber.toString().padStart(4, '0')}-0000`;
+      return `${CATEGORY_ID_PREFIX}${nextNumber.toString().padStart(4, PADDING_ZERO)}${CATEGORY_ID_SUFFIX}`;
     },
-    'generateCategoryId',
+    OPERATION_GENERATE_CATEGORY_ID_KEY,
     COLLECTION_NAME,
-    { operation: 'generateParentCategoryId' }
+    { operation: OPERATION_GENERATE_CATEGORY_ID }
   );
 };
 
@@ -65,7 +95,7 @@ const generateNextSubcategoryId = async (parentCategoryId) => {
   return executeFirebaseOperation(
     async () => {
       // Extraer el número de la categoría padre
-      const parentNumber = parentCategoryId.split('-')[1];
+      const parentNumber = parentCategoryId.split(CATEGORY_ID_SEPARATOR)[1];
       
       const categoryCollection = collection(db, COLLECTION_NAME);
       const snapshot = await getDocs(categoryCollection);
@@ -74,8 +104,8 @@ const generateNextSubcategoryId = async (parentCategoryId) => {
       let maxSubNumber = 0;
       snapshot.forEach((doc) => {
         const id = doc.id;
-        if (id.startsWith(`CAT-${parentNumber}-`) && !id.endsWith('-0000')) {
-          const subNumber = parseInt(id.split('-')[2]);
+        if (id.startsWith(`${CATEGORY_ID_PREFIX}${parentNumber}${CATEGORY_ID_SEPARATOR}`) && !id.endsWith(CATEGORY_ID_SUFFIX)) {
+          const subNumber = parseInt(id.split(CATEGORY_ID_SEPARATOR)[2]);
           if (subNumber > maxSubNumber) {
             maxSubNumber = subNumber;
           }
@@ -83,12 +113,12 @@ const generateNextSubcategoryId = async (parentCategoryId) => {
       });
       
       const nextSubNumber = maxSubNumber + 1;
-      return `CAT-${parentNumber}-${nextSubNumber.toString().padStart(4, '0')}`;
+      return `${CATEGORY_ID_PREFIX}${parentNumber}${CATEGORY_ID_SEPARATOR}${nextSubNumber.toString().padStart(4, PADDING_ZERO)}`;
     },
-    'generateSubcategoryId',
+    OPERATION_GENERATE_SUBCATEGORY_ID_KEY,
     COLLECTION_NAME,
     { 
-      operation: 'generateSubcategoryId',
+      operation: OPERATION_GENERATE_SUBCATEGORY_ID_KEY,
       parentCategoryId 
     }
   );
@@ -108,15 +138,15 @@ const getAllCategory = async () => {
     });
     
     // Filtrar solo categoria padre (terminan en -0000)
-    const parentCategory = allCategory.filter(cat => cat.id.endsWith('-0000'));
+    const parentCategory = allCategory.filter(cat => cat.id.endsWith(CATEGORY_ID_SUFFIX));
     
-    logMessage('info', '📋 Categorías padre obtenidas', {
+    logMessage(LOG_LEVEL_INFO, CATEGORIES_PARENT_OBTAINED, {
       totalCategory: parentCategory.length
     });
     
     return parentCategory;
   } catch (error) {
-    logMessage('error', '🚨 Error al obtener categorías de Firebase', {
+    logMessage(LOG_LEVEL_ERROR, ERROR_GETTING_CATEGORIES_FIREBASE, {
       error: error.message,
       stack: error.stack
     });
@@ -141,8 +171,8 @@ const getCategoryById = async (categoryId) => {
     const category = { id: docSnap.id, ...docSnap.data() };
     
     // Si es una categoría padre, obtener sus subcategoria
-    if (categoryId.endsWith('-0000')) {
-      const parentNumber = categoryId.split('-')[1];
+    if (categoryId.endsWith(CATEGORY_ID_SUFFIX)) {
+      const parentNumber = categoryId.split(CATEGORY_ID_SEPARATOR)[1];
       
       // Obtener todas las categorías para filtrar subcategorías
       const categoryCollection = collection(db, COLLECTION_NAME);
@@ -155,12 +185,12 @@ const getCategoryById = async (categoryId) => {
       
       // Filtrar subcategoria de esta categoría padre
       const subcategory = allCategory.filter(cat => 
-        cat.id.startsWith(`CAT-${parentNumber}-`) && !cat.id.endsWith('-0000')
+        cat.id.startsWith(`${CATEGORY_ID_PREFIX}${parentNumber}${CATEGORY_ID_SEPARATOR}`) && !cat.id.endsWith(CATEGORY_ID_SUFFIX)
       );
       
       category.subcategory = subcategory;
       
-      logMessage('info', '📂 Categoría obtenida con subcategoria', {
+      logMessage(LOG_LEVEL_INFO, CATEGORY_WITH_SUBCATEGORIES, {
         categoryId,
         subcategoryCount: subcategory.length
       });
@@ -168,7 +198,7 @@ const getCategoryById = async (categoryId) => {
     
     return category;
   } catch (error) {
-    logMessage('error', '🚨 Error al obtener categoría de Firebase', {
+    logMessage(LOG_LEVEL_ERROR, ERROR_GETTING_CATEGORY_FIREBASE, {
       categoryId,
       error: error.message,
       stack: error.stack
@@ -183,7 +213,7 @@ const getCategoryById = async (categoryId) => {
  */
 const getSubcategoryByParent = async (parentCategoryId) => {
   try {
-    const parentNumber = parentCategoryId.split('-')[1];
+    const parentNumber = parentCategoryId.split(CATEGORY_ID_SEPARATOR)[1];
     
     // Obtener todas las categorías directamente con Firebase v9+
     const categoryCollection = collection(db, COLLECTION_NAME);
@@ -195,17 +225,17 @@ const getSubcategoryByParent = async (parentCategoryId) => {
     });
     
     const subcategory = allCategory.filter(cat => 
-      cat.id.startsWith(`CAT-${parentNumber}-`) && !cat.id.endsWith('-0000')
+      cat.id.startsWith(`${CATEGORY_ID_PREFIX}${parentNumber}${CATEGORY_ID_SEPARATOR}`) && !cat.id.endsWith(CATEGORY_ID_SUFFIX)
     );
     
-    logMessage('info', '📂 Subcategorías obtenidas', {
+    logMessage(LOG_LEVEL_INFO, SUBCATEGORIES_OBTAINED, {
       parentCategoryId,
       subcategoryCount: subcategory.length
     });
     
     return subcategory;
   } catch (error) {
-    logMessage('error', '🚨 Error al obtener subcategorías de Firebase', {
+    logMessage(LOG_LEVEL_ERROR, ERROR_GETTING_SUBCATEGORIES_FIREBASE, {
       parentCategoryId,
       error: error.message,
       stack: error.stack
@@ -228,7 +258,7 @@ const createCategory = async (categoryData) => {
   
   await setDoc(doc(categoryCollection, newId), categoryWithId);
   
-  logMessage('info', '✅ Categoría padre creada exitosamente', {
+  logMessage(LOG_LEVEL_INFO, CATEGORY_PARENT_CREATED, {
     categoryId: newId,
     title: categoryData.title
   });
@@ -258,7 +288,7 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
   
   await setDoc(doc(categoryCollection, newId), subcategoryWithId);
   
-  logMessage('info', '✅ Subcategoría creada exitosamente', {
+  logMessage(LOG_LEVEL_INFO, SUBCATEGORY_CREATED, {
     subcategoryId: newId,
     parentCategoryId,
     title: subcategoryData.title
@@ -279,7 +309,7 @@ const updateCategory = async (categoryId, updateData) => {
     const categorySnap = await getDoc(categoryRef);
     
     if (!categorySnap.exists()) {
-      throw new Error(`Categoría no encontrada con ID: ${categoryId}`);
+      throw new Error(`${CATEGORY_NOT_FOUND_PREFIX} ${categoryId}`);
     }
     
     // Actualizar el documento
@@ -289,14 +319,14 @@ const updateCategory = async (categoryId, updateData) => {
     const updatedSnap = await getDoc(categoryRef);
     const updatedCategory = { id: updatedSnap.id, ...updatedSnap.data() };
     
-    logMessage('info', '✅ Categoría actualizada exitosamente', {
+    logMessage(LOG_LEVEL_INFO, CATEGORY_UPDATED, {
       categoryId,
       updatedFields: Object.keys(updateData)
     });
     
     return updatedCategory;
   } catch (error) {
-    logMessage('error', '🚨 Error al actualizar categoría de Firebase', {
+    logMessage(LOG_LEVEL_ERROR, ERROR_UPDATING_CATEGORY_FIREBASE, {
       categoryId,
       error: error.message,
       stack: error.stack
@@ -319,11 +349,11 @@ const deleteCategory = async (categoryId, options = {}) => {
     const categorySnap = await getDoc(categoryRef);
     
     if (!categorySnap.exists()) {
-      throw new Error(`Categoría no encontrada con ID: ${categoryId}`);
+      throw new Error(`${CATEGORY_NOT_FOUND_PREFIX} ${categoryId}`);
     }
     
     // Si es una categoría padre y se especifica eliminar subcategorías
-    if (categoryId.endsWith('-0000') && deleteSubcategory) {
+    if (categoryId.endsWith(CATEGORY_ID_SUFFIX) && deleteSubcategory) {
       const subcategory = await getSubcategoryByParent(categoryId);
       
       // Eliminar todas las subcategorías primero usando Firebase v9+
@@ -332,7 +362,7 @@ const deleteCategory = async (categoryId, options = {}) => {
         await deleteDoc(subcatRef);
       }
       
-      logMessage('info', '🗑️ Subcategorías eliminadas', {
+      logMessage(LOG_LEVEL_INFO, SUBCATEGORIES_DELETED, {
         parentCategoryId: categoryId,
         deletedCount: subcategory.length
       });
@@ -341,14 +371,14 @@ const deleteCategory = async (categoryId, options = {}) => {
     // Eliminar la categoría principal usando Firebase v9+
     await deleteDoc(categoryRef);
     
-    logMessage('info', '✅ Categoría eliminada exitosamente', {
+    logMessage(LOG_LEVEL_INFO, CATEGORY_DELETED, {
       categoryId,
       deletedSubcategory: deleteSubcategory
     });
     
     return true;
   } catch (error) {
-    logMessage('error', '🚨 Error al eliminar categoría de Firebase', {
+    logMessage(LOG_LEVEL_ERROR, ERROR_DELETING_CATEGORY, {
       categoryId,
       error: error.message,
       stack: error.stack
@@ -371,15 +401,15 @@ const getCategoryHierarchy = async () => {
     });
     
     // Separar categoria padre de subcategoria
-    const parentCategory = allCategory.filter(cat => cat.id.endsWith('-0000'));
+    const parentCategory = allCategory.filter(cat => cat.id.endsWith(CATEGORY_ID_SUFFIX));
     const subcategoryMap = new Map();
     
     // Agrupar subcategoria por categoría padre
     allCategory
-      .filter(cat => !cat.id.endsWith('-0000'))
+      .filter(cat => !cat.id.endsWith(CATEGORY_ID_SUFFIX))
       .forEach(subcat => {
-        const parentNumber = subcat.id.split('-')[1];
-        const parentId = `CAT-${parentNumber}-0000`;
+        const parentNumber = subcat.id.split(CATEGORY_ID_SEPARATOR)[1];
+        const parentId = `${CATEGORY_ID_PREFIX}${parentNumber}${CATEGORY_ID_SUFFIX}`;
         
         if (!subcategoryMap.has(parentId)) {
           subcategoryMap.set(parentId, []);
@@ -393,14 +423,14 @@ const getCategoryHierarchy = async () => {
       subcategory: subcategoryMap.get(parent.id) || []
     }));
     
-    logMessage('info', '🌳 Jerarquía de categoria obtenida', {
+    logMessage(LOG_LEVEL_INFO, CATEGORY_HIERARCHY_OBTAINED, {
       totalParentCategory: parentCategory.length,
       totalSubcategory: allCategory.length - parentCategory.length
     });
     
     return hierarchy;
   } catch (error) {
-    logMessage('error', '🚨 Error al obtener jerarquía de categorías de Firebase', {
+    logMessage(LOG_LEVEL_ERROR, ERROR_GETTING_CATEGORY_HIERARCHY, {
       error: error.message,
       stack: error.stack
     });

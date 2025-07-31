@@ -1,5 +1,5 @@
-const { EXTERNAL_PACKAGES, RELATIVE_PATHS } = require('../config/paths.js');
-const { AUTH_MESSAGES, FIREBASE_CONSTANTS, HTTP_STATUS } = require('../utils/messages.utils.js');
+const { EXTERNAL_PACKAGES, RELATIVE_PATHS, HTTP_STATUS } = require('../config/paths.js');
+const { AUTH_MESSAGES, FIREBASE_CONSTANTS } = require('../utils/messages.utils.js');
 const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = require(EXTERNAL_PACKAGES.FIREBASE_AUTH);
 const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
 const { doc, setDoc, getDoc } = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);

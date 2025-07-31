@@ -1,5 +1,5 @@
-const { RELATIVE_PATHS, ENV_VARIABLES, ENV_CONFIG, COMMON_VALUES, CONFIG_VALUES, LOG_LEVELS } = require('../config/paths.js');
-const { RESPONSE_FIELDS, CONTROLLER_MESSAGES, HTTP_STATUS } = require('./messages.utils.js');
+const { RELATIVE_PATHS, ENV_VARIABLES, ENV_CONFIG, COMMON_VALUES, CONFIG_VALUES, LOG_LEVELS, HTTP_STATUS } = require('../config/paths.js');
+const { RESPONSE_FIELDS, CONTROLLER_MESSAGES } = require('./messages.utils.js');
 const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
 
 /**

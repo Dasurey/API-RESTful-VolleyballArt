@@ -1,18 +1,19 @@
-const { Router } = require('express');
+const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, CACHE_CONFIG, PAGINATION_CONFIG } = require('../config/paths.js');
+const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
 const {
   getAllProducts,
   getProductById,
   createProduct,
   updateProduct,
   deleteProduct,
-} = require('../controllers/products.controller.js');
-const { authentication } = require('../middlewares/authentication.js');
-const { validate } = require('../middlewares/validation.middleware.js');
-const { productSchema, updateProductSchema } = require('../schemas/products.schema.js');
-const { idParamSchema, validateParams } = require('../schemas/common.schema.js');
-const { createLimiter } = require('../config/security.js');
-const { cacheMiddleware, cacheHeaders } = require('../config/cache.js');
-const { throttleConfigs, autoPagination } = require('../config/optimization.js');
+} = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_PRODUCTS);
+const { authentication } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_AUTH);
+const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
+const { productSchema, updateProductSchema } = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_PRODUCTS);
+const { idParamSchema, validateParams } = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_COMMON);
+const { createLimiter } = require(RELATIVE_PATHS.FROM_ROUTES.CONFIG_SECURITY);
+const { cacheMiddleware, cacheHeaders } = require(RELATIVE_PATHS.FROM_ROUTES.CONFIG_CACHE);
+const { throttleConfigs, autoPagination } = require(RELATIVE_PATHS.FROM_ROUTES.CONFIG_OPTIMIZATION);
 
 const router = Router();
 
@@ -45,7 +46,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', 
+router.get(API_ENDPOINTS.PRODUCTS_ROOT, 
   cacheHeaders(1800), // Cache por 30 minutos
   cacheMiddleware(1800), // Cache en memoria por 30 minutos
   throttleConfigs.read, // Throttling para lectura
@@ -95,7 +96,7 @@ router.get('/',
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', 
+router.get(API_ENDPOINTS.PRODUCTS_BY_ID, 
   validateParams(idParamSchema),
   cacheHeaders(3600), // Cache por 1 hora para productos individuales
   cacheMiddleware(3600), // Cache en memoria por 1 hora
@@ -179,7 +180,7 @@ router.get('/:id',
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/create', 
+router.post(API_ENDPOINTS.PRODUCTS_CREATE, 
   createLimiter, 
   authentication, 
   throttleConfigs.write, // Throttling para escritura
@@ -295,7 +296,7 @@ router.post('/create',
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', 
+router.put(API_ENDPOINTS.PRODUCTS_BY_ID, 
   validateParams(idParamSchema), 
   authentication, 
   throttleConfigs.write, // Throttling para escritura
@@ -303,11 +304,11 @@ router.put('/:id',
   updateProduct
 );
 
-router.delete('/:id', 
+router.delete(API_ENDPOINTS.PRODUCTS_BY_ID, 
   validateParams(idParamSchema), 
   authentication, 
   throttleConfigs.write, // Throttling para escritura
   deleteProduct
 );
 
-module.exports = router;;
+module.exports = router;

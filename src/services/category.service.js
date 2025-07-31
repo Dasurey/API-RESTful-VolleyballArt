@@ -1,6 +1,7 @@
-const CategoryModel = require('../model/category.model.js');
-const { logMessage } = require('../utils/response.utils.js');
-const { VALIDATION_MESSAGES, CATEGORIES_MESSAGES } = require('../utils/messages.utils.js');
+const { RELATIVE_PATHS, LOG_LEVELS } = require('../config/paths.js');
+const { VALIDATION_MESSAGES, CATEGORIES_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const CategoryModel = require(RELATIVE_PATHS.FROM_SERVICES.MODELS_CATEGORY);
+const { logMessage } = require(RELATIVE_PATHS.FROM_SERVICES.UTILS_RESPONSE);
 
 /**
  * Obtener todas las categoria padre
@@ -9,16 +10,16 @@ const getAllCategory = async () => {
   try {
     const category = await CategoryModel.getAllCategory();
     
-    logMessage('info', '📋 Servicio: Categorías obtenidas exitosamente', {
-      totalCategory: category.length,
-      service: 'category'
+    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORIES_GET_SUCCESS, {
+      [SERVICE_MESSAGES.TOTAL_CATEGORY_FIELD]: category.length,
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     
     return category;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al obtener categoria', {
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORIES_GET_ERROR, {
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }
@@ -33,19 +34,19 @@ const getCategoryById = async (categoryId) => {
     const category = await CategoryModel.getCategoryById(categoryId);
     
     if (category) {
-      logMessage('info', '📂 Servicio: Categoría obtenida exitosamente', {
-        categoryId,
-        hasSubcategory: !!(category.subcategory && category.subcategory.length > 0),
-        service: 'category'
+      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_GET_SUCCESS, {
+        [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
+        [SERVICE_MESSAGES.HAS_SUBCATEGORY_FIELD]: !!(category.subcategory && category.subcategory.length > 0),
+        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
       });
     }
     
     return category;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al obtener categoría por ID', {
-      categoryId,
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_GET_ERROR, {
+      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }
@@ -59,18 +60,18 @@ const getSubcategoryByParent = async (parentCategoryId) => {
   try {
     const subcategory = await CategoryModel.getSubcategoryByParent(parentCategoryId);
     
-    logMessage('info', '📂 Servicio: Subcategoria obtenidas exitosamente', {
-      parentCategoryId,
-      totalSubcategory: subcategory.length,
-      service: 'category'
+    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
+      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
+      [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: subcategory.length,
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     
     return subcategory;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al obtener subcategoria', {
-      parentCategoryId,
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_ERROR, {
+      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }
@@ -83,24 +84,24 @@ const getSubcategoryByParent = async (parentCategoryId) => {
 const createCategory = async (categoryData) => {
   try {
     // Validar datos requeridos
-    if (!categoryData.title || categoryData.title.trim() === '') {
+    if (!categoryData.title || categoryData.title.trim() === SERVICE_MESSAGES.EMPTY_STRING) {
       throw new Error(VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED);
     }
     
     const newCategory = await CategoryModel.createCategory(categoryData);
     
-    logMessage('info', '✅ Servicio: Categoría creada exitosamente', {
-      categoryId: newCategory.id,
-      title: newCategory.title,
-      service: 'category'
+    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_CREATE_SUCCESS, {
+      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: newCategory.id,
+      [SERVICE_MESSAGES.TITLE_FIELD]: newCategory.title,
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     
     return newCategory;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al crear categoría', {
-      categoryData: categoryData.title || 'Sin título',
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_CREATE_ERROR, {
+      categoryData: categoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT,
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }
@@ -114,30 +115,30 @@ const createCategory = async (categoryData) => {
 const createSubcategory = async (parentCategoryId, subcategoryData) => {
   try {
     // Validar datos requeridos
-    if (!subcategoryData.title || subcategoryData.title.trim() === '') {
+    if (!subcategoryData.title || subcategoryData.title.trim() === SERVICE_MESSAGES.EMPTY_STRING) {
       throw new Error(VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED);
     }
     
-    if (!parentCategoryId || !parentCategoryId.endsWith('-0000')) {
+    if (!parentCategoryId || !parentCategoryId.endsWith(SERVICE_MESSAGES.PARENT_CATEGORY_SUFFIX)) {
       throw new Error(VALIDATION_MESSAGES.CATEGORY_PARENT_ID_INVALID);
     }
     
     const newSubcategory = await CategoryModel.createSubcategory(parentCategoryId, subcategoryData);
     
-    logMessage('info', '✅ Servicio: Subcategoría creada exitosamente', {
-      subcategoryId: newSubcategory.id,
-      parentCategoryId,
-      title: newSubcategory.title,
-      service: 'category'
+    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
+      [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: newSubcategory.id,
+      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
+      [SERVICE_MESSAGES.TITLE_FIELD]: newSubcategory.title,
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     
     return newSubcategory;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al crear subcategoría', {
-      parentCategoryId,
-      subcategoryData: subcategoryData.title || 'Sin título',
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_ERROR, {
+      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
+      subcategoryData: subcategoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT,
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }
@@ -152,26 +153,26 @@ const updateCategory = async (categoryId, updateData) => {
   try {
     // Validar que hay datos para actualizar
     if (!updateData || Object.keys(updateData).length === 0) {
-      throw new Error('No hay datos para actualizar');
+      throw new Error(SERVICE_MESSAGES.NO_UPDATE_DATA_ERROR);
     }
     
     const updatedCategory = await CategoryModel.updateCategory(categoryId, updateData);
     
     if (updatedCategory) {
-      logMessage('info', '✅ Servicio: Categoría actualizada exitosamente', {
-        categoryId,
-        updatedFields: Object.keys(updateData),
-        service: 'category'
+      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_UPDATE_SUCCESS, {
+        [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
+        [SERVICE_MESSAGES.UPDATED_FIELDS_FIELD]: Object.keys(updateData),
+        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
       });
     }
     
     return updatedCategory;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al actualizar categoría', {
-      categoryId,
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_UPDATE_ERROR, {
+      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
       updateData: Object.keys(updateData || {}),
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }
@@ -187,7 +188,7 @@ const deleteCategory = async (categoryId, options = {}) => {
     const { deleteSubcategory = false } = options;
     
     // Si es categoría padre y no se especifica eliminar subcategoria, verificar que no tenga subcategoria
-    if (categoryId.endsWith('-0000') && !deleteSubcategory) {
+    if (categoryId.endsWith(SERVICE_MESSAGES.PARENT_CATEGORY_SUFFIX) && !deleteSubcategory) {
       const subcategory = await CategoryModel.getSubcategoryByParent(categoryId);
       if (subcategory.length > 0) {
         throw new Error(CATEGORIES_MESSAGES.CANNOT_DELETE_HAS_SUBCATEGORIES);
@@ -197,20 +198,20 @@ const deleteCategory = async (categoryId, options = {}) => {
     const result = await CategoryModel.deleteCategory(categoryId, options);
     
     if (result) {
-      logMessage('info', '✅ Servicio: Categoría eliminada exitosamente', {
-        categoryId,
-        deletedSubcategory: deleteSubcategory,
-        service: 'category'
+      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_DELETE_SUCCESS, {
+        [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
+        [SERVICE_MESSAGES.DELETED_SUBCATEGORY_FIELD]: deleteSubcategory,
+        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
       });
     }
     
     return result;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al eliminar categoría', {
-      categoryId,
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_DELETE_ERROR, {
+      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
       options,
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }
@@ -223,17 +224,17 @@ const getCategoryHierarchy = async () => {
   try {
     const hierarchy = await CategoryModel.getCategoryHierarchy();
     
-    logMessage('info', '🌳 Servicio: Jerarquía de categoria obtenida exitosamente', {
-      totalParentCategory: hierarchy.length,
-      totalSubcategory: hierarchy.reduce((acc, cat) => acc + (cat.subcategory?.length || 0), 0),
-      service: 'category'
+    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_HIERARCHY_GET_SUCCESS, {
+      [SERVICE_MESSAGES.TOTAL_PARENT_CATEGORY_FIELD]: hierarchy.length,
+      [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: hierarchy.reduce((acc, cat) => acc + (cat.subcategory?.length || 0), 0),
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     
     return hierarchy;
   } catch (error) {
-    logMessage('error', '🚨 Error en servicio al obtener jerarquía de categoria', {
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_HIERARCHY_GET_ERROR, {
       error: error.message,
-      service: 'category'
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
     throw error;
   }

@@ -1,4 +1,6 @@
-const Joi = require('joi');
+const { EXTERNAL_PACKAGES } = require('../config/paths.js');
+const { JOI_ERROR_KEYS, JOI_VALIDATION_MESSAGES } = require('../utils/messages.utils.js');
+const Joi = require(EXTERNAL_PACKAGES.JOI);
 
 // Esquema para validar productos
 const productSchema = Joi.object({
@@ -7,47 +9,47 @@ const productSchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      'string.empty': 'El título es obligatorio',
-      'string.min': 'El título debe tener al menos 3 caracteres',
-      'string.max': 'El título no puede tener más de 100 caracteres'
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.PRODUCT_TITLE_REQUIRED,
+      [JOI_ERROR_KEYS.STRING_MIN]: JOI_VALIDATION_MESSAGES.PRODUCT_TITLE_MIN,
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.PRODUCT_TITLE_MAX
     }),
 
   img: Joi.array()
     .items(
       Joi.object({
         src: Joi.string().uri().required().messages({
-          'string.uri': 'La URL de la imagen debe ser válida',
-          'string.empty': 'La URL de la imagen es obligatoria'
+          [JOI_ERROR_KEYS.STRING_URI]: JOI_VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_INVALID,
+          [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_REQUIRED
         }),
         alt: Joi.string().min(1).required().messages({
-          'string.empty': 'El texto alternativo es obligatorio'
+          [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.PRODUCT_IMAGE_ALT_REQUIRED
         }),
         carousel: Joi.boolean().required().messages({
-          'boolean.base': 'El carousel debe ser true o false'
+          [JOI_ERROR_KEYS.BOOLEAN_BASE]: JOI_VALIDATION_MESSAGES.PRODUCT_IMAGE_CAROUSEL_BOOLEAN
         })
       })
     )
     .min(1)
     .required()
     .messages({
-      'array.min': 'Debe incluir al menos una imagen',
-      'array.base': 'Las imágenes deben ser un array'
+      [JOI_ERROR_KEYS.ARRAY_MIN]: JOI_VALIDATION_MESSAGES.PRODUCT_IMAGES_MIN,
+      [JOI_ERROR_KEYS.ARRAY_BASE]: JOI_VALIDATION_MESSAGES.PRODUCT_IMAGES_ARRAY
     }),
 
   price: Joi.number()
     .min(0)
     .required()
     .messages({
-      'number.min': 'El precio no puede ser negativo',
-      'number.base': 'El precio debe ser un número'
+      [JOI_ERROR_KEYS.NUMBER_MIN]: JOI_VALIDATION_MESSAGES.PRODUCT_PRICE_NEGATIVE,
+      [JOI_ERROR_KEYS.NUMBER_BASE]: JOI_VALIDATION_MESSAGES.PRODUCT_PRICE_NUMBER
     }),
 
   previous_price: Joi.number()
     .min(0)
     .allow(null)
     .messages({
-      'number.min': 'El precio anterior no puede ser negativo',
-      'number.base': 'El precio anterior debe ser un número o null'
+      [JOI_ERROR_KEYS.NUMBER_MIN]: JOI_VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NEGATIVE,
+      [JOI_ERROR_KEYS.NUMBER_BASE]: JOI_VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NUMBER
     }),
 
   description: Joi.string()
@@ -55,9 +57,9 @@ const productSchema = Joi.object({
     .max(500)
     .required()
     .messages({
-      'string.empty': 'La descripción es obligatoria',
-      'string.min': 'La descripción debe tener al menos 10 caracteres',
-      'string.max': 'La descripción no puede tener más de 500 caracteres'
+      [JOI_ERROR_KEYS.STRING_EMPTY]: JOI_VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_REQUIRED,
+      [JOI_ERROR_KEYS.STRING_MIN]: JOI_VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MIN,
+      [JOI_ERROR_KEYS.STRING_MAX]: JOI_VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MAX
     }),
 
   category: Joi.number()
@@ -65,9 +67,9 @@ const productSchema = Joi.object({
     .min(1)
     .required()
     .messages({
-      'number.base': 'La categoría debe ser un número',
-      'number.integer': 'La categoría debe ser un número entero',
-      'number.min': 'La categoría debe ser mayor a 0'
+      [JOI_ERROR_KEYS.NUMBER_BASE]: JOI_VALIDATION_MESSAGES.PRODUCT_CATEGORY_NUMBER,
+      [JOI_ERROR_KEYS.NUMBER_INTEGER]: JOI_VALIDATION_MESSAGES.PRODUCT_CATEGORY_INTEGER,
+      [JOI_ERROR_KEYS.NUMBER_MIN]: JOI_VALIDATION_MESSAGES.PRODUCT_CATEGORY_MIN
     }),
 
   subcategory: Joi.number()
@@ -75,15 +77,15 @@ const productSchema = Joi.object({
     .min(1)
     .required()
     .messages({
-      'number.base': 'La subcategoría debe ser un número',
-      'number.integer': 'La subcategoría debe ser un número entero',
-      'number.min': 'La subcategoría debe ser mayor a 0'
+      [JOI_ERROR_KEYS.NUMBER_BASE]: JOI_VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_NUMBER,
+      [JOI_ERROR_KEYS.NUMBER_INTEGER]: JOI_VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_INTEGER,
+      [JOI_ERROR_KEYS.NUMBER_MIN]: JOI_VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_MIN
     }),
 
   outstanding: Joi.boolean()
     .required()
     .messages({
-      'boolean.base': 'El destacado debe ser true o false'
+      [JOI_ERROR_KEYS.BOOLEAN_BASE]: JOI_VALIDATION_MESSAGES.PRODUCT_OUTSTANDING_BOOLEAN
     })
 });
 

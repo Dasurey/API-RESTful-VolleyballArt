@@ -1,11 +1,13 @@
-const { API_CONFIG, getVersionInfo } = require('../config/api-versions.js');
+const { VERSION_MIDDLEWARE, HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.js');
+const { VERSION_MESSAGES } = require('../utils/messages.utils.js');
+const { API_CONFIG, getVersionInfo } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_API_VERSIONS);
 
 /**
  * Extrae la versión de la URL
  * Ejemplo: /api/v1/products -> 'v1'
  */
 const extractVersionFromUrl = (path) => {
-  const versionMatch = path.match(/^\/api\/(v\d+)\//);
+  const versionMatch = path.match(VERSION_MIDDLEWARE.VERSION_REGEX);
   return versionMatch ? versionMatch[1] : null;
 };
 
@@ -27,11 +29,11 @@ const isDeprecatedVersion = (version) => {
  * Configura los headers de respuesta con información de versión
  */
 const setVersionHeaders = (res, version) => {
-  res.setHeader('API-Version', version);
-  res.setHeader('API-Supported-Versions', API_CONFIG.supportedVersions.join(', '));
+  res.setHeader(VERSION_MIDDLEWARE.HEADER_API_VERSION, version);
+  res.setHeader(VERSION_MIDDLEWARE.HEADER_API_SUPPORTED_VERSIONS, API_CONFIG.supportedVersions.join(VERSION_MIDDLEWARE.VERSION_SEPARATOR));
   
   if (isDeprecatedVersion(version)) {
-    res.setHeader('API-Deprecation-Warning', `Version ${version} is deprecated`);
+    res.setHeader(VERSION_MIDDLEWARE.HEADER_API_DEPRECATION_WARNING, `${VERSION_MESSAGES.VERSION_DEPRECATED_PREFIX} ${version} ${VERSION_MESSAGES.VERSION_DEPRECATED_SUFFIX}`);
   }
 };
 
@@ -57,8 +59,8 @@ const versionMiddleware = (req, res, next) => {
       next();
     } else {
       // Versión no soportada
-      return res.status(400).json({
-        message: `Versión de API no soportada: ${requestedVersion}`,
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        message: `${VERSION_MESSAGES.VERSION_NOT_SUPPORTED} ${requestedVersion}`,
         supportedVersions: API_CONFIG.supportedVersions,
         currentVersion: API_CONFIG.currentVersion
       });
@@ -77,22 +79,22 @@ const versionMiddleware = (req, res, next) => {
  */
 const registerVersionedRoutes = (app, basePath, routes, additionalMiddlewares = []) => {
   // Caso especial: auth solo debe estar sin versión
-  if (basePath === '/auth') {
-    console.log(`✅ Registrando ruta (auth): ${basePath}`);
+  if (basePath === VERSION_MIDDLEWARE.AUTH_ROUTE) {
+    console.log(`${VERSION_MESSAGES.REGISTER_ROUTE_AUTH} ${basePath}`);
     app.use(basePath, ...additionalMiddlewares, routes);
     return;
   }
   
   // Para todas las demás rutas, registrar con versiones
   API_CONFIG.supportedVersions.forEach(version => {
-    const versionPath = `/api/${version}${basePath}`;
-    console.log(`✅ Registrando ruta: ${versionPath}`);
+    const versionPath = `${VERSION_MIDDLEWARE.API_PREFIX}/${version}${basePath}`;
+    console.log(`${VERSION_MESSAGES.REGISTER_ROUTE_VERSIONED} ${versionPath}`);
     app.use(versionPath, ...additionalMiddlewares, routes);
   });
   
   // Registrar sin versión con prefijo /api
-  const compatibilityPath = `/api${basePath}`;
-  console.log(`✅ Registrando ruta (sin versión): ${compatibilityPath}`);
+  const compatibilityPath = `${VERSION_MIDDLEWARE.API_PREFIX}${basePath}`;
+  console.log(`${VERSION_MESSAGES.REGISTER_ROUTE_NO_VERSION} ${compatibilityPath}`);
   app.use(compatibilityPath, ...additionalMiddlewares, routes);
 };
 
@@ -100,39 +102,39 @@ const registerVersionedRoutes = (app, basePath, routes, additionalMiddlewares = 
  * Registra endpoints de información para cada versión
  */
 const registerVersionInfoEndpoints = (app) => {
-  console.log('\n📋 Registrando endpoints de información de versiones:');
+  console.log(VERSION_MESSAGES.REGISTER_VERSION_ENDPOINTS);
   
   API_CONFIG.supportedVersions.forEach(version => {
-    const versionInfoPath = `/api/${version}/docs`;
+    const versionInfoPath = `${VERSION_MIDDLEWARE.API_PREFIX}/${version}${VERSION_MIDDLEWARE.DOCS_ENDPOINT}`;
     
     app.get(versionInfoPath, (req, res) => {
       const versionInfo = API_CONFIG.versions[version];
       
       if (!versionInfo) {
-        return res.status(404).json({
-          message: `Información de versión ${version} no encontrada`
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          message: `${VERSION_MESSAGES.VERSION_INFO_NOT_FOUND} ${version} ${VERSION_MESSAGES.VERSION_INFO_NOT_FOUND_SUFFIX}`
         });
       }
       
       res.json({
-        message: `Documentación de la API para la versión ${version}`,
+        message: `${VERSION_MESSAGES.API_DOCUMENTATION_PREFIX} ${version}`,
         payload: {
-            api: 'VolleyballArt API',
+            api: VERSION_MIDDLEWARE.API_NAME,
             ...versionInfo,
             serverTime: new Date().toISOString(),
             requestInfo: {
               method: req.method,
               url: req.originalUrl,
-              userAgent: req.get('User-Agent') || 'Unknown'
+              userAgent: req.get(VERSION_MIDDLEWARE.HEADER_USER_AGENT) || VERSION_MIDDLEWARE.USER_AGENT_UNKNOWN
             }
         }
       });
     });
     
-    console.log(`  ✅ ${versionInfoPath} - Documentación de ${version}`);
+    console.log(`  ${VERSION_MESSAGES.REGISTER_DOCS_FOR} ${versionInfoPath} ${VERSION_MESSAGES.REGISTER_DOCS_SUFFIX} ${version}`);
   });
   
-  console.log('');
+  console.log(VERSION_MIDDLEWARE.EMPTY_LINE);
 };
 
 

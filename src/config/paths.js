@@ -19,6 +19,12 @@ const EXTERNAL_PACKAGES = {
     JSONWEBTOKEN: 'jsonwebtoken',
     BCRYPT: 'bcrypt',
 
+    // Validación
+    JOI: 'joi',
+
+    // Firebase/Firestore
+    FIREBASE_FIRESTORE: 'firebase/firestore',
+
     // Node.js core modules
     PATH: 'path'
 };
@@ -110,7 +116,20 @@ const API_ENDPOINTS = {
     AUTH_REGISTER_FULL: '/auth/register',
 
     PRODUCTS_BASE: '/products',
+    PRODUCTS_ROOT: '/',
+    PRODUCTS_BY_ID: '/:id',
+    PRODUCTS_CREATE: '/create',
+    
     CATEGORY_BASE: '/category',
+    CATEGORY_ROOT: '/',
+    CATEGORY_BY_ID: '/:id',
+    CATEGORY_HIERARCHY: '/hierarchy',
+    CATEGORY_CREATE: '/create',
+    CATEGORY_UPDATE: '/:id/update',
+    CATEGORY_DELETE: '/:id/delete',
+    CATEGORY_SUBCATEGORY: '/:parentId/subcategory',
+    CATEGORY_SUBCATEGORY_CREATE: '/:id/subcategory/create',
+    CATEGORY_SUBCATEGORY_BY_IDS: '/:categoryId/subcategory/:subcategoryId',
 
     // Directorio público
     PUBLIC_DIR: 'public'
@@ -144,9 +163,20 @@ const HTTP_METHODS = {
 
 // Códigos de estado HTTP
 const HTTP_STATUS = {
+    // Códigos de éxito
     OK: 200,
+    CREATED: 201,
+
     MULTIPLE_CHOICES: 300,
+
+    // Códigos de error del cliente
     BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
+    FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    UNPROCESSABLE_ENTITY: 422,
+
+    // Códigos de error del servidor
     INTERNAL_SERVER_ERROR: 500
 };
 
@@ -205,6 +235,13 @@ const CONFIG_VALUES = {
     CACHE_MISS: 'MISS'
 };
 
+// Constantes para validación
+const VALIDATION_TYPES = {
+    PARAMS: 'params',
+    QUERY: 'query',
+    BODY: 'body'
+};
+
 // Rutas relativas específicas por contexto
 const RELATIVE_PATHS = {
     // Desde model/ hacia otros directorios
@@ -219,12 +256,14 @@ const RELATIVE_PATHS = {
     // Desde controllers/ hacia otros directorios  
     FROM_CONTROLLERS: {
         MODELS_AUTH: '../model/auth.model.js',
-        MODELS_PRODUCTS: '../model/products.model.js'
+        MODELS_PRODUCTS: '../model/products.model.js',
+        MODELS_CATEGORY: '../model/category.model.js'
     },
 
     // Desde middlewares/ hacia otros directorios
     FROM_MIDDLEWARES: {
-        CONFIG_LOGGER: '../config/logger.js'
+        CONFIG_LOGGER: '../config/logger.js',
+        CONFIG_API_VERSIONS: '../config/api-versions.js'
     },
 
     // Desde utils/ hacia otros directorios
@@ -237,6 +276,14 @@ const RELATIVE_PATHS = {
         CATEGORY_UTILS: './category.utils.js'
     },
 
+    // Desde services/ hacia otros directorios
+    FROM_SERVICES: {
+        MODELS_AUTH: '../model/auth.model.js',
+        MODELS_CATEGORY: '../model/category.model.js',
+        UTILS_RESPONSE: '../utils/response.utils.js',
+        CONFIG_JWT: '../config/jwt.js',
+    },
+
     // Desde routes/ hacia otros directorios
     FROM_ROUTES: {
         CONTROLLERS_AUTH: '../controllers/auth.controller.js',
@@ -247,7 +294,10 @@ const RELATIVE_PATHS = {
         SCHEMAS_AUTH: '../schemas/auth.schema.js',
         SCHEMAS_PRODUCTS: '../schemas/products.schema.js',
         SCHEMAS_CATEGORY: '../schemas/category.schema.js',
-        SCHEMAS_COMMON: '../schemas/common.schema.js'
+        SCHEMAS_COMMON: '../schemas/common.schema.js',
+        CONFIG_SECURITY: '../config/security.js',
+        CONFIG_CACHE: '../config/cache.js',
+        CONFIG_OPTIMIZATION: '../config/optimization.js'
     }
 };
 
@@ -257,6 +307,29 @@ const FORMAT_PATTERNS = {
     COLON_SEPARATOR: ':',
     NEWLINE: '\n',
     BULLET_INDENT: '   • '
+};
+
+// Constantes específicas para version middleware
+const VERSION_MIDDLEWARE = {
+    // Headers HTTP
+    HEADER_API_VERSION: 'API-Version',
+    HEADER_API_SUPPORTED_VERSIONS: 'API-Supported-Versions',
+    HEADER_API_DEPRECATION_WARNING: 'API-Deprecation-Warning',
+    HEADER_USER_AGENT: 'User-Agent',
+
+    // Paths y rutas
+    API_PREFIX: '/api',
+    DOCS_ENDPOINT: '/docs',
+    AUTH_ROUTE: '/auth',
+
+    // Patrones y separadores
+    VERSION_REGEX: /^\/api\/(v\d+)\//,
+    VERSION_SEPARATOR: ', ',
+    API_NAME: 'VolleyballArt API',
+    USER_AGENT_UNKNOWN: 'Unknown',
+    
+    // Separadores y espacios
+    EMPTY_LINE: ''
 };
 
 module.exports = {
@@ -273,5 +346,7 @@ module.exports = {
     COMMON_VALUES,
     ENV_VARIABLES,
     CONFIG_VALUES,
-    FORMAT_PATTERNS
+    FORMAT_PATTERNS,
+    VALIDATION_TYPES,
+    VERSION_MIDDLEWARE
 };
