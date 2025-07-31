@@ -1,9 +1,9 @@
-const { 
-  EXTERNAL_PACKAGES, 
-  PATHS, 
-  API_ENDPOINTS, 
-  ENV_CONFIG, 
-  HTTP_HEADERS, 
+const {
+  EXTERNAL_PACKAGES,
+  PATHS,
+  API_ENDPOINTS,
+  ENV_CONFIG,
+  HTTP_HEADERS,
   HTTP_METHODS,
   NODE_EVENTS,
   LOG_LEVELS,
@@ -186,7 +186,7 @@ registerVersionInfoEndpoints(app);
  *                     health:
  *                       type: string
  *                       example: https://api.example.com/api/health
- */ 
+ */
 
 app.get(API_ENDPOINTS.API_ROOT, (req, res) => {
   const versionInfo = getVersionInfo();

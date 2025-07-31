@@ -16,47 +16,47 @@ const { logMessage, successResponse, errorResponse } = require(RELATIVE_PATHS.FR
  * @param {Object} logMetadata - Metadatos adicionales para el log
  */
 async function executeController(operation, req, res, successMessage, errorMessage = LOG_MESSAGES.ERROR_INTERNAL, logMetadata = {}) {
-  try {
-    const startTime = Date.now();
-    const result = await operation();
-    
-    // Log de éxito con tiempo de ejecución
-    const executionTime = Date.now() - startTime;
-    logMessage(LOG_LEVELS.INFO, successMessage, {
-      ...logMetadata,
-      executionTime: `${executionTime}${CONTROLLER_MESSAGES.EXECUTION_TIME_SUFFIX}`,
-      method: req.method,
-      path: req.path,
-      ip: req.ip,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Si el result es una respuesta HTTP, no enviamos nada más
-    if (res.headersSent) {
-      return result;
+    try {
+        const startTime = Date.now();
+        const result = await operation();
+
+        // Log de éxito con tiempo de ejecución
+        const executionTime = Date.now() - startTime;
+        logMessage(LOG_LEVELS.INFO, successMessage, {
+            ...logMetadata,
+            executionTime: `${executionTime}${CONTROLLER_MESSAGES.EXECUTION_TIME_SUFFIX}`,
+            method: req.method,
+            path: req.path,
+            ip: req.ip,
+            timestamp: new Date().toISOString()
+        });
+
+        // Si el result es una respuesta HTTP, no enviamos nada más
+        if (res.headersSent) {
+            return result;
+        }
+
+        // Si el result tiene datos, enviar respuesta de éxito
+        if (result) {
+            return successResponse(res, successMessage, result);
+        }
+
+        return result;
+    } catch (error) {
+        // Log de error con detalles completos
+        logMessage(LOG_LEVELS.ERROR, errorMessage, {
+            error: error.message,
+            stack: error.stack,
+            method: req.method,
+            path: req.path,
+            ip: req.ip,
+            userAgent: req.get(CONTROLLER_MESSAGES.USER_AGENT_HEADER),
+            timestamp: new Date().toISOString(),
+            ...logMetadata
+        });
+
+        return errorResponse(res, errorMessage, HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
-    
-    // Si el result tiene datos, enviar respuesta de éxito
-    if (result) {
-      return successResponse(res, successMessage, result);
-    }
-    
-    return result;
-  } catch (error) {
-    // Log de error con detalles completos
-    logMessage(LOG_LEVELS.ERROR, errorMessage, {
-      error: error.message,
-      stack: error.stack,
-      method: req.method,
-      path: req.path,
-      ip: req.ip,
-      userAgent: req.get(CONTROLLER_MESSAGES.USER_AGENT_HEADER),
-      timestamp: new Date().toISOString(),
-      ...logMetadata
-    });
-    
-    return errorResponse(res, errorMessage, HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-  }
 }
 
 /**
@@ -68,34 +68,34 @@ async function executeController(operation, req, res, successMessage, errorMessa
  * @param {Object} options - Opciones adicionales
  */
 async function getResource(getOperation, req, res, resourceName, options = {}) {
-  const { 
-    successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_OBTAINED_SUCCESS}`,
-    notFoundMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_NOT_FOUND}`,
-    errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_GET_ERROR} ${resourceName}`
-  } = options;
+    const {
+        successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_OBTAINED_SUCCESS}`,
+        notFoundMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_NOT_FOUND}`,
+        errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_GET_ERROR} ${resourceName}`
+    } = options;
 
-  return executeController(
-    async () => {
-      const result = await getOperation();
-      
-      // Si no se encontró el recurso, lanzar error que será capturado por executeController
-      if (!result || (Array.isArray(result) && result.length === 0)) {
-        const error = new Error(notFoundMessage);
-        error.statusCode = HTTP_STATUS.NOT_FOUND;
-        throw error;
-      }
-      
-      return result;
-    },
-    req,
-    res,
-    successMessage,
-    errorMessage,
-    { 
-      [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
-      [CONTROLLER_MESSAGES.RESOURCE_ID_FIELD]: req.params.id
-    }
-  );
+    return executeController(
+        async () => {
+            const result = await getOperation();
+
+            // Si no se encontró el recurso, lanzar error que será capturado por executeController
+            if (!result || (Array.isArray(result) && result.length === 0)) {
+                const error = new Error(notFoundMessage);
+                error.statusCode = HTTP_STATUS.NOT_FOUND;
+                throw error;
+            }
+
+            return result;
+        },
+        req,
+        res,
+        successMessage,
+        errorMessage,
+        {
+            [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
+            [CONTROLLER_MESSAGES.RESOURCE_ID_FIELD]: req.params.id
+        }
+    );
 }
 
 /**
@@ -107,26 +107,26 @@ async function getResource(getOperation, req, res, resourceName, options = {}) {
  * @param {Object} options - Opciones adicionales
  */
 async function createResource(createOperation, req, res, resourceName, options = {}) {
-  const { 
-    successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_CREATED_SUCCESS}`,
-    errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_CREATE_ERROR} ${resourceName}`
-  } = options;
+    const {
+        successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_CREATED_SUCCESS}`,
+        errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_CREATE_ERROR} ${resourceName}`
+    } = options;
 
-  return executeController(
-    async () => {
-      const result = await createOperation();
-      return result;
-    },
-    req,
-    res,
-    successMessage,
-    errorMessage,
-    { 
-      [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
-      [CONTROLLER_MESSAGES.REQUEST_BODY_FIELD]: Object.keys(req.body || {}),
-      [CONTROLLER_MESSAGES.BODY_SIZE_FIELD]: JSON.stringify(req.body || {}).length
-    }
-  );
+    return executeController(
+        async () => {
+            const result = await createOperation();
+            return result;
+        },
+        req,
+        res,
+        successMessage,
+        errorMessage,
+        {
+            [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
+            [CONTROLLER_MESSAGES.REQUEST_BODY_FIELD]: Object.keys(req.body || {}),
+            [CONTROLLER_MESSAGES.BODY_SIZE_FIELD]: JSON.stringify(req.body || {}).length
+        }
+    );
 }
 
 /**
@@ -138,31 +138,31 @@ async function createResource(createOperation, req, res, resourceName, options =
  * @param {Object} options - Opciones adicionales
  */
 async function updateResource(updateOperation, req, res, resourceName, options = {}) {
-  const { 
-    successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_UPDATED_SUCCESS}`,
-    errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_UPDATE_ERROR} ${resourceName}`
-  } = options;
+    const {
+        successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_UPDATED_SUCCESS}`,
+        errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_UPDATE_ERROR} ${resourceName}`
+    } = options;
 
-  return executeController(
-    async () => {
-      const result = await updateOperation();
-      
-      if (!result) {
-        return errorResponse(res, `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_NOT_FOUND}`, HTTP_STATUS.NOT_FOUND);
-      }
-      
-      return result;
-    },
-    req,
-    res,
-    successMessage,
-    errorMessage,
-    { 
-      [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
-      [CONTROLLER_MESSAGES.RESOURCE_ID_FIELD]: req.params.id,
-      [CONTROLLER_MESSAGES.UPDATED_FIELDS_FIELD]: Object.keys(req.body || {})
-    }
-  );
+    return executeController(
+        async () => {
+            const result = await updateOperation();
+
+            if (!result) {
+                return errorResponse(res, `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_NOT_FOUND}`, HTTP_STATUS.NOT_FOUND);
+            }
+
+            return result;
+        },
+        req,
+        res,
+        successMessage,
+        errorMessage,
+        {
+            [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
+            [CONTROLLER_MESSAGES.RESOURCE_ID_FIELD]: req.params.id,
+            [CONTROLLER_MESSAGES.UPDATED_FIELDS_FIELD]: Object.keys(req.body || {})
+        }
+    );
 }
 
 /**
@@ -174,36 +174,36 @@ async function updateResource(updateOperation, req, res, resourceName, options =
  * @param {Object} options - Opciones adicionales
  */
 async function deleteResource(deleteOperation, req, res, resourceName, options = {}) {
-  const { 
-    successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_DELETED_SUCCESS}`,
-    errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_DELETE_ERROR} ${resourceName}`
-  } = options;
+    const {
+        successMessage = `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_DELETED_SUCCESS}`,
+        errorMessage = `${CONTROLLER_MESSAGES.RESOURCE_DELETE_ERROR} ${resourceName}`
+    } = options;
 
-  return executeController(
-    async () => {
-      const result = await deleteOperation();
-      
-      if (!result) {
-        return errorResponse(res, `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_NOT_FOUND}`, HTTP_STATUS.NOT_FOUND);
-      }
-      
-      return { deleted: CONTROLLER_MESSAGES.DELETED_FLAG, id: req.params.id };
-    },
-    req,
-    res,
-    successMessage,
-    errorMessage,
-    { 
-      [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
-      [CONTROLLER_MESSAGES.RESOURCE_ID_FIELD]: req.params.id
-    }
-  );
+    return executeController(
+        async () => {
+            const result = await deleteOperation();
+
+            if (!result) {
+                return errorResponse(res, `${resourceName} ${CONTROLLER_MESSAGES.RESOURCE_NOT_FOUND}`, HTTP_STATUS.NOT_FOUND);
+            }
+
+            return { deleted: CONTROLLER_MESSAGES.DELETED_FLAG, id: req.params.id };
+        },
+        req,
+        res,
+        successMessage,
+        errorMessage,
+        {
+            [CONTROLLER_MESSAGES.RESOURCE_NAME_FIELD]: resourceName,
+            [CONTROLLER_MESSAGES.RESOURCE_ID_FIELD]: req.params.id
+        }
+    );
 }
 
 module.exports = {
-  executeController,
-  getResource,
-  createResource,
-  updateResource,
-  deleteResource
+    executeController,
+    getResource,
+    createResource,
+    updateResource,
+    deleteResource
 };

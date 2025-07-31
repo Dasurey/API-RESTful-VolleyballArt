@@ -1,8 +1,8 @@
 // Importar constantes centralizadas primero
-const { 
-  RELATIVE_PATHS, 
-  ENV_VARIABLES, 
-  CONFIG_VALUES, 
+const {
+  RELATIVE_PATHS,
+  ENV_VARIABLES,
+  CONFIG_VALUES,
   LOG_LEVELS,
   EXTERNAL_PACKAGES
 } = require('../config/paths.js');
@@ -27,7 +27,7 @@ function getBaseUrl() {
   if (process.env[ENV_VARIABLES.BASE_DOMAIN]) {
     return process.env[ENV_VARIABLES.BASE_DOMAIN];
   }
-  
+
   // Si no, construir localhost con el puerto del .env
   return `${CONFIG_VALUES.LOCALHOST_PROTOCOL}${PORT}`;
 }
@@ -43,15 +43,15 @@ function updateSwaggerUrl(req, res, next) {
     // Importar swaggerSpec de forma lazy para evitar dependencias circulares
     const { swaggerSpec } = require(RELATIVE_PATHS.FROM_UTILS.CONFIG_SWAGGER);
     const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
-    
+
     // Usar la URL base desde .env
     const baseUrl = getBaseUrl();
-    
+
     // Actualizar la configuración de Swagger
     if (swaggerSpec && swaggerSpec.servers && swaggerSpec.servers[0]) {
       swaggerSpec.servers[0].url = baseUrl;
     }
-    
+
     next();
   } catch (error) {
     // Usar logMessage si está disponible, sino console.error como fallback
@@ -65,8 +65,8 @@ function updateSwaggerUrl(req, res, next) {
   }
 }
 
-module.exports = { 
-  __dirname: projectDir, 
+module.exports = {
+  __dirname: projectDir,
   join,
   getBaseUrl,
   updateSwaggerUrl,
