@@ -1,20 +1,32 @@
-const express = require('express');
-require('dotenv').config();
-const cors = require('cors');
+const { 
+  EXTERNAL_PACKAGES, 
+  PATHS, 
+  API_ENDPOINTS, 
+  ENV_CONFIG, 
+  HTTP_HEADERS, 
+  HTTP_METHODS,
+  NODE_EVENTS,
+  LOG_LEVELS,
+  COMMON_VALUES
+} = require('./config/paths.js');
+
+const express = require(EXTERNAL_PACKAGES.EXPRESS);
+require(EXTERNAL_PACKAGES.DOTENV).config();
+const cors = require(EXTERNAL_PACKAGES.CORS);
 
 // � Configuración de entorno para Vercel
 if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = process.env.NODE_ENV ? 'production' : 'development';
+  process.env.NODE_ENV = process.env.NODE_ENV ? ENV_CONFIG.NODE_ENV_PRODUCTION : ENV_CONFIG.NODE_ENV_DEVELOPMENT;
 }
 
 // �📊 Sistema de logging
-const Logger = require('./config/logger.js');
-const { httpLogger, devLogger, requestLogger } = require('./middlewares/logger.middleware.js');
-const { errorHandler, jsonErrorHandler, notFoundHandler } = require('./middlewares/error.middleware.js');
+const Logger = require(PATHS.CONFIG.LOGGER);
+const { httpLogger, devLogger, requestLogger } = require(PATHS.MIDDLEWARES.LOGGER);
+const { errorHandler, jsonErrorHandler, notFoundHandler } = require(PATHS.MIDDLEWARES.ERROR);
 
 // 🛡️ Sistema de seguridad
-const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require('./config/security.js');
-const { sanitizeInput, sanitizeHtml } = require('./middlewares/sanitization.middleware.js');
+const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require(PATHS.CONFIG.SECURITY);
+const { sanitizeInput, sanitizeHtml } = require(PATHS.MIDDLEWARES.SANITIZATION);
 
 // ⚡ Sistema de cache y optimización
 const {
@@ -22,55 +34,61 @@ const {
   optimizeResponse,
   minifyJson,
   performanceHeaders
-} = require('./config/optimization.js');
-const { getCacheStats, resetCacheStats } = require('./config/cache.js');
+} = require(PATHS.CONFIG.OPTIMIZATION);
+const { getCacheStats, resetCacheStats } = require(PATHS.CONFIG.CACHE);
 const {
   performanceMonitor,
   getPerformanceMetrics,
   healthCheckWithMetrics
-} = require('./middlewares/performance.middleware.js');
+} = require(PATHS.MIDDLEWARES.PERFORMANCE);
 
 // 📚 Sistema de documentación
-const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./config/swagger.js');
+const { swaggerSpec, swaggerUi, swaggerUiOptions } = require(PATHS.CONFIG.SWAGGER);
 
-const productsRoutes = require('./routes/products.routes.js');
-const authRoutes = require('./routes/auth.routes.js');
+const productsRoutes = require(PATHS.ROUTES.PRODUCTS);
+const authRoutes = require(PATHS.ROUTES.AUTH);
+const categoryRoutes = require(PATHS.ROUTES.CATEGORY);
 
-const { authentication } = require('./middlewares/authentication.js');
-const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware.js');
-const { getVersionInfo } = require('./config/api-versions.js');
+const { authentication } = require(PATHS.MIDDLEWARES.AUTHENTICATION);
+const { GENERAL_MESSAGES, LOG_MESSAGES, SYSTEM_MESSAGES } = require('./utils/messages.utils.js');
+const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require(PATHS.MIDDLEWARES.VERSION);
+const { getVersionInfo } = require(PATHS.CONFIG.API_VERSIONS);
 
 // 🔧 Utilidades para URLs y paths (incluyendo middleware dinámico para Swagger)
-const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl, PORT } = require('./utils/url.utils.js');
+const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl } = require(PATHS.UTILS.URL_UTILS);
+
+// 🔧 Utilidades centralizadas para respuestas y logging
+const { logMessage, successResponse, errorResponse, safeAsync, getEndpointUrls, logServerInfo } = require(PATHS.UTILS.RESPONSE_UTILS);
 
 // 🌐 Configuración de variables de entorno
 // Ya configurado con require('dotenv').config() arriba
+const PORT = process.env.PORT || ENV_CONFIG.PORT_DEFAULT;
 
 const app = express();
 
 // � Manejador de errores no capturados (especialmente importante en Vercel)
-process.on('uncaughtException', (err) => {
-  console.error('🚨 Uncaught Exception:', err);
-  process.exit(1);
+process.on(NODE_EVENTS.UNCAUGHT_EXCEPTION, (err) => {
+  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNCAUGHT_EXCEPTION, { error: err.message, stack: err.stack });
+  process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
+process.on(NODE_EVENTS.UNHANDLED_REJECTION, (reason, promise) => {
+  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNHANDLED_REJECTION, { reason, promise });
+  process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
 });
 
 // �📊 Iniciar logging del sistema
-Logger.info('🚀 Iniciando servidor VolleyballArt API...', {
+logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.SERVER_STARTING, {
   nodeVersion: process.version,
   environment: process.env.NODE_ENV,
   timestamp: new Date().toISOString()
 });
 
 const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  origin: SYSTEM_MESSAGES.CORS_ORIGIN,
+  methods: [HTTP_METHODS.GET, HTTP_METHODS.POST, HTTP_METHODS.PUT, HTTP_METHODS.DELETE],
+  allowedHeaders: [HTTP_HEADERS.CONTENT_TYPE, HTTP_HEADERS.AUTHORIZATION],
+  credentials: SYSTEM_MESSAGES.CORS_CREDENTIALS,
 };
 
 // 🛡️ Middlewares de seguridad y parsing
@@ -84,18 +102,18 @@ app.use(performanceMonitor); // Monitoreo de rendimiento
 app.use(optimizeResponse); // Optimización de respuestas
 app.use(minifyJson); // Minificación de JSON en producción
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: ENV_CONFIG.JSON_LIMIT }));
+app.use(express.urlencoded({ extended: COMMON_VALUES.EXTENDED_TRUE }));
 
 // 📁 Archivos estáticos usando utilidades CommonJS
-app.use(express.static(join(projectDir, "public")));
+app.use(express.static(join(projectDir, API_ENDPOINTS.PUBLIC_DIR)));
 
 // 🧹 Middlewares de sanitización
 app.use(sanitizeInput); // Prevenir NoSQL injection
 app.use(sanitizeHtml); // Limpiar HTML/XSS
 
 // 📊 Logging HTTP - aplicar antes de las rutas
-app.use(process.env.NODE_ENV === 'development' ? devLogger : httpLogger);
+app.use(process.env.NODE_ENV === ENV_CONFIG.NODE_ENV_DEVELOPMENT ? devLogger : httpLogger);
 app.use(requestLogger);
 
 // ⚠️ Middleware para capturar errores de JSON malformado
@@ -107,29 +125,28 @@ app.use(cors(corsOptions));
 app.use(versionMiddleware);
 
 // 🌐 Middleware para actualizar URL de Swagger dinámicamente usando req.headers.host
-app.use('/api/docs', updateSwaggerUrl);
+app.use(API_ENDPOINTS.API_DOCS, updateSwaggerUrl);
 
 // 📚 Configurar documentación Swagger
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+app.use(API_ENDPOINTS.API_DOCS, swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // 📄 Endpoint para descargar especificación OpenAPI en JSON
-app.get('/api/swagger.json', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
+app.get(API_ENDPOINTS.SWAGGER_JSON, (req, res) => {
+  res.setHeader(HTTP_HEADERS.CONTENT_TYPE, HTTP_HEADERS.CONTENT_TYPE_JSON);
   res.send(swaggerSpec);
 });
 
 // 🧪 Endpoint de test simple para Vercel
-app.get('/test', (req, res) => {
-  res.json({ 
-    message: '✅ Servidor funcionando correctamente',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'unknown'
+app.get(API_ENDPOINTS.TEST, (req, res) => {
+  successResponse(res, GENERAL_MESSAGES.SERVER_HEALTH, {
+    environment: process.env.NODE_ENV || ENV_CONFIG.NODE_ENV_UNKNOWN
   });
 });
 
 // Registrar rutas de forma dinámica para todas las versiones soportadas
-registerVersionedRoutes(app, '/auth', authRoutes, [authLimiter]); // Aplicar rate limiting específico para auth
-registerVersionedRoutes(app, '/products', productsRoutes); // Sin rate limiting general, se aplica específicamente en /create
+registerVersionedRoutes(app, API_ENDPOINTS.AUTH_BASE, authRoutes, [authLimiter]); // Aplicar rate limiting específico para auth
+registerVersionedRoutes(app, API_ENDPOINTS.PRODUCTS_BASE, productsRoutes); // Sin rate limiting general, se aplica específicamente en /create
+registerVersionedRoutes(app, API_ENDPOINTS.CATEGORY_BASE, categoryRoutes); // Rutas de categoria y subcategoria
 
 // Registrar endpoints de información para cada versión (/api/v1, /api/v2, etc.)
 registerVersionInfoEndpoints(app);
@@ -171,19 +188,14 @@ registerVersionInfoEndpoints(app);
  *                       example: https://api.example.com/api/health
  */ 
 
-app.get('/api', (req, res) => {
+app.get(API_ENDPOINTS.API_ROOT, (req, res) => {
   const versionInfo = getVersionInfo();
   const baseUrl = getBaseUrl();
+  const urls = getEndpointUrls(baseUrl);
 
-  res.json({
-    message: 'Endpoint de información de la API RESTful VolleyballArt',
-    payload: {
-      ...versionInfo,
-      documentation: `${baseUrl}/api/docs`,
-      health: `${baseUrl}/api/health`,
-      metrics: `${baseUrl}/api/metrics`,
-      cache: `${baseUrl}/api/cache/stats`
-    }
+  successResponse(res, GENERAL_MESSAGES.API_INFO, {
+    ...versionInfo,
+    ...urls
   });
 });
 
@@ -217,7 +229,7 @@ app.get('/api', (req, res) => {
  *                 cache:
  *                   type: object
  */
-app.get('/api/health', healthCheckWithMetrics);
+app.get(API_ENDPOINTS.HEALTH, healthCheckWithMetrics);
 
 /**
  * @swagger
@@ -236,12 +248,9 @@ app.get('/api/health', healthCheckWithMetrics);
  *             schema:
  *               type: object
  */
-app.get('/api/metrics', authentication, (req, res) => {
+app.get(API_ENDPOINTS.METRICS, authentication, (req, res) => {
   const metrics = getPerformanceMetrics();
-  res.json({
-    message: 'Métricas del sistema',
-    payload: metrics
-  });
+  successResponse(res, GENERAL_MESSAGES.SYSTEM_METRICS, metrics);
 });
 
 /**
@@ -257,12 +266,9 @@ app.get('/api/metrics', authentication, (req, res) => {
  *       200:
  *         description: Estadísticas de cache
  */
-app.get('/api/cache/stats', authentication, (req, res) => {
+app.get(API_ENDPOINTS.CACHE_STATS, authentication, (req, res) => {
   const cacheStats = getCacheStats();
-  res.json({
-    message: 'Estadísticas de cache',
-    payload: cacheStats
-  });
+  successResponse(res, GENERAL_MESSAGES.CACHE_STATS, cacheStats);
 });
 
 /**
@@ -278,44 +284,35 @@ app.get('/api/cache/stats', authentication, (req, res) => {
  *       200:
  *         description: Cache limpiado exitosamente
  */
-app.post('/api/cache/clear', authentication, (req, res) => {
+app.post(API_ENDPOINTS.CACHE_CLEAR, authentication, (req, res) => {
   resetCacheStats();
-  Logger.info('🗑️ Cache limpiado por usuario', {
+  logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.CACHE_CLEARED_BY_USER, {
     userId: req.user?.uid,
     timestamp: new Date().toISOString()
   });
-  res.json({
-    message: 'Cache limpiado exitosamente',
-    timestamp: new Date().toISOString()
-  });
+  successResponse(res, SYSTEM_MESSAGES.CACHE_CLEARED_SUCCESS);
 });
 
 // Redirigir la ruta raíz a la documentación de la API
-app.get('/', (req, res) => {
-  try {
-    Logger.info('🏠 Acceso a ruta raíz, redirigiendo a /api');
-    //res.redirect('/api');
-  } catch (error) {
-    console.error('Error en ruta raíz:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
+app.get(API_ENDPOINTS.ROOT, (req, res) => {
+  safeAsync(async () => {
+    logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.ROOT_REDIRECT);
+    res.redirect(API_ENDPOINTS.API_ROOT);
+  }, res, LOG_MESSAGES.ROOT_ROUTE_ERROR);
 });
 
 // 🔍 Endpoint de debug para Vercel
-app.get('/debug', (req, res) => {
-  try {
-    res.json({
-      message: 'Debug info for Vercel',
+app.get(API_ENDPOINTS.DEBUG, (req, res) => {
+  safeAsync(async () => {
+    successResponse(res, SYSTEM_MESSAGES.DEBUG_INFO, {
       nodeVersion: process.version,
       environment: process.env.NODE_ENV,
+      isVercel: !!process.env.VERCEL,
+      vercelUrl: process.env.VERCEL_URL,
       baseUrl: getBaseUrl(),
-      timestamp: new Date().toISOString(),
       headers: req.headers
     });
-  } catch (error) {
-    console.error('Error en debug:', error);
-    res.status(500).json({ error: 'Error en debug endpoint' });
-  }
+  }, res, SYSTEM_MESSAGES.DEBUG_ENDPOINT_ERROR);
 });
 
 // 🚫 Middleware para rutas no encontradas (debe ir antes del error handler)
@@ -327,36 +324,5 @@ app.use(errorHandler);
 // 🎧 Iniciar servidor
 app.listen(PORT, () => {
   const baseUrl = getBaseUrl();
-
-  Logger.info(`✅ Servidor iniciado exitosamente`, {
-    port: PORT,
-    url: baseUrl,
-    environment: process.env.NODE_ENV,
-    pid: process.pid,
-    timestamp: new Date().toISOString()
-  });
-
-  // Mostrar URLs según el entorno
-  console.log(`🌐 Server running on ${baseUrl}`);
-  console.log(`📚 API Documentation: ${baseUrl}/api`);
-  console.log(`📖 Swagger Docs: ${baseUrl}/api/docs`);
-  console.log(`💚 Health Check: ${baseUrl}/api/health`);
-  console.log(`📊 Performance Metrics: ${baseUrl}/api/metrics`);
-  console.log(`🗄️ Cache Stats: ${baseUrl}/api/cache/stats`);
-  console.log(`📄 OpenAPI Spec: ${baseUrl}/api/swagger.json`);
-
-  // Información adicional en desarrollo
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`\n🔧 Development Mode:`);
-    console.log(`   • Auto-reload: Active`);
-    console.log(`   • Debug logging: Enabled`);
-    console.log(`   • Cache TTL: Short for testing`);
-    console.log(`   • CORS: Permissive (*)`);
-  } else {
-    console.log(`\n🚀 Production Mode:`);
-    console.log(`   • Optimizations: Active`);
-    console.log(`   • Compression: Enabled`);
-    console.log(`   • Cache: Long TTL`);
-    console.log(`   • Security: Enhanced`);
-  }
+  logServerInfo(baseUrl, PORT);
 });

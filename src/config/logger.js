@@ -1,5 +1,6 @@
 const winston = require('winston');
-const path = require('path');
+const { EXTERNAL_PACKAGES } = require('./paths.js');
+const path = require(EXTERNAL_PACKAGES.PATH);
 
 // Configuración de colores para el desarrollo
 const colors = {

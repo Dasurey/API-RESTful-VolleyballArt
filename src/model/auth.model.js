@@ -1,7 +1,9 @@
-const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = require('firebase/auth');
-const { db } = require('../config/dataBase.js');
-const { doc, setDoc, getDoc } = require('firebase/firestore');
-const { generateToken } = require('../config/jwt.js');
+const { EXTERNAL_PACKAGES, RELATIVE_PATHS } = require('../config/paths.js');
+const { AUTH_MESSAGES, FIREBASE_CONSTANTS, HTTP_STATUS } = require('../utils/messages.utils.js');
+const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = require(EXTERNAL_PACKAGES.FIREBASE_AUTH);
+const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
+const { doc, setDoc, getDoc } = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
+const { generateToken } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_JWT);
 
 const auth = getAuth();
 
@@ -16,8 +18,8 @@ const loginUser = async (req, res, email, password) => {
       email: user.email
     });
     
-    return res.status(200).json({
-      message: 'Login exitoso',
+    return res.status(HTTP_STATUS.OK).json({
+      message: AUTH_MESSAGES.LOGIN_SUCCESS,
       payload: {
         user: {
           id: user.uid,
@@ -28,8 +30,8 @@ const loginUser = async (req, res, email, password) => {
       }
     });
   } catch (error) {
-    return res.status(401).json({
-      message: 'Login invalido: email o password incorrectos',
+    return res.status(HTTP_STATUS.UNAUTHORIZED).json({
+      message: AUTH_MESSAGES.INCORRECT_CREDENTIALS,
       error: error.message
     });
   }
@@ -41,7 +43,7 @@ const registerUser = async (req, res, email, password) => {
     const user = userCredential.user;
     
     // Opcionalmente guardar información adicional del usuario en Firestore
-    await setDoc(doc(db, 'users', user.uid), {
+    await setDoc(doc(db, FIREBASE_CONSTANTS.COLLECTION_USERS, user.uid), {
       email: user.email,
       createdAt: new Date(),
       uid: user.uid
@@ -53,8 +55,8 @@ const registerUser = async (req, res, email, password) => {
       email: user.email
     });
     
-    return res.status(201).json({
-      message: 'Usuario registrado exitosamente',
+    return res.status(HTTP_STATUS.CREATED).json({
+      message: AUTH_MESSAGES.REGISTER_SUCCESS,
       payload: {
         user: {
           id: user.uid,
@@ -64,18 +66,18 @@ const registerUser = async (req, res, email, password) => {
       }
     });
   } catch (error) {
-    let errorMessage = 'Error al registrar usuario';
-    let statusCode = 500;
+    let errorMessage = AUTH_MESSAGES.REGISTER_ERROR;
+    let statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR;
     
-    if (error.code === 'auth/email-already-in-use') {
-      errorMessage = 'El email ya está en uso';
-      statusCode = 400;
-    } else if (error.code === 'auth/weak-password') {
-      errorMessage = 'La contraseña es muy débil (mínimo 6 caracteres)';
-      statusCode = 400;
-    } else if (error.code === 'auth/invalid-email') {
-      errorMessage = 'Email inválido';
-      statusCode = 400;
+    if (error.code === FIREBASE_CONSTANTS.ERROR_EMAIL_ALREADY_IN_USE) {
+      errorMessage = AUTH_MESSAGES.EMAIL_ALREADY_IN_USE;
+      statusCode = HTTP_STATUS.BAD_REQUEST;
+    } else if (error.code === FIREBASE_CONSTANTS.ERROR_WEAK_PASSWORD) {
+      errorMessage = AUTH_MESSAGES.WEAK_PASSWORD;
+      statusCode = HTTP_STATUS.BAD_REQUEST;
+    } else if (error.code === FIREBASE_CONSTANTS.ERROR_INVALID_EMAIL) {
+      errorMessage = AUTH_MESSAGES.INVALID_EMAIL;
+      statusCode = HTTP_STATUS.BAD_REQUEST;
     }
     
     return res.status(statusCode).json({

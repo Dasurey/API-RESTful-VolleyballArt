@@ -18,19 +18,23 @@ const API_CONFIG = {
       changelog: [
         '✅ Autenticación con Firebase',
         '✅ CRUD de productos con IDs secuenciales (VA-XXXXX)', 
+        '✅ Sistema completo de categorías y subcategorías',
+        '✅ IDs jerárquicos para categorías (CAT-XXXX-YYYY)',
         '✅ Rutas públicas y privadas',
         '✅ Sistema de version dinámico'
       ],
       features: {
         authentication: true,
         products: true,
-        categories: false,
+        category: true,
+        subcategory: true,
         users: false,
         fileUpload: false
       },
       endpoints: {
         auth: '/auth',
-        products: '/api/products'
+        products: '/api/products',
+        category: '/api/category'
       },
       //supportedUntil: '2026-01-29', // 1 año de soporte
       breakingChanges: []
@@ -38,7 +42,7 @@ const API_CONFIG = {
     /* Futuras versiones se agregarán aquí
     v2: {
       version: 'v2',
-      description: 'Segunda versión con categorías y gestión de usuarios',
+      description: 'Segunda versión con categoria y gestión de usuarios',
       releaseDate: '2025-06-01',
       deprecated: false,
       inMaintenance: true,
@@ -46,7 +50,7 @@ const API_CONFIG = {
       maintainer: 'VolleyballArt Team',
       documentation: '/api/v2/docs',
       changelog: [
-        '🆕 Sistema de categorías',
+        '🆕 Sistema de categoria',
         '🆕 Gestión de usuarios',
         '🆕 Upload de archivos',
         '🔄 Mejoras en autenticación'
@@ -54,14 +58,14 @@ const API_CONFIG = {
       features: {
         authentication: true,
         products: true,
-        categories: true,
+        category: true,
         users: true,
         fileUpload: true
       },
       endpoints: {
         auth: '/auth',
         products: '/products',
-        categories: '/categories',
+        category: '/category',
         users: '/users'
       },
       // supportedUntil: '2026-06-01',

@@ -1,74 +1,90 @@
 const productsService = require('../services/products.service.js');
-const Logger = require('../config/logger.js');
+const { PRODUCTS_MESSAGES } = require('../utils/messages.utils.js');
+const { 
+  getResource, 
+  createResource, 
+  updateResource, 
+  deleteResource 
+} = require("../utils/controller.utils.js");
 
 const getAllProducts = async (req, res) => {
-  try {
-    const products = await productsService.getAllProducts(res);
-    
-    Logger.info('📋 Listado de productos obtenido', {
-      totalProducts: products.length,
-      timestamp: new Date().toISOString()
-    });
-    
-    res.status(200).json({ message: "Listado de productos", payload: products });
-  } catch (error) {
-    Logger.error('🚨 Error al obtener productos', {
-      error: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
-    
-    res.status(500).json({ 
-      message: "Error interno del servidor", 
-      error: error.message 
-    });
-  }
+  return getResource(
+    () => productsService.getAllProducts(),
+    req,
+    res,
+    PRODUCTS_MESSAGES.RESOURCE_PLURAL,
+    {
+      successMessage: PRODUCTS_MESSAGES.GET_ALL_SUCCESS,
+      errorMessage: PRODUCTS_MESSAGES.GET_ALL_ERROR
+    }
+  );
 };
 
 const getProductById = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const product = await productsService.getProductById(id, res);
-
-    if (product) {
-      return res.json(product);
-    } else {
-      res.status(404).json({
-        message: `No se ha encontrado ningun producto con el siguiente ID: ${id}`,
-      });
+  const { id } = req.params;
+  
+  return getResource(
+    () => productsService.getProductById(id),
+    req,
+    res,
+    PRODUCTS_MESSAGES.RESOURCE_SINGLE,
+    {
+      successMessage: PRODUCTS_MESSAGES.GET_BY_ID_SUCCESS,
+      notFoundMessage: PRODUCTS_MESSAGES.NOT_FOUND(id),
+      errorMessage: PRODUCTS_MESSAGES.GET_BY_ID_ERROR
     }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  );
 };
 
 const createProduct = async (req, res) => {
   // Los datos ya están validados por Joi middleware
-  const data = req.body;
-  return productsService.createProduct(req, res, data);
+  return createResource(
+    () => productsService.createProduct(req.body),
+    req,
+    res,
+    PRODUCTS_MESSAGES.RESOURCE_SINGLE,
+    {
+      successMessage: PRODUCTS_MESSAGES.CREATE_SUCCESS,
+      errorMessage: PRODUCTS_MESSAGES.CREATE_ERROR
+    }
+  );
 };
 
 const updateProduct = async (req, res) => {
-  try {
-    const id = req.params.id;
-    // Los datos ya están validados por Joi middleware
-    const product = req.body;
-
-    const updatedProduct = await productsService.updateProduct(id, product, res);
-    res.json({ message: 'Producto actualizado correctamente', updatedProduct });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  const { id } = req.params;
+  // Los datos ya están validados por Joi middleware
+  
+  return updateResource(
+    async () => {
+      const updatedProduct = await productsService.updateProduct(id, req.body, res);
+      return { message: PRODUCTS_MESSAGES.UPDATE_SUCCESS, updatedProduct };
+    },
+    req,
+    res,
+    PRODUCTS_MESSAGES.RESOURCE_SINGLE,
+    {
+      successMessage: PRODUCTS_MESSAGES.UPDATE_SUCCESS,
+      errorMessage: PRODUCTS_MESSAGES.UPDATE_ERROR
+    }
+  );
 };
 
 const deleteProduct = async (req, res) => {
-  try {
-    const id = req.params.id;
-    await productsService.deleteProduct(id, res);
-    res.sendStatus(204);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  const { id } = req.params;
+  
+  return deleteResource(
+    async () => {
+      await productsService.deleteProduct(id, res);
+      return { deleted: true, id };
+    },
+    req,
+    res,
+    PRODUCTS_MESSAGES.RESOURCE_SINGLE,
+    {
+      successMessage: PRODUCTS_MESSAGES.DELETE_SUCCESS,
+      errorMessage: PRODUCTS_MESSAGES.DELETE_ERROR
+    }
+  );
 };
 
 module.exports = {

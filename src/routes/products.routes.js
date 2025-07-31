@@ -8,7 +8,7 @@ const {
 } = require('../controllers/products.controller.js');
 const { authentication } = require('../middlewares/authentication.js');
 const { validate } = require('../middlewares/validation.middleware.js');
-const { productSchema, updateProductSchema } = require('../schemas/product.schema.js');
+const { productSchema, updateProductSchema } = require('../schemas/products.schema.js');
 const { idParamSchema, validateParams } = require('../schemas/common.schema.js');
 const { createLimiter } = require('../config/security.js');
 const { cacheMiddleware, cacheHeaders } = require('../config/cache.js');

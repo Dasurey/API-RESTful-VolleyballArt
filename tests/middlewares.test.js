@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { JWT_EXPIRATION } = require('../src/config/jwt');
 
 describe('🛡️ Middlewares', () => {
   describe('Authentication Middleware Simulation', () => {
@@ -6,7 +7,7 @@ describe('🛡️ Middlewares', () => {
       const validToken = jwt.sign(
         { uid: 'test-user', email: 'test@test.com' },
         'test-secret',
-        { expiresIn: '1h' }
+        { expiresIn: JWT_EXPIRATION }
       );
 
       const decoded = jwt.verify(validToken, 'test-secret');
@@ -28,7 +29,7 @@ describe('🛡️ Middlewares', () => {
       const expiredToken = jwt.sign(
         { uid: 'test-user' },
         'test-secret',
-        { expiresIn: '-1h' } // Token expirado
+        { expiresIn: `-${JWT_EXPIRATION}` } // Token expirado usando JWT_EXPIRATION negativo
       );
 
       expect(() => {

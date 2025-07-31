@@ -1,4 +1,5 @@
-const { config } = require('dotenv');
+const { EXTERNAL_PACKAGES } = require('./paths.js');
+const { config } = require(EXTERNAL_PACKAGES.DOTENV);
 config();
 const { getFirestore } = require('firebase/firestore');
 const { getAuth } = require('firebase/auth');

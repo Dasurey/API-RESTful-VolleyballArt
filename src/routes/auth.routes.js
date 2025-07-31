@@ -1,7 +1,8 @@
-const express = require('express');
-const { loginUser, registerUser } = require('../controllers/auth.controller.js');
-const { validate } = require('../middlewares/validation.middleware.js');
-const { loginSchema, registerSchema } = require('../schemas/auth.schema.js');
+const { EXTERNAL_PACKAGES, RELATIVE_PATHS, API_ENDPOINTS } = require('../config/paths.js');
+const express = require(EXTERNAL_PACKAGES.EXPRESS);
+const { loginUser, registerUser } = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_AUTH);
+const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
+const { loginSchema, registerSchema } = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_AUTH);
 
 const router = express.Router();
 
@@ -50,7 +51,7 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', validate(loginSchema), loginUser);
+router.post(API_ENDPOINTS.AUTH_LOGIN, validate(loginSchema), loginUser);
 
 /**
  * @swagger
@@ -85,6 +86,6 @@ router.post('/login', validate(loginSchema), loginUser);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/register', validate(registerSchema), registerUser);
+router.post(API_ENDPOINTS.AUTH_REGISTER, validate(registerSchema), registerUser);
 
 module.exports = router;;

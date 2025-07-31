@@ -1,13 +1,13 @@
 const productsModel = require('../model/products.model.js');
 
-const getAllProducts = async (res) => productsModel.getAllProducts(res);
+const getAllProducts = async () => productsModel.getAllProducts();
 
-const getProductById = (id, res) => {
-  return productsModel.getProductById(id, res);
+const getProductById = (id) => {
+  return productsModel.getProductById(id);
 };
 
-const createProduct = async (req, res, product) => {
-  return productsModel.createProduct(req, res, product);
+const createProduct = async (productData) => {
+  return productsModel.createProduct(productData);
 };
 
 const updateProduct = async (id, product, res) => {

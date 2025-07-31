@@ -1,6 +1,15 @@
-const { db } = require('../config/dataBase.js');
-const Logger = require('../config/logger.js');
-const { productsCacheManager } = require('../config/cache.js');
+const { RELATIVE_PATHS } = require('../config/paths.js');
+const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
+const { productsCacheManager } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_CACHE);
+const { 
+  getAllDocuments, 
+  getDocumentById, 
+  createDocument, 
+  updateDocument, 
+  deleteDocument,
+  executeFirebaseOperation 
+} = require(RELATIVE_PATHS.FROM_MODEL.UTILS_FIREBASE);
+const { logMessage } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_RESPONSE);
 const {
   addDoc,
   collection,
@@ -12,219 +21,213 @@ const {
   setDoc,
 } = require('firebase/firestore');
 
-const productsCollection = collection(db, 'products');
+const COLLECTION_NAME = 'products';
+const CACHE_TTL = 1800; // 30 minutos
+const CACHE_TTL_SHORT = 300; // 5 minutos para productos no encontrados
 
 // Función simple para generar el próximo ID
-const generateNextId = async (req, res) => {
-  try {
-    // Obtener todos los productos sin ordenamiento (no requiere índice)
-    const snapshot = await getDocs(productsCollection);
-    
-    if (snapshot.empty) {
-      // Si no hay productos, empezar con VA-0000001
-      return 'VA-0000001';
-    }
-    
-    // Obtener todos los IDs y encontrar el número más alto
-    let maxNumber = 0;
-    snapshot.forEach((doc) => {
-      const id = doc.id;
-      if (id.startsWith('VA-')) {
-        const number = parseInt(id.split('-')[1]);
-        if (number > maxNumber) {
-          maxNumber = number;
-        }
+const generateNextId = async () => {
+  return executeFirebaseOperation(
+    async () => {
+      const productsCollection = collection(db, COLLECTION_NAME);
+      
+      // Obtener todos los productos sin ordenamiento (no requiere índice)
+      const snapshot = await getDocs(productsCollection);
+      
+      if (snapshot.empty) {
+        // Si no hay productos, empezar con VA-0000001
+        return 'VA-0000001';
       }
-    });
-    
-    // Generar el siguiente número
-    const nextNumber = maxNumber + 1;
-    
-    // Formatear con padding de ceros (7 dígitos)
-    return `VA-${nextNumber.toString().padStart(7, '0')}`;
-  } catch (error) {
-    Logger.error('🚨 Error generando ID de producto', {
-      error: error.message,
-      stack: error.stack,
-      timestamp: new Date().toISOString()
-    });
-    return res.status(500).json({
-      message: 'No se pudo generar el ID del producto',
-      error: error.message
-    });
-  }
+      
+      // Obtener todos los IDs y encontrar el número más alto
+      let maxNumber = 0;
+      snapshot.forEach((doc) => {
+        const id = doc.id;
+        if (id.startsWith('VA-')) {
+          const number = parseInt(id.split('-')[1]);
+          if (number > maxNumber) {
+            maxNumber = number;
+          }
+        }
+      });
+      
+      // Generar el siguiente número
+      const nextNumber = maxNumber + 1;
+      
+      // Formatear con padding de ceros (7 dígitos)
+      return `VA-${nextNumber.toString().padStart(7, '0')}`;
+    },
+    'generateId',
+    COLLECTION_NAME,
+    { operation: 'generateSequentialId' }
+  );
 };
 
-const getAllProducts = async (res) => {
-  try {
-    // Intentar obtener del cache primero
-    const cacheKey = 'all_products';
-    const cachedProducts = productsCacheManager.get(cacheKey);
-    
-    if (cachedProducts) {
-      Logger.info('📦 Productos obtenidos desde cache');
-      return cachedProducts;
-    }
+const getAllProducts = async () => {
+  // Intentar obtener del cache primero
+  const cacheKey = 'all_products';
+  const cachedProducts = productsCacheManager.get(cacheKey);
+  
+  if (cachedProducts) {
+    logMessage('info', '📦 Productos obtenidos desde cache', { cacheHit: true });
+    return cachedProducts;
+  }
 
-    // Si no está en cache, obtener de Firebase
-    const querySnapshot = await getDocs(productsCollection);
+  // Si no está en cache, obtener de Firebase directamente
+  try {
+    const productsCollection = collection(db, COLLECTION_NAME);
+    const snapshot = await getDocs(productsCollection);
+    
     const products = [];
-    querySnapshot.forEach((doc) => products.push({ id: doc.id, ...doc.data() }));
+    snapshot.forEach((doc) => {
+      products.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Ordenar los productos por título en el código
+    products.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     
     // Guardar en cache por 30 minutos
-    productsCacheManager.set(cacheKey, products, 1800);
+    productsCacheManager.set(cacheKey, products, CACHE_TTL);
     
-    Logger.info('📦 Productos obtenidos desde Firebase y cacheados', {
-      count: products.length
+    logMessage('info', '📦 Productos obtenidos desde Firebase y cacheados', {
+      count: products.length,
+      cached: true,
+      ttl: CACHE_TTL
     });
     
     return products;
   } catch (error) {
-    Logger.error('🚨 Error obteniendo productos', {
+    logMessage('error', '🚨 Error al obtener productos de Firebase', {
       error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      message: 'Error al obtener los productos',
-      error: error.message
-    });
+    throw error;
   }
 };
 
-const getProductById = async (id, res) => {
-  try {
-    // Intentar obtener del cache primero
-    const cacheKey = `product_${id}`;
-    const cachedProduct = productsCacheManager.get(cacheKey);
-    
-    if (cachedProduct) {
-      Logger.info('📦 Producto obtenido desde cache', { productId: id });
-      return cachedProduct;
-    }
+const getProductById = async (id) => {
+  // Intentar obtener del cache primero (ignorar valores null del cache)
+  const cacheKey = `product_${id}`;
+  const cachedProduct = productsCacheManager.get(cacheKey);
+  
+  if (cachedProduct !== undefined && cachedProduct !== null) {
+    logMessage('info', '📦 Producto obtenido desde cache', { 
+      productId: id, 
+      cacheHit: true,
+      found: true 
+    });
+    return cachedProduct;
+  }
 
-    // Si no está en cache, obtener de Firebase
-    const productDoc = await getDoc(doc(productsCollection, id));
+  // Obtener de Firebase
+  try {
+    const docRef = doc(db, COLLECTION_NAME, id);
+    const docSnap = await getDoc(docRef);
     
-    if (productDoc.exists()) {
-      const product = { id: productDoc.id, ...productDoc.data() };
+    if (docSnap.exists()) {
+      const product = { id: docSnap.id, ...docSnap.data() };
       
       // Guardar en cache por 30 minutos
-      productsCacheManager.set(cacheKey, product, 1800);
+      productsCacheManager.set(cacheKey, product, CACHE_TTL);
       
-      Logger.info('📦 Producto obtenido desde Firebase y cacheado', { productId: id });
+      logMessage('info', '📦 Producto obtenido desde Firebase y cacheado', { 
+        productId: id,
+        cached: true,
+        ttl: CACHE_TTL
+      });
+      
       return product;
     } else {
-      // Cachear también productos no encontrados (por 5 minutos)
-      productsCacheManager.set(cacheKey, null, 300);
+      // NO cachear productos no encontrados para evitar problemas futuros
+      logMessage('warn', '📦 Producto no encontrado en Firebase', { 
+        productId: id,
+        found: false
+      });
+      
       return null;
     }
   } catch (error) {
-    Logger.error('🚨 Error obteniendo producto por ID', {
-      error: error.message,
+    logMessage('error', '🚨 Error al obtener producto de Firebase', {
       productId: id,
+      error: error.message,
       stack: error.stack
     });
-    return res.status(500).json({
-      message: 'Error al obtener el producto',
-      error: error.message
-    });
+    throw error;
   }
 };
 
-const createProduct = async (req, res, product) => {
+const createProduct = async (productData) => {
   try {
     // Generar ID secuencial
-    const newId = await generateNextId(req, res);
+    const newId = await generateNextId();
     
-    // Si generateNextId devolvió una respuesta de error, ya se envió
-    if (!newId || typeof newId !== 'string') {
-      return; // La respuesta ya fue enviada por generateNextId
-    }
-    
-    // Crear producto con ID personalizado
-    await setDoc(doc(productsCollection, newId), product);
+    // Crear producto con ID personalizado usando Firebase nativo (para IDs personalizados)
+    const productsCollection = collection(db, COLLECTION_NAME);
+    await setDoc(doc(productsCollection, newId), productData);
     
     // Invalidar cache relacionado
     productsCacheManager.invalidateAll();
     
-    Logger.info('✅ Producto creado exitosamente', {
+    const newProduct = { id: newId, ...productData };
+    
+    logMessage('info', '✅ Producto creado exitosamente en modelo', {
       productId: newId,
-      title: product.title,
-      category: product.category,
-      price: product.price,
-      timestamp: new Date().toISOString()
+      title: productData.title,
+      category: productData.category,
+      price: productData.price,
+      cacheInvalidated: true
     });
     
-    return res.status(201).json({
-      message: 'Producto creado exitosamente',
-      payload: { id: newId, ...product }
-    });
+    // Retornar solo los datos, sin enviar respuesta HTTP
+    return newProduct;
   } catch (error) {
-    Logger.error('🚨 Error creando producto en la base de datos', {
+    logMessage('error', '🚨 Error creando producto en la base de datos', {
       error: error.message,
       stack: error.stack,
-      productData: product,
-      timestamp: new Date().toISOString()
+      productData: productData
     });
-    return res.status(500).json({
-      message: 'Error al crear el producto en la base de datos',
-      error: error.message
-    });
+    
+    // Lanzar error para que el controlador lo maneje
+    throw new Error(`Error al crear el producto en la base de datos: ${error.message}`);
   }
 };
 
-const updateProduct = async (id, data, res) => {
-  try {
-    await updateDoc(doc(productsCollection, id), data);
-    
+const updateProduct = async (id, data) => {
+  const updatedProduct = await updateDocument(db, COLLECTION_NAME, id, data, {
+    includeTimestamp: false, // No agregar timestamp automático
+    validateData: null // Sin validación adicional por ahora
+  });
+  
+  if (updatedProduct) {
     // Invalidar cache del producto específico y de la lista
     productsCacheManager.invalidateProduct(id);
     
-    Logger.info('✅ Producto actualizado exitosamente', {
+    logMessage('info', '✅ Producto actualizado exitosamente', {
       productId: id,
       updatedFields: Object.keys(data),
-      timestamp: new Date().toISOString()
-    });
-    
-    return getProductById(id, res);
-  } catch (error) {
-    Logger.error('🚨 Error actualizando producto', {
-      error: error.message,
-      productId: id,
-      data,
-      stack: error.stack
-    });
-    return res.status(500).json({
-      message: 'Error al actualizar el producto',
-      error: error.message
+      cacheInvalidated: true
     });
   }
+  
+  return updatedProduct;
 };
 
-const deleteProduct = async (id, res) => {
-  try {
-    await deleteDoc(doc(productsCollection, id));
-    
+const deleteProduct = async (id) => {
+  const result = await deleteDocument(db, COLLECTION_NAME, id, {
+    softDelete: false // Hard delete por defecto
+  });
+  
+  if (result) {
     // Invalidar cache del producto específico y de la lista
     productsCacheManager.invalidateProduct(id);
     
-    Logger.info('✅ Producto eliminado exitosamente', {
+    logMessage('info', '✅ Producto eliminado exitosamente', {
       productId: id,
-      timestamp: new Date().toISOString()
-    });
-    
-    return true;
-  } catch (error) {
-    Logger.error('🚨 Error eliminando producto', {
-      error: error.message,
-      productId: id,
-      stack: error.stack
-    });
-    return res.status(500).json({
-      message: 'Error al eliminar el producto',
-      error: error.message
+      cacheInvalidated: true
     });
   }
+  
+  return result;
 };
 
 module.exports = {

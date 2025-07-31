@@ -1,11 +1,22 @@
-const { dirname, join } = require("path");
-require('dotenv').config();
+// Importar constantes centralizadas primero
+const { 
+  RELATIVE_PATHS, 
+  ENV_VARIABLES, 
+  CONFIG_VALUES, 
+  LOG_LEVELS,
+  EXTERNAL_PACKAGES
+} = require('../config/paths.js');
+const { SYSTEM_MESSAGES } = require('./messages.utils.js');
+
+// Usar paquetes centralizados
+const { dirname, join } = require(EXTERNAL_PACKAGES.PATH);
+require(EXTERNAL_PACKAGES.DOTENV).config();
 
 // Equivalente CommonJS a:
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = join(dirname(__filename), "..");
 const projectDir = join(dirname(__filename), "..");
-const PORT = process.env.PORT || 5000;
+const PORT = process.env[ENV_VARIABLES.PORT] || CONFIG_VALUES.DEFAULT_PORT;
 
 /**
  * Función para obtener la URL base desde .env o localhost con puerto del .env
@@ -13,12 +24,12 @@ const PORT = process.env.PORT || 5000;
  */
 function getBaseUrl() {
   // Si BASE_DOMAIN está definida en .env, usarla
-  if (process.env.BASE_DOMAIN) {
-    return process.env.BASE_DOMAIN;
+  if (process.env[ENV_VARIABLES.BASE_DOMAIN]) {
+    return process.env[ENV_VARIABLES.BASE_DOMAIN];
   }
   
   // Si no, construir localhost con el puerto del .env
-  return `http://localhost:${PORT}`;
+  return `${CONFIG_VALUES.LOCALHOST_PROTOCOL}${PORT}`;
 }
 
 /**
@@ -30,7 +41,8 @@ function getBaseUrl() {
 function updateSwaggerUrl(req, res, next) {
   try {
     // Importar swaggerSpec de forma lazy para evitar dependencias circulares
-    const { swaggerSpec } = require('../config/swagger.js');
+    const { swaggerSpec } = require(RELATIVE_PATHS.FROM_UTILS.CONFIG_SWAGGER);
+    const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
     
     // Usar la URL base desde .env
     const baseUrl = getBaseUrl();
@@ -42,7 +54,13 @@ function updateSwaggerUrl(req, res, next) {
     
     next();
   } catch (error) {
-    console.error('Error actualizando URL de Swagger:', error);
+    // Usar logMessage si está disponible, sino console.error como fallback
+    try {
+      const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
+      logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.ERROR_UPDATING_SWAGGER_URL, { error: error.message });
+    } catch {
+      console.error(SYSTEM_MESSAGES.ERROR_UPDATING_SWAGGER_URL, error);
+    }
     next();
   }
 }

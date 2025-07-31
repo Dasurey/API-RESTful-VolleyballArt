@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { JWT_EXPIRATION } = require('../src/config/jwt');
 
 describe('🛠️ Utilities & Schemas', () => {
   describe('JWT Token Generator', () => {
@@ -8,7 +9,7 @@ describe('🛠️ Utilities & Schemas', () => {
         email: 'test@volleyballart.com'
       };
 
-      const token = jwt.sign(userData, 'test-secret', { expiresIn: '1h' });
+      const token = jwt.sign(userData, 'test-secret', { expiresIn: JWT_EXPIRATION });
 
       expect(typeof token).toBe('string');
       expect(token).toMatch(/^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/);
@@ -18,8 +19,8 @@ describe('🛠️ Utilities & Schemas', () => {
       const user1 = { uid: 'user1', email: 'user1@test.com' };
       const user2 = { uid: 'user2', email: 'user2@test.com' };
 
-      const token1 = jwt.sign(user1, 'test-secret', { expiresIn: '1h' });
-      const token2 = jwt.sign(user2, 'test-secret', { expiresIn: '1h' });
+      const token1 = jwt.sign(user1, 'test-secret', { expiresIn: JWT_EXPIRATION });
+      const token2 = jwt.sign(user2, 'test-secret', { expiresIn: JWT_EXPIRATION });
 
       expect(token1).not.toBe(token2);
     });
