@@ -293,9 +293,9 @@ router.get('/:id', validate(categoryIdSchema, 'params'), categoryController.getC
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/:id/subcategory/create', 
+router.post('/:id/subcategory/create',
   validate(categoryParentIdSchema, 'params'),
-  validate(createSubcategorySimpleSchema), 
+  validate(createSubcategorySimpleSchema),
   categoryController.createSubcategorySimple
 );
 
@@ -399,9 +399,9 @@ router.post('/', validate(createCategorySchema), categoryController.createCatego
  */
 router.post('/create', validate(createCategorySchema), categoryController.createCategory);
 
-router.put('/:id/update', 
+router.put('/:id/update',
   // validate(categoryParentIdSchema, 'params'),
-  validate(updateCategorySchema), 
+  validate(updateCategorySchema),
   categoryController.updateCategorySpecific
 );
 
@@ -462,15 +462,15 @@ router.put('/:id/update',
  *       500:
  *         description: Error interno del servidor
  */
-router.put('/:categoryId/subcategory/:subcategoryId', 
+router.put('/:categoryId/subcategory/:subcategoryId',
   // validate(categorySubcategoryParamsSchema, 'params'),
-  validate(updateSubcategorySchema), 
+  validate(updateSubcategorySchema),
   categoryController.updateSubcategorySpecific
 );
 
-router.delete('/:id/delete', 
+router.delete('/:id/delete',
   // validate(categoryParentIdSchema, 'params'),
-  validate(deleteQuerySchema, 'query'), 
+  validate(deleteQuerySchema, 'query'),
   categoryController.deleteCategorySpecific
 );
 
@@ -513,7 +513,7 @@ router.delete('/:id/delete',
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/:categoryId/subcategory/:subcategoryId', 
+router.delete('/:categoryId/subcategory/:subcategoryId',
   // validate(categorySubcategoryParamsSchema, 'params'),
   categoryController.deleteSubcategorySpecific
 );
@@ -620,7 +620,7 @@ router.delete('/:categoryId/subcategory/:subcategoryId',
  *       500:
  *         description: Error interno del servidor
  */
-router.post('/:parentId/subcategory', 
+router.post('/:parentId/subcategory',
   validate(parentCategoryIdSchema, 'params'),
   validate(createSubcategorySchema),
   categoryController.createSubcategory
@@ -670,7 +670,7 @@ router.post('/:parentId/subcategory',
  *       500:
  *         description: Error interno del servidor
  */
-router.put('/:id', 
+router.put('/:id',
   // validate(categoryIdSchema, 'params'),
   validate(updateCategorySchema),
   categoryController.updateCategory
@@ -723,7 +723,7 @@ router.put('/:id',
  *       500:
  *         description: Error interno del servidor
  */
-router.delete('/:id', 
+router.delete('/:id',
   validate(categoryIdSchema, 'params'),
   validate(deleteQuerySchema, 'query'),
   categoryController.deleteCategory
