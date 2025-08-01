@@ -62,24 +62,20 @@ const productSchema = Joi.object({
       [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MAX
     }),
 
-  category: Joi.number()
-    .integer()
-    .min(1)
+  category: Joi.string()
+    .pattern(/^CAT-\d{4}-0000$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.NUMBER_BASE]: VALIDATION_MESSAGES.PRODUCT_CATEGORY_NUMBER,
-      [JOI_ERROR_KEYS.NUMBER_INTEGER]: VALIDATION_MESSAGES.PRODUCT_CATEGORY_INTEGER,
-      [JOI_ERROR_KEYS.NUMBER_MIN]: VALIDATION_MESSAGES.PRODUCT_CATEGORY_MIN
+      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_CATEGORY_REQUIRED,
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PRODUCT_CATEGORY_INVALID_FORMAT
     }),
 
-  subcategory: Joi.number()
-    .integer()
-    .min(1)
+  subcategory: Joi.string()
+    .pattern(/^CAT-\d{4}-\d{4}$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.NUMBER_BASE]: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_NUMBER,
-      [JOI_ERROR_KEYS.NUMBER_INTEGER]: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_INTEGER,
-      [JOI_ERROR_KEYS.NUMBER_MIN]: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_MIN
+      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_REQUIRED,
+      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_INVALID_FORMAT
     }),
 
   outstanding: Joi.boolean()
@@ -102,8 +98,8 @@ const updateProductSchema = Joi.object({
   price: Joi.number().min(0),
   previous_price: Joi.number().min(0).allow(null),
   description: Joi.string().min(10).max(500),
-  category: Joi.number().integer().min(1),
-  subcategory: Joi.number().integer().min(1),
+  category: Joi.string().pattern(/^CAT-\d{4}-0000$/),
+  subcategory: Joi.string().pattern(/^CAT-\d{4}-\d{4}$/),
   outstanding: Joi.boolean()
 }).min(1); // Al menos un campo debe estar presente
 

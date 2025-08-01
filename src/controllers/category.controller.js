@@ -77,6 +77,25 @@ const getSubcategoryByParent = async (req, res) => {
 };
 
 /**
+ * Obtener subcategoría específica por ID
+ */
+const getSubcategorySpecific = async (req, res) => {
+  const { categoryId, subcategoryId } = req.params;
+  
+  return getCategoryResource(
+    () => CategoryService.getSubcategorySpecific(categoryId, subcategoryId),
+    req,
+    res,
+    CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
+    {
+      successMessage: CATEGORIES_MESSAGES.GET_BY_ID_SUCCESS,
+      notFoundMessage: CATEGORIES_MESSAGES.NOT_FOUND(subcategoryId),
+      errorMessage: CATEGORIES_MESSAGES.GET_BY_ID_ERROR
+    }
+  );
+};
+
+/**
  * Crear nueva categoría padre
  */
 const createCategory = async (req, res) => {
@@ -262,6 +281,7 @@ module.exports = {
   getAllCategory,
   getCategoryById,
   getSubcategoryByParent,
+  getSubcategorySpecific,
   createCategory,
   createSubcategory,
   createSubcategorySimple,

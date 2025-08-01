@@ -41,58 +41,86 @@ const swaggerOptions = {
       schemas: {
         Product: {
           type: SWAGGER_CONSTANTS.TYPE_OBJECT,
-          required: [SWAGGER_CONSTANTS.FIELD_NAME, SWAGGER_CONSTANTS.FIELD_DESCRIPTION, SWAGGER_CONSTANTS.FIELD_PRICE, SWAGGER_CONSTANTS.FIELD_CATEGORY, SWAGGER_CONSTANTS.FIELD_STOCK],
+          required: ['title', 'img', 'price', 'previous_price', 'description', 'category', 'subcategory', 'outstanding'],
           properties: {
             id: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: SWAGGER_CONSTANTS.ID_DESCRIPTION,
-              example: SWAGGER_CONSTANTS.EXAMPLE_PRODUCT_ID
+              description: 'ID único del producto (formato VA-XXXXX)',
+              example: 'VA-0000001'
             },
-            name: {
+            title: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: SWAGGER_CONSTANTS.PRODUCT_NAME_DESCRIPTION,
-              example: SWAGGER_CONSTANTS.EXAMPLE_PRODUCT_NAME
+              description: 'Título del producto',
+              example: 'Zapatilla Asics Metarise Tokyo Men'
             },
-            description: {
-              type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: SWAGGER_CONSTANTS.PRODUCT_DESCRIPTION_DESCRIPTION,
-              example: SWAGGER_CONSTANTS.EXAMPLE_PRODUCT_DESCRIPTION
+            img: {
+              type: SWAGGER_CONSTANTS.TYPE_ARRAY,
+              items: {
+                type: SWAGGER_CONSTANTS.TYPE_OBJECT,
+                properties: {
+                  src: {
+                    type: SWAGGER_CONSTANTS.TYPE_STRING,
+                    format: SWAGGER_CONSTANTS.FORMAT_URI,
+                    description: 'URL de la imagen'
+                  },
+                  alt: {
+                    type: SWAGGER_CONSTANTS.TYPE_STRING,
+                    description: 'Texto alternativo'
+                  },
+                  carousel: {
+                    type: 'boolean',
+                    description: 'Si la imagen aparece en el carrusel'
+                  }
+                }
+              },
+              description: 'Imágenes del producto'
             },
             price: {
               type: SWAGGER_CONSTANTS.TYPE_NUMBER,
               minimum: 0,
-              description: SWAGGER_CONSTANTS.PRODUCT_PRICE_DESCRIPTION,
-              example: 150.00
+              description: 'Precio actual del producto',
+              example: 225000
+            },
+            previous_price: {
+              type: SWAGGER_CONSTANTS.TYPE_NUMBER,
+              minimum: 0,
+              nullable: true,
+              description: 'Precio anterior del producto (para ofertas)',
+              example: 247500
+            },
+            description: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: 'Descripción del producto',
+              example: 'Zapatilla Asics Metarise Tokyo Men las de Nishida, la estrella del voley Japones.'
             },
             category: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: SWAGGER_CONSTANTS.CATEGORY_DESCRIPTION,
-              example: SWAGGER_CONSTANTS.EXAMPLE_CATEGORY
+              pattern: '^CAT-\\d{4}-0000$',
+              description: 'ID de la categoría padre (formato CAT-XXXX-0000)',
+              example: 'CAT-0001-0000'
             },
-            stock: {
-              type: SWAGGER_CONSTANTS.TYPE_INTEGER,
-              minimum: 0,
-              description: SWAGGER_CONSTANTS.PRODUCT_STOCK_DESCRIPTION,
-              example: 50
+            subcategory: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              pattern: '^CAT-\\d{4}-\\d{4}$',
+              description: 'ID de la subcategoría (formato CAT-XXXX-YYYY)',
+              example: 'CAT-0001-0001'
             },
-            images: {
-              type: SWAGGER_CONSTANTS.TYPE_ARRAY,
-              items: {
-                type: SWAGGER_CONSTANTS.TYPE_STRING,
-                format: SWAGGER_CONSTANTS.FORMAT_URI
-              },
-              description: SWAGGER_CONSTANTS.IMAGES_DESCRIPTION,
-              example: [SWAGGER_CONSTANTS.EXAMPLE_IMAGE_URL]
+            outstanding: {
+              type: 'boolean',
+              description: 'Si el producto es destacado',
+              example: true
             },
             createdAt: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
               format: SWAGGER_CONSTANTS.FORMAT_DATE_TIME,
-              description: SWAGGER_CONSTANTS.CREATED_AT_DESCRIPTION
+              description: SWAGGER_CONSTANTS.CREATED_AT_DESCRIPTION,
+              readOnly: true
             },
             updatedAt: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
               format: SWAGGER_CONSTANTS.FORMAT_DATE_TIME,
-              description: SWAGGER_CONSTANTS.UPDATED_AT_DESCRIPTION
+              description: SWAGGER_CONSTANTS.UPDATED_AT_DESCRIPTION,
+              readOnly: true
             }
           }
         },
@@ -140,12 +168,9 @@ const swaggerOptions = {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
               description: SWAGGER_CONSTANTS.ERROR_MESSAGE_DESCRIPTION
             },
-            errors: {
-              type: SWAGGER_CONSTANTS.TYPE_ARRAY,
-              items: {
-                type: SWAGGER_CONSTANTS.TYPE_STRING
-              },
-              description: SWAGGER_CONSTANTS.ERROR_LIST_DESCRIPTION
+            error: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.ERROR_DETAILS_DESCRIPTION
             }
           }
         },

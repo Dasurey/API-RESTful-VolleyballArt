@@ -463,13 +463,11 @@ const VALIDATION_MESSAGES = {
   PRODUCT_DESCRIPTION_MIN: "La descripción debe tener al menos 10 caracteres",
   PRODUCT_DESCRIPTION_MAX: "La descripción no puede tener más de 500 caracteres",
 
-  PRODUCT_CATEGORY_NUMBER: "La categoría debe ser un número",
-  PRODUCT_CATEGORY_INTEGER: "La categoría debe ser un número entero",
-  PRODUCT_CATEGORY_MIN: "La categoría debe ser mayor a 0",
+  PRODUCT_CATEGORY_REQUIRED: "La categoría es obligatoria",
+  PRODUCT_CATEGORY_INVALID_FORMAT: "La categoría debe tener el formato CAT-XXXX-0000",
 
-  PRODUCT_SUBCATEGORY_NUMBER: "La subcategoría debe ser un número",
-  PRODUCT_SUBCATEGORY_INTEGER: "La subcategoría debe ser un número entero",
-  PRODUCT_SUBCATEGORY_MIN: "La subcategoría debe ser mayor a 0",
+  PRODUCT_SUBCATEGORY_REQUIRED: "La subcategoría es obligatoria",
+  PRODUCT_SUBCATEGORY_INVALID_FORMAT: "La subcategoría debe tener el formato CAT-XXXX-YYYY",
 
   // Validaciones de imágenes de productos
   PRODUCT_IMAGE_URL_INVALID: "La URL de la imagen debe ser válida",

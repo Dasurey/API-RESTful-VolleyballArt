@@ -78,6 +78,35 @@ const getSubcategoryByParent = async (parentCategoryId) => {
 };
 
 /**
+ * Obtener subcategoría específica por ID
+ * @param {string} parentCategoryId - ID de la categoría padre
+ * @param {string} subcategoryId - ID de la subcategoría
+ */
+const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
+  try {
+    const subcategory = await CategoryModel.getSubcategorySpecific(parentCategoryId, subcategoryId);
+    
+    if (subcategory) {
+      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
+        [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
+        [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: subcategoryId,
+        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+      });
+    }
+    
+    return subcategory;
+  } catch (error) {
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_ERROR, {
+      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
+      [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: subcategoryId,
+      error: error.message,
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    });
+    throw error;
+  }
+};
+
+/**
  * Crear nueva categoría padre
  * @param {Object} categoryData - Datos de la categoría
  */
@@ -244,6 +273,7 @@ module.exports = {
   getAllCategory,
   getCategoryById,
   getSubcategoryByParent,
+  getSubcategorySpecific,
   createCategory,
   createSubcategory,
   updateCategory,

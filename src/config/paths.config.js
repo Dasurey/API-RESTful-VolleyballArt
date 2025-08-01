@@ -153,8 +153,6 @@ const API_ENDPOINTS = {
     CATEGORY_BY_ID: '/:id',
     CATEGORY_HIERARCHY: '/hierarchy',
     CATEGORY_CREATE: '/create',
-    CATEGORY_UPDATE: '/:id/update',
-    CATEGORY_DELETE: '/:id/delete',
     CATEGORY_SUBCATEGORY: '/:parentId/subcategory',
     CATEGORY_SUBCATEGORY_CREATE: '/:id/subcategory/create',
     CATEGORY_SUBCATEGORY_BY_IDS: '/:categoryId/subcategory/:subcategoryId',

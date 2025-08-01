@@ -236,6 +236,55 @@ const getSubcategoryByParent = async (parentCategoryId) => {
 };
 
 /**
+ * Obtener subcategoría específica por ID
+ * @param {string} parentCategoryId - ID de la categoría padre
+ * @param {string} subcategoryId - ID de la subcategoría
+ */
+const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
+  try {
+    // Verificar que subcategoryId corresponde al parentCategoryId
+    const parentNumber = parentCategoryId.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[1];
+    if (!subcategoryId.startsWith(`${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${parentNumber}${SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR}`)) {
+      return null;
+    }
+    
+    // Obtener documento directamente por ID
+    const categoryRef = doc(db, COLLECTION_NAME, subcategoryId);
+    const docSnap = await getDoc(categoryRef);
+    
+    if (!docSnap.exists()) {
+      logMessage(SYSTEM_MESSAGES.LOG_LEVEL_WARN, SYSTEM_MESSAGES.CATEGORY_NOT_FOUND, {
+        parentCategoryId,
+        subcategoryId
+      });
+      return null;
+    }
+    
+    const data = docSnap.data();
+    const subcategory = { 
+      id: docSnap.id, 
+      title: data.title,
+      ...data
+    };
+    
+    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.SUBCATEGORIES_OBTAINED, {
+      parentCategoryId,
+      subcategoryId
+    });
+    
+    return subcategory;
+  } catch (error) {
+    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_SUBCATEGORIES_FIREBASE, {
+      parentCategoryId,
+      subcategoryId,
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+};
+
+/**
  * Crear una nueva categoría padre
  * @param {Object} categoryData - Datos de la categoría
  */
@@ -456,6 +505,7 @@ module.exports = {
   getAllCategory,
   getCategoryById,
   getSubcategoryByParent,
+  getSubcategorySpecific,
   createCategory,
   createSubcategory,
   updateCategory,

@@ -17,6 +17,8 @@ const { throttleConfigs, autoPagination } = require(RELATIVE_PATHS.FROM_ROUTES.C
 
 const router = Router();
 
+
+
 /**
  * @swagger
  * /api/v1/products:
@@ -118,25 +120,7 @@ router.get(API_ENDPOINTS.PRODUCTS_BY_ID,
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [name, description, price, category, stock]
- *             properties:
- *               name:
- *                 type: string
- *                 example: Pelota de Volleyball Profesional
- *               description:
- *                 type: string
- *                 example: Pelota oficial para competencias
- *               price:
- *                 type: number
- *                 minimum: 0
- *                 example: 150.00
- *               category:
- *                 type: string
- *                 example: Pelotas
- *               stock:
- *                 type: integer
- *                 minimum: 0
+ *             $ref: '#/components/schemas/ProductInput'
  *                 example: 50
  *               images:
  *                 type: array
@@ -212,24 +196,47 @@ router.post(API_ENDPOINTS.PRODUCTS_CREATE,
  *         application/json:
  *           schema:
  *             type: object
+ *             minProperties: 1
  *             properties:
- *               name:
+ *               title:
  *                 type: string
- *               description:
- *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 100
+ *                 description: Título del producto
+ *               img:
+ *                 type: array
+ *                 minItems: 1
+ *                 items:
+ *                   type: object
+ *                   required: [src, alt, carousel]
+ *                   properties:
+ *                     src:
+ *                       type: string
+ *                       format: uri
+ *                     alt:
+ *                       type: string
+ *                       minLength: 1
+ *                     carousel:
+ *                       type: boolean
  *               price:
  *                 type: number
  *                 minimum: 0
+ *               previous_price:
+ *                 type: number
+ *                 minimum: 0
+ *                 nullable: true
+ *               description:
+ *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 500
  *               category:
  *                 type: string
- *               stock:
- *                 type: integer
- *                 minimum: 0
- *               images:
- *                 type: array
- *                 items:
- *                   type: string
- *                   format: uri
+ *                 pattern: "^CAT-\\d{4}-0000$"
+ *               subcategory:
+ *                 type: string
+ *                 pattern: "^CAT-\\d{4}-\\d{4}$"
+ *               outstanding:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Producto actualizado exitosamente
