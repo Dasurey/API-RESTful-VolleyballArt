@@ -1,4 +1,4 @@
-const { VERSION_MIDDLEWARE, HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.js');
+const { VERSION_MIDDLEWARE, HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.config.js');
 const { VERSION_MESSAGES } = require('../utils/messages.utils.js');
 const { API_CONFIG, getVersionInfo } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_API_VERSIONS);
 

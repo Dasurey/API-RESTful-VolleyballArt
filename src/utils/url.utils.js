@@ -5,7 +5,7 @@ const {
   CONFIG_VALUES,
   LOG_LEVELS,
   EXTERNAL_PACKAGES
-} = require('../config/paths.js');
+} = require('../config/paths.config.js');
 const { SYSTEM_MESSAGES } = require('./messages.utils.js');
 
 // Usar paquetes centralizados

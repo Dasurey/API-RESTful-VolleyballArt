@@ -1,11 +1,12 @@
-const productsService = require('../services/products.service.js');
+const { RELATIVE_PATHS } = require('../config/paths.config.js');
 const { PRODUCTS_MESSAGES } = require('../utils/messages.utils.js');
+const productsService = require(RELATIVE_PATHS.FROM_CONTROLLERS.SERVICES_PRODUCTS);
 const { 
   getResource, 
   createResource, 
   updateResource, 
   deleteResource 
-} = require("../utils/controller.utils.js");
+} = require(RELATIVE_PATHS.FROM_CONTROLLERS.UTILS_CONTROLLER);
 
 const getAllProducts = async (req, res) => {
   return getResource(

@@ -1,4 +1,4 @@
-const { RELATIVE_PATHS } = require('../config/paths.js');
+const { RELATIVE_PATHS } = require('../config/paths.config.js');
 const { SYSTEM_MESSAGES } = require('./messages.utils.js');
 const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
 const {

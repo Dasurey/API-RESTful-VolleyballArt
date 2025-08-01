@@ -8,7 +8,23 @@
  * - Invalidación automática de cache
  */
 
-const NodeCache = require('node-cache');
+const { 
+  CACHE_KEY_ALL_PRODUCTS, 
+  CACHE_KEY_PRODUCT_PREFIX, 
+  CACHE_KEY_PRODUCTS_COUNT,
+  ERROR_SETTING_PRODUCT_CACHE,
+  ERROR_SETTING_GENERAL_CACHE,
+  PERCENTAGE_SYMBOL,
+  ZERO_PERCENTAGE
+} = require('../utils/messages.utils');
+const { 
+  EXTERNAL_PACKAGES,
+  CACHE,
+  HTTP_METHODS,
+  HTTP_STATUS
+} = require('./paths.config');
+
+const NodeCache = require(EXTERNAL_PACKAGES.NODE_CACHE);
 
 /**
  * Cache principal de la aplicación
@@ -64,17 +80,17 @@ const cacheStats = {
 const cacheMiddleware = (duration = 600) => {
   return (req, res, next) => {
     // Solo cachear GET requests
-    if (req.method !== 'GET') {
+    if (req.method !== HTTP_METHODS.GET) {
       return next();
     }
 
-    const key = `route_${req.originalUrl}`;
+    const key = `${CACHE.ROUTE_PREFIX}${req.originalUrl}`;
     const cachedResponse = appCache.get(key);
 
     if (cachedResponse) {
       cacheStats.hits++;
-      res.set('X-Cache', 'HIT');
-      res.set('X-Cache-TTL', appCache.getTtl(key));
+      res.set(CACHE.HEADER_CACHE, CACHE.STATUS_HIT);
+      res.set(CACHE.HEADER_CACHE_TTL, appCache.getTtl(key));
       return res.json(cachedResponse);
     }
 
@@ -82,10 +98,10 @@ const cacheMiddleware = (duration = 600) => {
     const originalJson = res.json;
     res.json = function(data) {
       // Solo cachear respuestas exitosas
-      if (res.statusCode === 200) {
+      if (res.statusCode === HTTP_STATUS.OK) {
         appCache.set(key, data, duration);
         cacheStats.sets++;
-        res.set('X-Cache', 'MISS');
+        res.set(CACHE.HEADER_CACHE, CACHE.STATUS_MISS);
       }
       return originalJson.call(this, data);
     };
@@ -116,7 +132,7 @@ const productsCacheManager = {
       return true;
     } catch (error) {
       cacheStats.errors++;
-      console.error('Error setting product cache:', error);
+      console.error(ERROR_SETTING_PRODUCT_CACHE, error);
       return false;
     }
   },
@@ -145,9 +161,9 @@ const productsCacheManager = {
   // Invalidar cache cuando se modifica un producto
   invalidateProduct: (productId) => {
     const keysToDelete = [
-      'all_products',
-      `product_${productId}`,
-      'products_count'
+      CACHE_KEY_ALL_PRODUCTS,
+      `${CACHE_KEY_PRODUCT_PREFIX}${productId}`,
+      CACHE_KEY_PRODUCTS_COUNT
     ];
     
     keysToDelete.forEach(key => {
@@ -212,7 +228,7 @@ const generalCacheManager = {
       cacheStats.sets++;
       return true;
     } catch (error) {
-      Logger.error('Error setting general cache:', error);
+      Logger.error(ERROR_SETTING_GENERAL_CACHE, error);
       return false;
     }
   },
@@ -258,8 +274,8 @@ const getCacheStats = () => {
       }
     },
     hitRate: cacheStats.hits + cacheStats.misses > 0 
-      ? ((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100).toFixed(2) + '%'
-      : '0%'
+      ? ((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100).toFixed(2) + PERCENTAGE_SYMBOL
+      : ZERO_PERCENTAGE
   };
 };
 
@@ -279,11 +295,11 @@ const resetCacheStats = () => {
  */
 const cacheHeaders = (maxAge = 600) => {
   return (req, res, next) => {
-    if (req.method === 'GET') {
-      res.set('Cache-Control', `public, max-age=${maxAge}`);
-      res.set('ETag', `W/"${Date.now()}"`);
+    if (req.method === HTTP_METHODS.GET) {
+      res.set(CACHE.CACHE_CONTROL, `${CACHE.PUBLIC_MAX_AGE_PREFIX}${maxAge}`);
+      res.set(CACHE.HEADER_ETAG, `${CACHE.ETAG_PREFIX}${Date.now()}${CACHE.QUOTE_SYMBOL}`);
     } else {
-      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set(CACHE.CACHE_CONTROL, CACHE.NO_CACHE_NO_STORE_MUST_REVALIDATE);
     }
     next();
   };

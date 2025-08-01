@@ -1,6 +1,7 @@
-const authService = require('../services/auth.service.js');
+const { RELATIVE_PATHS } = require('../config/paths.config.js');
 const { AUTH_MESSAGES } = require('../utils/messages.utils.js');
-const { executeController } = require("../utils/controller.utils.js");
+const authService = require(RELATIVE_PATHS.FROM_CONTROLLERS.SERVICES_AUTH);
+const { executeController } = require(RELATIVE_PATHS.FROM_CONTROLLERS.UTILS_CONTROLLER);
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -18,6 +19,8 @@ const loginUser = async (req, res) => {
   );
 };
 
+// Registro temporalmente deshabilitado - TODO: Implementar sistema de roles
+/*
 const registerUser = async (req, res) => {
   const { email, password } = req.body;
   
@@ -33,8 +36,9 @@ const registerUser = async (req, res) => {
     }
   );
 };
+*/
 
 module.exports = {
-  loginUser,
-  registerUser
+  loginUser
+  // registerUser // Temporalmente deshabilitado
 };

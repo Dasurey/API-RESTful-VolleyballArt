@@ -1,4 +1,4 @@
-const { HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.js');
+const { HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.config.js');
 const { GENERAL_MESSAGES } = require('../utils/messages.utils.js');
 
 // Middleware para validar datos con Joi

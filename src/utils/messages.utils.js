@@ -88,6 +88,51 @@ const AUTH_MESSAGES = {
   OPERATION_REGISTER: "register"
 };
 
+const PERFORMANCE_MESSAGES = {
+  // Mensajes de alerta
+  HIGH_MEMORY_USAGE: "High memory usage:",
+  HIGH_RESPONSE_TIME: "High average response time:",
+  TOO_MANY_REQUESTS: "Too many requests in progress:",
+  
+  // Headers de request
+  REQUEST_ID_HEADER: 'x-request-id'
+};
+
+const LOGGING_MESSAGES = {
+  // Prefijos de logs
+  REQUEST_PREFIX: '📨 [REQUEST]',
+  RESPONSE_PREFIX: '📤 [RESPONSE]'
+};
+
+const CACHE_MESSAGES = {
+  // Mensajes de cache hit/miss
+  CACHE_HIT: '🎯 Cache HIT para',
+  CACHE_MISS: '📦 Cache MISS - Guardando en cache',
+  CACHE_INVALIDATED_PRODUCTS: '🗑️ Cache de productos invalidado',
+  CACHE_INVALIDATED_AUTH: '🗑️ Cache de auth invalidado'
+};
+
+const AUTH_MIDDLEWARE_MESSAGES = {
+  // Mensajes de log
+  ACCESS_WITHOUT_TOKEN: '🔐 Intento de acceso sin token de autorización',
+  INVALID_TOKEN_FORMAT: '🔐 Token de autorización con formato inválido',
+  INVALID_OR_EXPIRED_TOKEN: '🔐 Token JWT inválido o expirado',
+  AUTHENTICATION_SUCCESS: '✅ Autenticación exitosa',
+  
+  // Mensajes de respuesta
+  TOKEN_REQUIRED: '🔐 Token de acceso requerido. Incluye el header Authorization.',
+  TOKEN_INVALID_FORMAT: '🚫 Token de acceso inválido. Formato: Bearer <token>',
+  TOKEN_INVALID_OR_EXPIRED: '🔐 Token de acceso inválido o expirado.'
+};
+
+const SANITIZATION_MESSAGES = {
+  // Mensajes de error
+  SANITIZATION_ERROR: "🚨 Error en sanitización:",
+  
+  // Mensajes de validación
+  INVALID_DATA: "Datos inválidos"
+};
+
 const VERSION_MESSAGES = {
   // Mensajes de error
   VERSION_NOT_SUPPORTED: "Versión de API no soportada:",
@@ -198,6 +243,11 @@ const SYSTEM_MESSAGES = {
   COLLECTION_CATEGORY: "category",
   CACHE_KEY_ALL_PRODUCTS: "all_products",
   CACHE_KEY_PRODUCT_PREFIX: "product_",
+  CACHE_KEY_PRODUCTS_COUNT: "products_count",
+  ERROR_SETTING_PRODUCT_CACHE: "Error setting product cache:",
+  ERROR_SETTING_GENERAL_CACHE: "Error setting general cache:",
+  PERCENTAGE_SYMBOL: "%",
+  ZERO_PERCENTAGE: "0%",
   OPERATION_GENERATE_ID: "generateSequentialId",
   OPERATION_GENERATE_ID_KEY: "generateId",
   OPERATION_GENERATE_CATEGORY_ID: "generateParentCategoryId",
@@ -208,9 +258,36 @@ const SYSTEM_MESSAGES = {
   PRODUCT_ID_INITIAL: "VA-0000001",
   CATEGORY_ID_PREFIX: "CAT-",
   CATEGORY_ID_SUFFIX: "-0000",
-  CATEGORY_ID_SEPARATOR: "-",
-  CATEGORY_ID_INITIAL: "CAT-0001-0000",
-  PADDING_ZERO: "0",
+
+  // Constantes de API versioning
+  API_VERSION_V1: 'v1',
+  API_VERSION_V2: 'v2',
+  API_STATUS_STABLE: 'stable',
+  API_STATUS_BETA: 'beta',
+  API_DESCRIPTION_V1: 'Primera versión de la API RESTful VolleyballArt',
+  API_DESCRIPTION_V2: 'Segunda versión con categoria y gestión de usuarios',
+  API_RELEASE_DATE: '2025-07-09',
+  API_RELEASE_DATE_V2: '2025-06-01',
+  API_MAINTAINER: 'VolleyballArt Team',
+  API_DOCS_V1: '/api/v1/docs',
+  API_DOCS_V2: '/api/v2/docs',
+  API_FEATURE_AUTHENTICATION: 'authentication',
+  API_FEATURE_PRODUCTS: 'products',
+  API_FEATURE_CATEGORY: 'category',
+  API_FEATURE_SUBCATEGORY: 'subcategory',
+  API_FEATURE_USERS: 'users',
+  API_FEATURE_FILE_UPLOAD: 'fileUpload',
+
+  // Constantes de changelog
+  CHANGELOG_AUTH_FIREBASE: '✅ Autenticación con Firebase',
+  CHANGELOG_CRUD_PRODUCTS: '✅ CRUD de productos con IDs secuenciales (VA-XXXXX)',
+  CHANGELOG_CATEGORY_SYSTEM: '✅ Sistema completo de categorías y subcategorías',
+  CHANGELOG_HIERARCHICAL_IDS: '✅ IDs jerárquicos para categorías (CAT-XXXX-YYYY)',
+  CHANGELOG_PUBLIC_PRIVATE_ROUTES: '✅ Rutas públicas y privadas',
+  CHANGELOG_DYNAMIC_VERSIONING: '✅ Sistema de version dinámico',
+  CATEGORY_ID_SEPARATOR: '-',
+  CATEGORY_ID_INITIAL: 'CAT-0001-0000',
+  PADDING_ZERO: '0',
 
   // Mensajes de categorías
   CATEGORIES_PARENT_OBTAINED: "📋 Categorías padre obtenidas",
@@ -394,6 +471,19 @@ const VALIDATION_MESSAGES = {
   PRODUCT_SUBCATEGORY_INTEGER: "La subcategoría debe ser un número entero",
   PRODUCT_SUBCATEGORY_MIN: "La subcategoría debe ser mayor a 0",
 
+  // Validaciones de imágenes de productos
+  PRODUCT_IMAGE_URL_INVALID: "La URL de la imagen debe ser válida",
+  PRODUCT_IMAGE_URL_REQUIRED: "La URL de la imagen es requerida",
+  PRODUCT_IMAGE_ALT_REQUIRED: "El texto alternativo es requerido",
+  PRODUCT_IMAGE_ALT_MAX: "El texto alternativo no puede exceder 200 caracteres",
+  PRODUCT_IMAGE_CAROUSEL_BOOLEAN: "El campo carousel debe ser un valor booleano",
+  PRODUCT_IMAGES_MIN: "Se requiere al menos una imagen",
+  PRODUCT_IMAGES_ARRAY: "Las imágenes deben ser un array",
+  PRODUCT_IMAGES_MAX: "No se pueden agregar más de 10 imágenes",
+  PRODUCT_PRICE_NEGATIVE: "El precio no puede ser negativo",
+  PRODUCT_PREVIOUS_PRICE_NEGATIVE: "El precio anterior no puede ser negativo",
+  PRODUCT_OUTSTANDING_BOOLEAN: "El campo destacado debe ser un valor booleano",
+
   // Validaciones comunes de esquemas
   ID_FORMAT_INVALID: "El ID debe tener el formato VA-0000001",
   ID_REQUIRED: "El ID es obligatorio",
@@ -548,76 +638,225 @@ const JOI_ERROR_KEYS = {
   STRING_EMAIL: 'string.email'
 };
 
-// Mensajes de validación para esquemas Joi
-const JOI_VALIDATION_MESSAGES = {
-  // Mensajes de productos para Joi
-  PRODUCT_TITLE_REQUIRED: VALIDATION_MESSAGES.PRODUCT_TITLE_REQUIRED,
-  PRODUCT_TITLE_MIN: VALIDATION_MESSAGES.PRODUCT_TITLE_MIN,
-  PRODUCT_TITLE_MAX: VALIDATION_MESSAGES.PRODUCT_TITLE_MAX,
-  
-  PRODUCT_IMAGE_URL_INVALID: VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_INVALID,
-  PRODUCT_IMAGE_URL_REQUIRED: VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_REQUIRED,
-  PRODUCT_IMAGE_ALT_REQUIRED: VALIDATION_MESSAGES.PRODUCT_IMAGE_ALT_REQUIRED,
-  PRODUCT_IMAGE_CAROUSEL_BOOLEAN: VALIDATION_MESSAGES.PRODUCT_IMAGE_CAROUSEL_BOOLEAN,
-  PRODUCT_IMAGES_MIN: VALIDATION_MESSAGES.PRODUCT_IMAGES_MIN,
-  PRODUCT_IMAGES_ARRAY: VALIDATION_MESSAGES.PRODUCT_IMAGES_ARRAY,
-  
-  PRODUCT_PRICE_NEGATIVE: VALIDATION_MESSAGES.PRODUCT_PRICE_NEGATIVE,
-  PRODUCT_PRICE_NUMBER: VALIDATION_MESSAGES.PRODUCT_PRICE_NUMBER,
-  PRODUCT_PREVIOUS_PRICE_NEGATIVE: VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NEGATIVE,
-  PRODUCT_PREVIOUS_PRICE_NUMBER: VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NUMBER,
-  
-  PRODUCT_DESCRIPTION_REQUIRED: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_REQUIRED,
-  PRODUCT_DESCRIPTION_MIN: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MIN,
-  PRODUCT_DESCRIPTION_MAX: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MAX,
-  
-  PRODUCT_CATEGORY_NUMBER: VALIDATION_MESSAGES.PRODUCT_CATEGORY_NUMBER,
-  PRODUCT_CATEGORY_INTEGER: VALIDATION_MESSAGES.PRODUCT_CATEGORY_INTEGER,
-  PRODUCT_CATEGORY_MIN: VALIDATION_MESSAGES.PRODUCT_CATEGORY_MIN,
-  
-  PRODUCT_SUBCATEGORY_NUMBER: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_NUMBER,
-  PRODUCT_SUBCATEGORY_INTEGER: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_INTEGER,
-  PRODUCT_SUBCATEGORY_MIN: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_MIN,
-  
-  PRODUCT_OUTSTANDING_BOOLEAN: VALIDATION_MESSAGES.PRODUCT_OUTSTANDING_BOOLEAN,
+// Constantes para categorías
+const CATEGORY_CONSTANTS = {
+  CATEGORY_SINGULAR: "categoría",
+  CATEGORY_PLURAL: "categorías", 
+  SUBCATEGORY_SINGULAR: "subcategoría",
+  SUBCATEGORY_PLURAL: "subcategorías",
+  CATEGORY_HIERARCHY: "jerarquía de categoria",
+  BOOLEAN_TRUE: "true",
+  VALUE_TRUE: true
+};
 
-  // Mensajes de validación común para esquemas
-  ID_FORMAT_INVALID: VALIDATION_MESSAGES.ID_FORMAT_INVALID,
-  ID_REQUIRED: VALIDATION_MESSAGES.ID_REQUIRED,
-  PARAM_INVALID: VALIDATION_MESSAGES.PARAM_INVALID,
-  QUERY_PARAM_INVALID: VALIDATION_MESSAGES.QUERY_PARAM_INVALID,
-
-  // Mensajes de validación de categorías
-  CATEGORY_TITLE_REQUIRED: VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED,
-  SUBCATEGORY_TITLE_REQUIRED: VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED,
-  TITLE_MIN_2_CHARS: VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-  TITLE_MAX_100_CHARS: VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
-  TITLE_CANNOT_BE_EMPTY: VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
-  TEXT_MAX_5000_CHARS: VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS,
-  IMAGE_URL_INVALID: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
-  IMAGE_URL_REQUIRED: VALIDATION_MESSAGES.IMAGE_URL_REQUIRED,
-  ALT_TEXT_REQUIRED: VALIDATION_MESSAGES.ALT_TEXT_REQUIRED,
-  ALT_TEXT_MAX_200_CHARS: VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
-  IMAGES_MAX_10: VALIDATION_MESSAGES.IMAGES_MAX_10,
-  PROVIDE_AT_LEAST_ONE_FIELD: VALIDATION_MESSAGES.PROVIDE_AT_LEAST_ONE_FIELD,
-  CATEGORY_ID_FORMAT_INVALID: VALIDATION_MESSAGES.CATEGORY_ID_FORMAT_INVALID,
-  CATEGORY_ID_REQUIRED: VALIDATION_MESSAGES.CATEGORY_ID_REQUIRED,
-  PARENT_CATEGORY_ID_FORMAT_INVALID: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
-  PARENT_CATEGORY_ID_REQUIRED: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED,
-  SUBCATEGORY_ID_FORMAT_INVALID: VALIDATION_MESSAGES.SUBCATEGORY_ID_FORMAT_INVALID,
-  SUBCATEGORY_ID_REQUIRED: VALIDATION_MESSAGES.SUBCATEGORY_ID_REQUIRED,
-  ID_CANNOT_END_0000: VALIDATION_MESSAGES.ID_CANNOT_END_0000,
-  DELETE_SUBCATEGORY_VALID_VALUES: VALIDATION_MESSAGES.DELETE_SUBCATEGORY_VALID_VALUES,
+// Constantes para Swagger
+const SWAGGER_CONSTANTS = {
+  PACKAGE_SWAGGER_JSDOC: 'swagger-jsdoc',
+  PACKAGE_SWAGGER_UI: 'swagger-ui-express',
+  UTILS_URL_PATH: '../utils/url.utils.js',
+  FAVICON_PATH: '/favicon.ico',
+  CSS_TOPBAR_HIDDEN: '.swagger-ui .topbar { display: none }',
+  TYPE_STRING: 'string',
+  MESSAGE_SUCCESS: 'Mensaje de éxito',
+  EXAMPLE_IMAGE_URL: 'https://example.com/image1.jpg',
+  ENV_PRODUCTION: 'production',
+  SERVER_PRODUCTION: 'Servidor de producción',
+  SERVER_DEVELOPMENT: 'Servidor de desarrollo',
   
-  // Mensajes de autenticación para Joi
-  EMAIL_REQUIRED: VALIDATION_MESSAGES.EMAIL_REQUIRED,
-  EMAIL_INVALID: VALIDATION_MESSAGES.EMAIL_INVALID,
-  PASSWORD_REQUIRED: VALIDATION_MESSAGES.PASSWORD_REQUIRED,
-  PASSWORD_MIN_6_CHARS: VALIDATION_MESSAGES.PASSWORD_MIN_6_CHARS,
-  PASSWORD_MAX_50_CHARS: VALIDATION_MESSAGES.PASSWORD_MAX_50_CHARS,
-  PASSWORD_PATTERN_INVALID: VALIDATION_MESSAGES.PASSWORD_PATTERN_INVALID,
-  PASSWORD_CONFIRMATION_REQUIRED: VALIDATION_MESSAGES.PASSWORD_CONFIRMATION_REQUIRED,
-  PASSWORDS_DO_NOT_MATCH: VALIDATION_MESSAGES.PASSWORDS_DO_NOT_MATCH
+  // Información de la API
+  OPENAPI_VERSION: '3.0.0',
+  API_TITLE: 'VolleyballArt API',
+  API_VERSION: '1.0.0',
+  API_DESCRIPTION: 'API RESTful para la gestión de productos de volleyball. Proyecto educativo desarrollado como parte del programa Talento Tech.',
+  CONTACT_NAME: 'Dario Asurey',
+  CONTACT_EMAIL: 'dario.asurey@gmail.com',
+  LICENSE_NAME: 'MIT',
+  LICENSE_URL: 'https://opensource.org/licenses/MIT',
+  
+  // Documentación
+  JWT_DESCRIPTION: 'Token JWT obtenido desde el endpoint de login',
+  CATEGORY_DESCRIPTION: 'Categoría del producto',
+  SITE_TITLE: 'VolleyballArt API Docs',
+  
+  // Rutas de archivos
+  ROUTES_PATTERN: 'routes/*.js',
+  INDEX_FILE: 'index.js',
+  
+  // Tipos y esquemas
+  TYPE_HTTP: 'http',
+  TYPE_BEARER: 'bearer',
+  TYPE_JWT: 'JWT',
+  TYPE_OBJECT: 'object',
+  TYPE_NUMBER: 'number',
+  TYPE_INTEGER: 'integer',
+  TYPE_ARRAY: 'array',
+  
+  // Propiedades de esquemas
+  FIELD_NAME: 'name',
+  FIELD_DESCRIPTION: 'description',
+  FIELD_PRICE: 'price',
+  FIELD_CATEGORY: 'category',
+  FIELD_STOCK: 'stock',
+  FIELD_EMAIL: 'email',
+  FIELD_PASSWORD: 'password',
+  
+  // Descripciones específicas
+  ID_DESCRIPTION: 'Identificador único del producto (formato VA-XXXXX)',
+  EXAMPLE_PRODUCT_ID: 'VA-00001',
+  
+  // Formatos y tipos adicionales
+  FORMAT_EMAIL: 'email',
+  FORMAT_URI: 'uri',
+  FORMAT_DATE_TIME: 'date-time',
+  
+  // Descripciones de productos
+  IMAGES_DESCRIPTION: 'URLs de imágenes del producto',
+  CREATED_AT_DESCRIPTION: 'Fecha de creación del producto',
+  UPDATED_AT_DESCRIPTION: 'Fecha de última actualización',
+  EMAIL_USER_DESCRIPTION: 'Email del usuario',
+  PASSWORD_USER_DESCRIPTION: 'Contraseña del usuario',
+  
+  // Tags de documentación
+  TAG_AUTH: 'Auth',
+  TAG_PRODUCTS: 'Products',
+  TAG_HEALTH: 'Health',
+  TAG_AUTH_DESCRIPTION: 'Endpoints de autenticación',
+  TAG_PRODUCTS_DESCRIPTION: 'Gestión de productos de volleyball',
+  TAG_HEALTH_DESCRIPTION: 'Endpoints de estado y salud de la API',
+  
+  // Descripciones de productos específicas
+  PRODUCT_NAME_DESCRIPTION: 'Nombre del producto',
+  PRODUCT_DESCRIPTION_DESCRIPTION: 'Descripción detallada del producto',
+  PRODUCT_PRICE_DESCRIPTION: 'Precio del producto en pesos',
+  PRODUCT_STOCK_DESCRIPTION: 'Cantidad disponible en stock',
+  
+  // Ejemplos de productos
+  EXAMPLE_PRODUCT_NAME: 'Pelota de Volleyball Profesional',
+  EXAMPLE_PRODUCT_DESCRIPTION: 'Pelota oficial para competencias de volleyball',
+  EXAMPLE_CATEGORY: 'Pelotas',
+  
+  // Ejemplos de autenticación
+  EXAMPLE_EMAIL: 'admin@volleyballart.com',
+  EXAMPLE_PASSWORD: 'password123',
+  EXAMPLE_LOGIN_MESSAGE: 'Login exitoso',
+  EXAMPLE_JWT_TOKEN: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  
+  // Descripciones de respuestas
+  JWT_TOKEN_DESCRIPTION: 'Token JWT para autenticación',
+  ERROR_MESSAGE_DESCRIPTION: 'Mensaje de error',
+  ERROR_LIST_DESCRIPTION: 'Lista detallada de errores',
+  RESPONSE_DATA_DESCRIPTION: 'Datos de respuesta'
+};
+
+// Constantes de seguridad
+const SECURITY_CONSTANTS = {
+  // Content Security Policy valores
+  CSP_SELF: "'self'",
+  CSP_UNSAFE_INLINE: "'unsafe-inline'",
+  CSP_NONE: "'none'",
+  CSP_DATA: "data:",
+  CSP_HTTPS: "https:",
+  
+  // CORS Policy valores
+  CROSS_ORIGIN: "cross-origin",
+  
+  // Rate limiting mensajes
+  RATE_LIMIT_GENERAL_ERROR: "Demasiadas solicitudes desde esta IP",
+  RATE_LIMIT_AUTH_ERROR: "Demasiados intentos de autenticación",
+  RATE_LIMIT_CREATE_ERROR: "Límite de creación de productos excedido",
+  
+  // Rate limiting tiempo de espera
+  RETRY_AFTER_15_MIN: "15 minutos",
+  RETRY_AFTER_1_HOUR: "1 hora"
+};
+
+// Constantes de optimización
+const OPTIMIZATION_CONSTANTS = {
+  // Headers de compresión y optimización
+  HEADER_X_NO_COMPRESSION: 'x-no-compression',
+  HEADER_CONTENT_TYPE: 'content-type',
+  HEADER_X_REQUEST_ID: 'x-request-id',
+  HEADER_X_CACHE: 'X-Cache',
+  HEADER_X_RESPONSE_TIME: 'X-Response-Time',
+  HEADER_X_POWERED_BY: 'X-Powered-By',
+  HEADER_X_DNS_PREFETCH_CONTROL: 'X-DNS-Prefetch-Control',
+  HEADER_LINK: 'Link',
+  HEADER_X_CONTENT_TYPE_OPTIONS: 'X-Content-Type-Options',
+  HEADER_X_FRAME_OPTIONS: 'X-Frame-Options',
+  
+  // Content Types para compresión
+  CONTENT_TYPE_JSON: 'application/json',
+  CONTENT_TYPE_TEXT: 'text/',
+  CONTENT_TYPE_JAVASCRIPT: 'application/javascript',
+  CONTENT_TYPE_XML: 'application/xml',
+  
+  // Cache values
+  CACHE_HIT: 'HIT',
+  
+  // Request ID prefix
+  REQUEST_ID_PREFIX: 'req_',
+  
+  // Response time suffix
+  RESPONSE_TIME_SUFFIX: 'ms',
+  
+  // API branding
+  API_POWERED_BY: 'VolleyballArt-API',
+  
+  // Performance headers values
+  DNS_PREFETCH_ON: 'on',
+  FIRESTORE_PRECONNECT: '<https://firestore.googleapis.com>; rel=preconnect',
+  CONTENT_TYPE_NOSNIFF: 'nosniff',
+  FRAME_OPTIONS_DENY: 'DENY',
+  
+  // Environment
+  NODE_ENV_PRODUCTION: 'production',
+  
+  // Pagination properties
+  PAGINATION_CURRENT_PAGE: 'currentPage',
+  PAGINATION_TOTAL_PAGES: 'totalPages',
+  PAGINATION_TOTAL_ITEMS: 'totalItems',
+  PAGINATION_ITEMS_PER_PAGE: 'itemsPerPage',
+  PAGINATION_HAS_NEXT_PAGE: 'hasNextPage',
+  PAGINATION_HAS_PREV_PAGE: 'hasPrevPage',
+  
+  // Field separator
+  FIELD_SEPARATOR: ','
+};
+
+// Constantes de logger
+const LOGGER_CONSTANTS = {
+  // Colores de logging
+  COLOR_RED: 'red',
+  COLOR_YELLOW: 'yellow',
+  COLOR_GREEN: 'green',
+  COLOR_MAGENTA: 'magenta',
+  COLOR_WHITE: 'white',
+  
+  // Niveles de logging
+  LEVEL_ERROR: 'error',
+  LEVEL_WARN: 'warn',
+  LEVEL_INFO: 'info',
+  LEVEL_HTTP: 'http',
+  LEVEL_DEBUG: 'debug',
+  
+  // Entorno de desarrollo
+  ENV_DEVELOPMENT: 'development',
+  
+  // Formato de timestamp
+  TIMESTAMP_FORMAT: 'YYYY-MM-DD HH:mm:ss:ms',
+  
+  // Separadores de log
+  LOG_SEPARATOR: ':',
+  
+  // Archivos de log
+  ERROR_LOG_FILE: 'logs/error.log',
+  COMBINED_LOG_FILE: 'logs/combined.log'
+};
+
+// Constantes de JWT
+const JWT_CONSTANTS = {
+  // Duración del token
+  EXPIRATION_1_DAY: '1d'
 };
 
 module.exports = {
@@ -635,6 +874,17 @@ module.exports = {
   RESPONSE_FIELDS,
   FIREBASE_CONSTANTS,
   JOI_ERROR_KEYS,
-  JOI_VALIDATION_MESSAGES,
-  VERSION_MESSAGES
+  VALIDATION_MESSAGES,
+  VERSION_MESSAGES,
+  SANITIZATION_MESSAGES,
+  PERFORMANCE_MESSAGES,
+  LOGGING_MESSAGES,
+  CACHE_MESSAGES,
+  AUTH_MIDDLEWARE_MESSAGES,
+  CATEGORY_CONSTANTS,
+  SWAGGER_CONSTANTS,
+  SECURITY_CONSTANTS,
+  OPTIMIZATION_CONSTANTS,
+  LOGGER_CONSTANTS,
+  JWT_CONSTANTS
 };

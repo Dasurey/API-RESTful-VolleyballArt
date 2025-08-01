@@ -1,4 +1,4 @@
-const { RELATIVE_PATHS, ENV_VARIABLES, ENV_CONFIG, COMMON_VALUES, CONFIG_VALUES, LOG_LEVELS, HTTP_STATUS } = require('../config/paths.js');
+const { RELATIVE_PATHS, ENV_VARIABLES, ENV_CONFIG, COMMON_VALUES, CONFIG_VALUES, LOG_LEVELS, HTTP_STATUS } = require('../config/paths.config.js');
 const { RESPONSE_FIELDS, CONTROLLER_MESSAGES } = require('./messages.utils.js');
 const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
 
@@ -16,7 +16,7 @@ function categorySuccessResponse(res, message, payload, statusCode = COMMON_VALU
         [RESPONSE_FIELDS.META]: {
             [RESPONSE_FIELDS.TIMESTAMP]: new Date().toISOString(),
             [RESPONSE_FIELDS.REQUEST_ID]: `${CONFIG_VALUES.REQ_PREFIX}${Date.now()}`,
-            [RESPONSE_FIELDS.CACHED]: COMMON_VALUES.CACHED_FALSE,
+            [RESPONSE_FIELDS.CACHED]: false,
             [RESPONSE_FIELDS.RESPONSE_TIME]: 0
         }
     };
@@ -37,7 +37,7 @@ function categoryErrorResponse(res, message, statusCode = COMMON_VALUES.SERVER_E
         [RESPONSE_FIELDS.META]: {
             [RESPONSE_FIELDS.TIMESTAMP]: new Date().toISOString(),
             [RESPONSE_FIELDS.REQUEST_ID]: `${CONFIG_VALUES.REQ_PREFIX}${Date.now()}`,
-            [RESPONSE_FIELDS.CACHED]: COMMON_VALUES.CACHED_FALSE,
+            [RESPONSE_FIELDS.CACHED]: false,
             [RESPONSE_FIELDS.RESPONSE_TIME]: 0
         }
     };

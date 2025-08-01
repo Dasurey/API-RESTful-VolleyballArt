@@ -1,11 +1,12 @@
-const CategoryService = require('../services/category.service.js');
-const { CATEGORIES_MESSAGES } = require('../utils/messages.utils.js');
+const { RELATIVE_PATHS } = require('../config/paths.config.js');
+const { CATEGORIES_MESSAGES, CATEGORY_CONSTANTS } = require('../utils/messages.utils.js');
+const CategoryService = require(RELATIVE_PATHS.FROM_CONTROLLERS.SERVICES_CATEGORY);
 const { 
   getCategoryResource,
   createCategoryResource,
   updateCategoryResource,
   deleteCategoryResource
-} = require("../utils/category.utils.js");
+} = require(RELATIVE_PATHS.FROM_CONTROLLERS.UTILS_CATEGORY);
 
 /**
  * Obtener todas las categoria padre
@@ -47,7 +48,7 @@ const getCategoryById = async (req, res) => {
     () => CategoryService.getCategoryById(id),
     req,
     res,
-    "categoría",
+    CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.GET_BY_ID_SUCCESS,
       notFoundMessage: CATEGORIES_MESSAGES.NOT_FOUND(id),
@@ -66,7 +67,7 @@ const getSubcategoryByParent = async (req, res) => {
     () => CategoryService.getSubcategoryByParent(parentId),
     req,
     res,
-    "subcategoria",
+    CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_SUCCESS,
       notFoundMessage: CATEGORIES_MESSAGES.NOT_FOUND_SUBCATEGORIES(parentId),
@@ -83,7 +84,7 @@ const createCategory = async (req, res) => {
     () => CategoryService.createCategory(req.body),
     req,
     res,
-    "categoría",
+    CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.CREATE_CATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.CREATE_CATEGORY_ERROR
@@ -101,7 +102,7 @@ const createSubcategory = async (req, res) => {
     () => CategoryService.createSubcategory(parentId, req.body),
     req,
     res,
-    "subcategoría",
+    CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.CREATE_SUBCATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.CREATE_SUBCATEGORY_ERROR
@@ -119,7 +120,7 @@ const createSubcategorySimple = async (req, res) => {
     () => CategoryService.createSubcategory(id, req.body),
     req,
     res,
-    "subcategoría",
+    CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.CREATE_SUBCATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.CREATE_SUBCATEGORY_ERROR
@@ -137,7 +138,7 @@ const updateCategory = async (req, res) => {
     () => CategoryService.updateCategory(id, req.body),
     req,
     res,
-    "categoría",
+    CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.UPDATE_CATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.UPDATE_CATEGORY_ERROR
@@ -146,7 +147,7 @@ const updateCategory = async (req, res) => {
 };
 
 /**
- * Actualizar categoría específica (estilo RESTful)
+ * Actualizar categoría específica
  */
 const updateCategorySpecific = async (req, res) => {
   const { id } = req.params;
@@ -155,7 +156,7 @@ const updateCategorySpecific = async (req, res) => {
     () => CategoryService.updateCategory(id, req.body),
     req,
     res,
-    "categoría",
+    CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.UPDATE_CATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.UPDATE_CATEGORY_ERROR
@@ -164,7 +165,7 @@ const updateCategorySpecific = async (req, res) => {
 };
 
 /**
- * Actualizar subcategoría específica (estilo RESTful)
+ * Actualizar subcategoría específica
  */
 const updateSubcategorySpecific = async (req, res) => {
   const { categoryId, subcategoryId } = req.params;
@@ -173,7 +174,7 @@ const updateSubcategorySpecific = async (req, res) => {
     () => CategoryService.updateCategory(subcategoryId, req.body),
     req,
     res,
-    "subcategoría",
+    CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.UPDATE_SUBCATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.UPDATE_SUBCATEGORY_ERROR
@@ -190,11 +191,11 @@ const deleteCategory = async (req, res) => {
   
   return deleteCategoryResource(
     () => CategoryService.deleteCategory(id, { 
-      deleteSubcategory: deleteSubcategory === 'true' 
+      deleteSubcategory: deleteSubcategory === CATEGORY_CONSTANTS.BOOLEAN_TRUE 
     }),
     req,
     res,
-    "categoría",
+    CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.DELETE_CATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.DELETE_CATEGORY_ERROR
@@ -203,7 +204,7 @@ const deleteCategory = async (req, res) => {
 };
 
 /**
- * Eliminar categoría específica (estilo RESTful)
+ * Eliminar categoría específica
  */
 const deleteCategorySpecific = async (req, res) => {
   const { id } = req.params;
@@ -211,11 +212,11 @@ const deleteCategorySpecific = async (req, res) => {
   
   return deleteCategoryResource(
     () => CategoryService.deleteCategory(id, { 
-      deleteSubcategory: deleteSubcategory === 'true' 
+      deleteSubcategory: deleteSubcategory === CATEGORY_CONSTANTS.BOOLEAN_TRUE 
     }),
     req,
     res,
-    "categoría",
+    CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.DELETE_CATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.DELETE_CATEGORY_ERROR
@@ -224,7 +225,7 @@ const deleteCategorySpecific = async (req, res) => {
 };
 
 /**
- * Eliminar subcategoría específica (estilo RESTful)
+ * Eliminar subcategoría específica
  */
 const deleteSubcategorySpecific = async (req, res) => {
   const { categoryId, subcategoryId } = req.params;
@@ -233,7 +234,7 @@ const deleteSubcategorySpecific = async (req, res) => {
     () => CategoryService.deleteCategory(subcategoryId),
     req,
     res,
-    "subcategoría",
+    CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.DELETE_SUBCATEGORY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.DELETE_SUBCATEGORY_ERROR
@@ -249,7 +250,7 @@ const getCategoryHierarchy = async (req, res) => {
     () => CategoryService.getCategoryHierarchy(),
     req,
     res,
-    "jerarquía de categoria",
+    CATEGORY_CONSTANTS.CATEGORY_HIERARCHY,
     {
       successMessage: CATEGORIES_MESSAGES.GET_HIERARCHY_SUCCESS,
       errorMessage: CATEGORIES_MESSAGES.GET_HIERARCHY_ERROR

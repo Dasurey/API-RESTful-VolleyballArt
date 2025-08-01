@@ -8,7 +8,9 @@
  * - Throughput
  */
 
-const { getCacheStats } = require('../config/cache.js');
+const { HTTP_STATUS, RELATIVE_PATHS, EXTERNAL_PACKAGES, PERFORMANCE } = require('../config/paths.config.js');
+const { PERFORMANCE_MESSAGES } = require('../utils/messages.utils.js');
+const { getCacheStats } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_CACHE);
 
 /**
  * Métricas globales de rendimiento
@@ -85,7 +87,7 @@ const performanceMonitor = (req, res, next) => {
       (endpointStats.avgResponseTime * (endpointStats.count - 1) + responseTime) / endpointStats.count;
 
     // Clasificar respuesta
-    if (res.statusCode >= 200 && res.statusCode < 400) {
+    if (res.statusCode >= HTTP_STATUS.OK && res.statusCode < HTTP_STATUS.BAD_REQUEST) {
       performanceMetrics.requests.successful++;
     } else {
       performanceMetrics.requests.failed++;
@@ -98,8 +100,8 @@ const performanceMonitor = (req, res, next) => {
     }
 
     // Headers de rendimiento
-    res.set('X-Response-Time', `${responseTime}ms`);
-    res.set('X-Request-ID', req.headers['x-request-id'] || `req_${startTime}`);
+    res.set(PERFORMANCE.HEADER_RESPONSE_TIME, `${responseTime}${PERFORMANCE.TIME_UNIT_MS}`);
+    res.set(PERFORMANCE.HEADER_REQUEST_ID, req.headers[PERFORMANCE_MESSAGES.REQUEST_ID_HEADER] || `${PERFORMANCE.REQUEST_ID_PREFIX}${startTime}`);
 
     return data;
   };
@@ -148,9 +150,9 @@ function updateResponseTimeMetrics(responseTime) {
  */
 const memoryMonitor = () => {
   const memUsage = process.memoryUsage();
-  const totalMem = process.platform === 'linux' ? 
-    parseInt(require('fs').readFileSync('/proc/meminfo', 'utf8').match(/MemTotal:\s*(\d+)/)?.[1] || 0) * 1024 :
-    require('os').totalmem();
+  const totalMem = process.platform === PERFORMANCE.LINUX_PLATFORM ? 
+    parseInt(require(EXTERNAL_PACKAGES.FS).readFileSync(PERFORMANCE.MEMINFO_PATH, PERFORMANCE.MEMINFO_ENCODING).match(PERFORMANCE.MEMINFO_REGEX)?.[1] || 0) * 1024 :
+    require(EXTERNAL_PACKAGES.OS).totalmem();
 
   performanceMetrics.memory = {
     used: memUsage.heapUsed,
@@ -217,18 +219,18 @@ const healthCheckWithMetrics = (req, res) => {
   const isHealthy = 
     metrics.memory.percentage < 90 && 
     metrics.responseTime.avg < 1000 &&
-    metrics.requests.inProgress < 100;
+    metrics.requests.inProgress < 50;
 
-  res.status(isHealthy ? 200 : 503).json({
-    status: isHealthy ? 'healthy' : 'unhealthy',
+  res.status(isHealthy ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE).json({
+    status: isHealthy ? PERFORMANCE.STATUS_HEALTHY : PERFORMANCE.STATUS_UNHEALTHY,
     timestamp: new Date().toISOString(),
     uptime: metrics.uptime,
     memory: metrics.memory,
     performance: {
-      averageResponseTime: `${metrics.responseTime.avg.toFixed(2)}ms`,
+      averageResponseTime: `${metrics.responseTime.avg.toFixed(2)}${PERFORMANCE.TIME_UNIT_MS}`,
       requestsInProgress: metrics.requests.inProgress,
       totalRequests: metrics.requests.total,
-      successRate: `${((metrics.requests.successful / metrics.requests.total) * 100).toFixed(2)}%`
+      successRate: `${((metrics.requests.successful / metrics.requests.total) * 100).toFixed(2)}${PERFORMANCE.PERCENTAGE_UNIT}`
     },
     cache: {
       hitRate: metrics.cache.hitRate,
@@ -247,8 +249,8 @@ const performanceAlerts = () => {
   // Alerta de memoria alta
   if (metrics.memory.percentage > 85) {
     alerts.push({
-      level: 'warning',
-      message: `High memory usage: ${metrics.memory.percentage}%`,
+      level: PERFORMANCE.ALERT_WARNING,
+      message: `${PERFORMANCE_MESSAGES.HIGH_MEMORY_USAGE}${metrics.memory.percentage}${PERFORMANCE.PERCENTAGE_UNIT}`,
       timestamp: new Date().toISOString()
     });
   }
@@ -256,8 +258,8 @@ const performanceAlerts = () => {
   // Alerta de tiempo de respuesta alto
   if (metrics.responseTime.avg > 1000) {
     alerts.push({
-      level: 'warning',
-      message: `High average response time: ${metrics.responseTime.avg.toFixed(2)}ms`,
+      level: PERFORMANCE.ALERT_WARNING,
+      message: `${PERFORMANCE_MESSAGES.HIGH_RESPONSE_TIME}${metrics.responseTime.avg.toFixed(2)}${PERFORMANCE.TIME_UNIT_MS}`,
       timestamp: new Date().toISOString()
     });
   }
@@ -265,8 +267,8 @@ const performanceAlerts = () => {
   // Alerta de muchos requests en progreso
   if (metrics.requests.inProgress > 50) {
     alerts.push({
-      level: 'critical',
-      message: `Too many requests in progress: ${metrics.requests.inProgress}`,
+      level: PERFORMANCE.ALERT_CRITICAL,
+      message: `${PERFORMANCE_MESSAGES.TOO_MANY_REQUESTS}${metrics.requests.inProgress}`,
       timestamp: new Date().toISOString()
     });
   }

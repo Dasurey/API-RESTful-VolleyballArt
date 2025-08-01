@@ -1,4 +1,4 @@
-const { RELATIVE_PATHS, LOG_LEVELS } = require('../config/paths.js');
+const { RELATIVE_PATHS, LOG_LEVELS } = require('../config/paths.config.js');
 const { VALIDATION_MESSAGES, CATEGORIES_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
 const CategoryModel = require(RELATIVE_PATHS.FROM_SERVICES.MODELS_CATEGORY);
 const { logMessage } = require(RELATIVE_PATHS.FROM_SERVICES.UTILS_RESPONSE);

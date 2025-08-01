@@ -1,4 +1,4 @@
-const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, CACHE_CONFIG, PAGINATION_CONFIG } = require('../config/paths.js');
+const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, CACHE_CONFIG, PAGINATION_CONFIG } = require('../config/paths.config.js');
 const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
 const {
   getAllProducts,

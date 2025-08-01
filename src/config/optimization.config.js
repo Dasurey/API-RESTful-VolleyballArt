@@ -8,8 +8,10 @@
  * - Minimización de payload
  */
 
-const compression = require('compression');
-const slowDown = require('express-slow-down');
+const { EXTERNAL_PACKAGES } = require('./paths.config.js');
+const { OPTIMIZATION_CONSTANTS } = require('../utils/messages.utils.js');
+const compression = require(EXTERNAL_PACKAGES.COMPRESSION);
+const slowDown = require(EXTERNAL_PACKAGES.EXPRESS_SLOW_DOWN);
 
 /**
  * Configuración de compresión avanzada
@@ -24,19 +26,19 @@ const compressionMiddleware = compression({
   // Filtro para decidir qué comprimir
   filter: (req, res) => {
     // No comprimir si el cliente no lo soporta
-    if (req.headers['x-no-compression']) {
+    if (req.headers[OPTIMIZATION_CONSTANTS.HEADER_X_NO_COMPRESSION]) {
       return false;
     }
     
     // Comprimir solo ciertos tipos de contenido
-    const contentType = res.getHeader('content-type');
+    const contentType = res.getHeader(OPTIMIZATION_CONSTANTS.HEADER_CONTENT_TYPE);
     if (!contentType) return false;
     
     return (
-      contentType.includes('application/json') ||
-      contentType.includes('text/') ||
-      contentType.includes('application/javascript') ||
-      contentType.includes('application/xml')
+      contentType.includes(OPTIMIZATION_CONSTANTS.CONTENT_TYPE_JSON) ||
+      contentType.includes(OPTIMIZATION_CONSTANTS.CONTENT_TYPE_TEXT) ||
+      contentType.includes(OPTIMIZATION_CONSTANTS.CONTENT_TYPE_JAVASCRIPT) ||
+      contentType.includes(OPTIMIZATION_CONSTANTS.CONTENT_TYPE_XML)
     );
   },
   
@@ -108,15 +110,15 @@ const optimizeResponse = (req, res, next) => {
         ...data,
         meta: {
           timestamp: new Date().toISOString(),
-          requestId: req.headers['x-request-id'] || `req_${Date.now()}`,
-          cached: res.get('X-Cache') === 'HIT',
+          requestId: req.headers[OPTIMIZATION_CONSTANTS.HEADER_X_REQUEST_ID] || `${OPTIMIZATION_CONSTANTS.REQUEST_ID_PREFIX}${Date.now()}`,
+          cached: res.get(OPTIMIZATION_CONSTANTS.HEADER_X_CACHE) === OPTIMIZATION_CONSTANTS.CACHE_HIT,
           responseTime: Date.now() - (req.startTime || Date.now())
         }
       };
 
       // Configurar headers de optimización
-      res.set('X-Response-Time', `${Date.now() - (req.startTime || Date.now())}ms`);
-      res.set('X-Powered-By', 'VolleyballArt-API');
+      res.set(OPTIMIZATION_CONSTANTS.HEADER_X_RESPONSE_TIME, `${Date.now() - (req.startTime || Date.now())}${OPTIMIZATION_CONSTANTS.RESPONSE_TIME_SUFFIX}`);
+      res.set(OPTIMIZATION_CONSTANTS.HEADER_X_POWERED_BY, OPTIMIZATION_CONSTANTS.API_POWERED_BY);
       
       return originalJson.call(this, optimizedData);
     } catch (error) {
@@ -139,7 +141,7 @@ const minifyJson = (req, res, next) => {
   res.json = function(data) {
     try {
       // Solo minificar en producción
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === OPTIMIZATION_CONSTANTS.NODE_ENV_PRODUCTION) {
         // Eliminar campos null/undefined
         const minified = JSON.parse(JSON.stringify(data, (key, value) => {
           if (value === null || value === undefined) return undefined;
@@ -187,12 +189,12 @@ const autoPagination = (defaultLimit = 20, maxLimit = 100) => {
         const paginatedResponse = {
           data: paginatedData,
           pagination: {
-            currentPage: page,
-            totalPages: Math.ceil(total / limit),
-            totalItems: total,
-            itemsPerPage: limit,
-            hasNextPage: offset + limit < total,
-            hasPrevPage: page > 1
+            [OPTIMIZATION_CONSTANTS.PAGINATION_CURRENT_PAGE]: page,
+            [OPTIMIZATION_CONSTANTS.PAGINATION_TOTAL_PAGES]: Math.ceil(total / limit),
+            [OPTIMIZATION_CONSTANTS.PAGINATION_TOTAL_ITEMS]: total,
+            [OPTIMIZATION_CONSTANTS.PAGINATION_ITEMS_PER_PAGE]: limit,
+            [OPTIMIZATION_CONSTANTS.PAGINATION_HAS_NEXT_PAGE]: offset + limit < total,
+            [OPTIMIZATION_CONSTANTS.PAGINATION_HAS_PREV_PAGE]: page > 1
           }
         };
         
@@ -212,8 +214,8 @@ const autoPagination = (defaultLimit = 20, maxLimit = 100) => {
 const lazyLoad = (fields = []) => {
   return (req, res, next) => {
     // Determinar campos a cargar basado en query params
-    const fieldsToLoad = req.query.fields 
-      ? req.query.fields.split(',').filter(f => fields.includes(f))
+    const fieldsToLoad = req.query.fields
+      ? req.query.fields.split(OPTIMIZATION_CONSTANTS.FIELD_SEPARATOR).filter(f => fields.includes(f))
       : fields;
 
     req.lazyLoad = {
@@ -230,14 +232,14 @@ const lazyLoad = (fields = []) => {
  */
 const performanceHeaders = (req, res, next) => {
   // DNS prefetch para recursos externos
-  res.set('X-DNS-Prefetch-Control', 'on');
+  res.set(OPTIMIZATION_CONSTANTS.HEADER_X_DNS_PREFETCH_CONTROL, OPTIMIZATION_CONSTANTS.DNS_PREFETCH_ON);
   
   // Preconnect a servicios externos
-  res.set('Link', '<https://firestore.googleapis.com>; rel=preconnect');
+  res.set(OPTIMIZATION_CONSTANTS.HEADER_LINK, OPTIMIZATION_CONSTANTS.FIRESTORE_PRECONNECT);
   
   // Resource hints
-  res.set('X-Content-Type-Options', 'nosniff');
-  res.set('X-Frame-Options', 'DENY');
+  res.set(OPTIMIZATION_CONSTANTS.HEADER_X_CONTENT_TYPE_OPTIONS, OPTIMIZATION_CONSTANTS.CONTENT_TYPE_NOSNIFF);
+  res.set(OPTIMIZATION_CONSTANTS.HEADER_X_FRAME_OPTIONS, OPTIMIZATION_CONSTANTS.FRAME_OPTIONS_DENY);
   
   next();
 };

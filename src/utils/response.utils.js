@@ -7,7 +7,7 @@ const {
     LOG_LEVELS,
     FORMAT_PATTERNS,
     API_ENDPOINTS
-} = require('../config/paths.js');
+} = require('../config/paths.config.js');
 const { LOG_MESSAGES, SYSTEM_MESSAGES, RESPONSE_FIELDS } = require('./messages.utils.js');
 const Logger = require(RELATIVE_PATHS.FROM_UTILS.CONFIG_LOGGER);
 
@@ -46,7 +46,7 @@ function successResponse(res, message, payload = null, statusCode = COMMON_VALUE
         [RESPONSE_FIELDS.META]: {
             [RESPONSE_FIELDS.TIMESTAMP]: new Date().toISOString(),
             [RESPONSE_FIELDS.REQUEST_ID]: `${CONFIG_VALUES.REQ_PREFIX}${Date.now()}`,
-            [RESPONSE_FIELDS.CACHED]: COMMON_VALUES.CACHED_FALSE,
+            [RESPONSE_FIELDS.CACHED]: false,
             [RESPONSE_FIELDS.RESPONSE_TIME]: Date.now() - (res.locals.startTime || Date.now())
         }
     };
@@ -71,7 +71,7 @@ function errorResponse(res, message, statusCode = COMMON_VALUES.SERVER_ERROR_COD
             [RESPONSE_FIELDS.META]: {
                 [RESPONSE_FIELDS.TIMESTAMP]: new Date().toISOString(),
                 [RESPONSE_FIELDS.REQUEST_ID]: `${CONFIG_VALUES.REQ_PREFIX}${Date.now()}`,
-                [RESPONSE_FIELDS.CACHED]: COMMON_VALUES.CACHED_FALSE,
+                [RESPONSE_FIELDS.CACHED]: false,
                 [RESPONSE_FIELDS.RESPONSE_TIME]: Date.now() - (res.locals.startTime || Date.now())
             }
         }

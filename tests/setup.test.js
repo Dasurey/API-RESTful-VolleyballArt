@@ -38,3 +38,13 @@ global.mockLogger = {
 
 // Configurar timeout para tests
 jest.setTimeout(10000);
+
+// Test básico para que Jest no se queje de que no hay tests
+describe('🔧 Setup de Test', () => {
+  it('debería cargar la configuración correctamente', () => {
+    expect(process.env.NODE_ENV).toBe('test');
+    expect(process.env.JWT_SECRET).toBeDefined();
+    expect(global.mockFirestore).toBeDefined();
+    expect(global.mockLogger).toBeDefined();
+  });
+});

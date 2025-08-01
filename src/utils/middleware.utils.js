@@ -1,4 +1,4 @@
-const { RELATIVE_PATHS, LOG_LEVELS, HTTP_HEADERS, HTTP_STATUS, CONFIG_VALUES } = require('../config/paths.js');
+const { RELATIVE_PATHS, LOG_LEVELS, HTTP_HEADERS, HTTP_STATUS, CONFIG_VALUES } = require('../config/paths.config.js');
 const { LOG_MESSAGES, SYSTEM_MESSAGES } = require('./messages.utils.js');
 const { logMessage, errorResponse } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
 

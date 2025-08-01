@@ -1,4 +1,4 @@
-const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, VALIDATION_TYPES } = require('../config/paths.js');
+const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, VALIDATION_TYPES } = require('../config/paths.config.js');
 const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
 const categoryController = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_CATEGORY);
 const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
@@ -235,7 +235,7 @@ router.get(API_ENDPOINTS.CATEGORY_BY_ID, validate(categoryIdSchema, VALIDATION_T
  * @swagger
  * /api/v1/category/{id}/subcategory/create:
  *   post:
- *     summary: Crear nueva subcategoría (estilo RESTful)
+ *     summary: Crear nueva subcategoría
  *     tags: [Category]
  *     parameters:
  *       - in: path
@@ -243,7 +243,7 @@ router.get(API_ENDPOINTS.CATEGORY_BY_ID, validate(categoryIdSchema, VALIDATION_T
  *         required: true
  *         schema:
  *           type: string
- *           pattern: "^CAT-\d{4}-0000$"
+ *           pattern: "^CAT-\\\\d{4}-0000$"
  *         description: ID de la categoría padre (CAT-XXXX-0000)
  *         example: "CAT-0001-0000"
  *     requestBody:
@@ -372,7 +372,7 @@ router.post(API_ENDPOINTS.CATEGORY_ROOT, validate(createCategorySchema), categor
  * @swagger
  * /api/v1/category/create:
  *   post:
- *     summary: Crear nueva categoría padre (estilo products)
+ *     summary: Crear nueva categoría padre
  *     tags: [Category]
  *     requestBody:
  *       required: true
@@ -410,7 +410,7 @@ router.put(API_ENDPOINTS.CATEGORY_UPDATE,
  * @swagger
  * /api/v1/category/{categoryId}/subcategory/{subcategoryId}:
  *   put:
- *     summary: Actualizar subcategoría específica (estilo RESTful)
+ *     summary: Actualizar subcategoría específica
  *     tags: [Category]
  *     parameters:
  *       - in: path
@@ -418,7 +418,7 @@ router.put(API_ENDPOINTS.CATEGORY_UPDATE,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: "^CAT-\\d{4}-0000$"
+ *           pattern: "^CAT-\\\\\\\\d{4}-0000$"
  *         description: ID de la categoría padre (CAT-XXXX-0000)
  *         example: "CAT-0001-0000"
  *       - in: path
@@ -426,7 +426,7 @@ router.put(API_ENDPOINTS.CATEGORY_UPDATE,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: "^CAT-\\d{4}-\\d{4}$"
+ *           pattern: "^CAT-\\\\\\\\d{4}-\\d{4}$"
  *         description: ID de la subcategoría (CAT-XXXX-YYYY)
  *         example: "CAT-0001-0001"
  *     requestBody:
@@ -479,7 +479,7 @@ router.delete(API_ENDPOINTS.CATEGORY_DELETE,
  * @swagger
  * /api/v1/category/{categoryId}/subcategory/{subcategoryId}:
  *   delete:
- *     summary: Eliminar subcategoría específica (estilo RESTful)
+ *     summary: Eliminar subcategoría específica
  *     tags: [Category]
  *     parameters:
  *       - in: path
@@ -487,7 +487,7 @@ router.delete(API_ENDPOINTS.CATEGORY_DELETE,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: "^CAT-\\d{4}-0000$"
+ *           pattern: "^CAT-\\\\\\\\d{4}-0000$"
  *         description: ID de la categoría padre (CAT-XXXX-0000)
  *         example: "CAT-0001-0000"
  *       - in: path
@@ -495,7 +495,7 @@ router.delete(API_ENDPOINTS.CATEGORY_DELETE,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: "^CAT-\\d{4}-\\d{4}$"
+ *           pattern: "^CAT-\\\\\\\\d{4}-\\d{4}$"
  *         description: ID de la subcategoría (CAT-XXXX-YYYY)
  *         example: "CAT-0001-0001"
  *     responses:
@@ -523,7 +523,7 @@ router.delete(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
  * @swagger
  * /api/v1/category/{id}/subcategory/create:
  *   post:
- *     summary: Crear nueva subcategoría (estilo RESTful)
+ *     summary: Crear nueva subcategoría
  *     tags: [Category]
  *     parameters:
  *       - in: path
@@ -531,7 +531,7 @@ router.delete(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: "^CAT-\\d{4}-0000$"
+ *           pattern: "^CAT-\\\\\\\\d{4}-0000$"
  *         description: ID de la categoría padre (CAT-XXXX-0000)
  *         example: "CAT-0001-0000"
  *     requestBody:
@@ -581,7 +581,8 @@ router.delete(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
  *         description: Categoría padre no encontrada
  *       500:
  *         description: Error interno del servidor
- /**
+ */
+/**
  * @swagger
  * /api/v1/category/{parentId}/subcategory:
  *   post:

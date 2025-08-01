@@ -1,5 +1,6 @@
-const Logger = require('../config/logger.js');
 const { AUTH_MESSAGES, GENERAL_MESSAGES, LOG_MESSAGES, SYSTEM_CONSTANTS } = require('../utils/messages.utils.js');
+const { RELATIVE_PATHS, HTTP_STATUS, ERROR_HANDLING } = require('../config/paths.config.js');
+const Logger = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
 
 /**
  * Middleware global para manejo de errores
@@ -20,21 +21,21 @@ const errorHandler = (error, req, res, next) => {
   });
 
   // Determinar el código de estado
-  let statusCode = error.statusCode || error.status || 500;
+  let statusCode = error.statusCode || error.status || ERROR_HANDLING.DEFAULT_ERROR_STATUS;
   
   // Mensajes de error según el tipo usando mensajes centralizados
   let message = GENERAL_MESSAGES.INTERNAL_ERROR;
   let details = null;
 
-  if (statusCode === 400) {
+  if (statusCode === HTTP_STATUS.BAD_REQUEST) {
     message = GENERAL_MESSAGES.VALIDATION_ERROR;
-  } else if (statusCode === 401) {
+  } else if (statusCode === HTTP_STATUS.UNAUTHORIZED) {
     message = AUTH_MESSAGES.UNAUTHORIZED;
-  } else if (statusCode === 403) {
+  } else if (statusCode === HTTP_STATUS.FORBIDDEN) {
     message = GENERAL_MESSAGES.FORBIDDEN;
-  } else if (statusCode === 404) {
+  } else if (statusCode === HTTP_STATUS.NOT_FOUND) {
     message = GENERAL_MESSAGES.NOT_FOUND_GENERIC;
-  } else if (statusCode === 422) {
+  } else if (statusCode === HTTP_STATUS.UNPROCESSABLE_ENTITY) {
     message = GENERAL_MESSAGES.VALIDATION_ERROR;
   }
 
@@ -66,7 +67,7 @@ const errorHandler = (error, req, res, next) => {
  * Middleware para capturar errores de JSON malformado
  */
 const jsonErrorHandler = (error, req, res, next) => {
-  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+  if (error instanceof SyntaxError && error.status === HTTP_STATUS.BAD_REQUEST && ERROR_HANDLING.BODY_PROPERTY in error) {
     Logger.warn(`${LOG_MESSAGES.JSON_ERROR_LOG} ${req.ip}`, {
       error: error.message,
       method: req.method,
@@ -76,10 +77,10 @@ const jsonErrorHandler = (error, req, res, next) => {
       timestamp: new Date().toISOString()
     });
 
-    return res.status(400).json({
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
       message: GENERAL_MESSAGES.JSON_MALFORMED,
       payload: {
-        statusCode: 400,
+        statusCode: HTTP_STATUS.BAD_REQUEST,
         error: error.message,
         timestamp: new Date().toISOString(),
         path: req.originalUrl,
@@ -103,10 +104,10 @@ const notFoundHandler = (req, res, next) => {
     timestamp: new Date().toISOString()
   });
 
-  res.status(404).json({
+  res.status(HTTP_STATUS.NOT_FOUND).json({
     message: GENERAL_MESSAGES.NOT_FOUND_ROUTE,
     payload: {
-      statusCode: 404,
+      statusCode: HTTP_STATUS.NOT_FOUND,
       timestamp: new Date().toISOString(),
       path: req.originalUrl,
       method: req.method,

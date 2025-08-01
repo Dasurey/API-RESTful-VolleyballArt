@@ -8,7 +8,7 @@ const {
   NODE_EVENTS,
   LOG_LEVELS,
   COMMON_VALUES
-} = require('./config/paths.js');
+} = require('./config/paths.config.js');
 
 const express = require(EXTERNAL_PACKAGES.EXPRESS);
 require(EXTERNAL_PACKAGES.DOTENV).config();
@@ -103,7 +103,7 @@ app.use(optimizeResponse); // Optimización de respuestas
 app.use(minifyJson); // Minificación de JSON en producción
 
 app.use(express.json({ limit: ENV_CONFIG.JSON_LIMIT }));
-app.use(express.urlencoded({ extended: COMMON_VALUES.EXTENDED_TRUE }));
+app.use(express.urlencoded({ extended: true }));
 
 // 📁 Archivos estáticos usando utilidades CommonJS
 app.use(express.static(join(projectDir, API_ENDPOINTS.PUBLIC_DIR)));
@@ -297,7 +297,7 @@ app.post(API_ENDPOINTS.CACHE_CLEAR, authentication, (req, res) => {
 app.get(API_ENDPOINTS.ROOT, (req, res) => {
   safeAsync(async () => {
     logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.ROOT_REDIRECT);
-    res.redirect(API_ENDPOINTS.API_ROOT);
+    //res.redirect(API_ENDPOINTS.API_ROOT);
   }, res, LOG_MESSAGES.ROOT_ROUTE_ERROR);
 });
 
