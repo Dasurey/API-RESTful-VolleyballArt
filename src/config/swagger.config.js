@@ -224,7 +224,7 @@ const swaggerUiOptions = {
     tagsSorter: (a, b) => {
       try {
         // Orden personalizado mejorado y más seguro
-        const order = ['System', 'Health', 'Auth', 'Products', 'Category and Subcategory'];
+        const order = SWAGGER_CONSTANTS.ORDER_ITEMS;
         const indexA = order.indexOf(a);
         const indexB = order.indexOf(b);
         

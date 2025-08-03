@@ -858,6 +858,7 @@ const SWAGGER_CONSTANTS = {
   MESSAGE_SUCCESS: 'Mensaje de éxito',
   EXAMPLE_IMAGE_URL: 'https://example.com/image1.jpg',
   ENV_PRODUCTION: 'production',
+  ORDER_ITEMS: ['System', 'Health', 'Auth', 'Products', 'Category and Subcategory'],
   SERVER_PRODUCTION: 'Servidor de producción',
   SERVER_DEVELOPMENT: 'Servidor de desarrollo',
   
@@ -1422,7 +1423,6 @@ module.exports = {
   CACHE_MESSAGES,
   AUTH_MIDDLEWARE_MESSAGES,
   CATEGORY_CONSTANTS,
-  SWAGGER_CONSTANTS,
   SECURITY_CONSTANTS,
   OPTIMIZATION_CONSTANTS,
   LOGGER_CONSTANTS,
