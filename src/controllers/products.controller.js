@@ -10,7 +10,7 @@ const {
 
 const getAllProducts = async (req, res) => {
   return getResource(
-    () => productsService.getAllProducts(),
+    () => productsService.getAllProducts(req.queryProcessor),
     req,
     res,
     PRODUCTS_MESSAGES.RESOURCE_PLURAL,

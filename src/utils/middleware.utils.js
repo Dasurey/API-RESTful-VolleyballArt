@@ -14,7 +14,7 @@ const { logMessage, errorResponse } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE
  * @param {Object} additionalData - Datos adicionales para la respuesta
  * @param {Object} logData - Datos adicionales para el log
  */
-function middlewareError(res, message, statusCode = CONFIG_VALUES.BAD_REQUEST_CODE, additionalData = {}, logData = {}) {
+function middlewareError(res, message, statusCode = HTTP_STATUS.BAD_REQUEST, additionalData = {}, logData = {}) {
     logMessage(LOG_LEVELS.WARN, message, {
         statusCode,
         middleware: true,
@@ -44,7 +44,7 @@ function validationError(res, field, errors, logData = {}) {
         ...logData
     });
 
-    return res.status(CONFIG_VALUES.BAD_REQUEST_CODE).json({
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
         message,
         payload: {
             errors,
@@ -218,7 +218,7 @@ function asyncMiddleware(asyncFn, middlewareName = CONFIG_VALUES.UNKNOWN) {
  */
 function createCacheMiddleware(cacheManager, options = {}) {
     const {
-        ttl = CONFIG_VALUES.DEFAULT_TTL,
+        ttl = HTTP_STATUS.MULTIPLE_CHOICES,
         keyGenerator = null,
         middlewareName = CONFIG_VALUES.CACHE_DEFAULT_NAME
     } = options;

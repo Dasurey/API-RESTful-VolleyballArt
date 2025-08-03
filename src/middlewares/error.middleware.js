@@ -1,6 +1,13 @@
 const { AUTH_MESSAGES, GENERAL_MESSAGES, LOG_MESSAGES, SYSTEM_CONSTANTS } = require('../utils/messages.utils.js');
 const { RELATIVE_PATHS, HTTP_STATUS, ERROR_HANDLING } = require('../config/paths.config.js');
 const Logger = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
+const { 
+  AppError, 
+  isOperationalError, 
+  formatDatabaseError, 
+  formatJWTError,
+  InternalServerError 
+} = require(RELATIVE_PATHS.FROM_UTILS.UTILS_ERROR);
 
 /**
  * Middleware global para manejo de errores

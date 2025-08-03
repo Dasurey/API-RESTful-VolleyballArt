@@ -1,6 +1,7 @@
-const productsModel = require('../model/products.model.js');
+const { RELATIVE_PATHS } = require('../config/paths.config.js');
+const productsModel = require(RELATIVE_PATHS.FROM_CONTROLLERS.MODELS_PRODUCTS);
 
-const getAllProducts = async () => productsModel.getAllProducts();
+const getAllProducts = async (queryProcessor = null) => productsModel.getAllProducts(queryProcessor);
 
 const getProductById = (id) => {
   return productsModel.getProductById(id);

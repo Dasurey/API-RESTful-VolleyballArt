@@ -45,13 +45,27 @@ const sanitizeInput = (req, res, next) => {
 
 // Middleware para sanitizar HTML y prevenir XSS
 const sanitizeHtml = (req, res, next) => {
-  // Función simple para limpiar HTML básico
+  // Función para limpiar HTML manteniendo etiquetas permitidas
   const cleanHtml = (str) => {
     if (typeof str !== SANITIZATION.TYPE_STRING) return str;
-    return str
-      .replace(SANITIZATION.HTML_SCRIPT_TAGS, SANITIZATION.EMPTY_STRING) // Remover scripts
-      .replace(SANITIZATION.HTML_ALL_TAGS, SANITIZATION.EMPTY_STRING) // Remover todas las etiquetas HTML
-      .trim();
+    
+    // Primero remover scripts y etiquetas peligrosas
+    let cleaned = str.replace(SANITIZATION.HTML_SCRIPT_TAGS, SANITIZATION.EMPTY_STRING);
+    
+    // Remover solo etiquetas no permitidas, manteniendo las seguras
+    cleaned = cleaned.replace(/<(\/?)([\w\s="'-]*)>/g, (match, slash, tagContent) => {
+      const tagName = tagContent.split(' ')[0].toLowerCase();
+      
+      // Si la etiqueta está en la lista de permitidas, mantenerla
+      if (SANITIZATION.ALLOWED_HTML_TAGS.includes(tagName)) {
+        return match;
+      }
+      
+      // Si no está permitida, removerla
+      return SANITIZATION.EMPTY_STRING;
+    });
+    
+    return cleaned.trim();
   };
 
   // Limpiar req.body recursivamente

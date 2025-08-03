@@ -41,17 +41,17 @@ const swaggerOptions = {
       schemas: {
         Product: {
           type: SWAGGER_CONSTANTS.TYPE_OBJECT,
-          required: ['title', 'img', 'price', 'previous_price', 'description', 'category', 'subcategory', 'outstanding'],
+          required: [SWAGGER_CONSTANTS.FIELD_TITLE, SWAGGER_CONSTANTS.FIELD_IMG, SWAGGER_CONSTANTS.FIELD_PRICE, SWAGGER_CONSTANTS.FIELD_PREVIOUS_PRICE, SWAGGER_CONSTANTS.FIELD_DESCRIPTION, SWAGGER_CONSTANTS.FIELD_CATEGORY, SWAGGER_CONSTANTS.FIELD_SUBCATEGORY, SWAGGER_CONSTANTS.FIELD_OUTSTANDING],
           properties: {
             id: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: 'ID único del producto (formato VA-XXXXX)',
-              example: 'VA-0000001'
+              description: SWAGGER_CONSTANTS.PRODUCT_ID_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.PRODUCT_ID_EXAMPLE
             },
             title: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: 'Título del producto',
-              example: 'Zapatilla Asics Metarise Tokyo Men'
+              description: SWAGGER_CONSTANTS.PRODUCT_TITLE_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.PRODUCT_TITLE_EXAMPLE
             },
             img: {
               type: SWAGGER_CONSTANTS.TYPE_ARRAY,
@@ -61,53 +61,53 @@ const swaggerOptions = {
                   src: {
                     type: SWAGGER_CONSTANTS.TYPE_STRING,
                     format: SWAGGER_CONSTANTS.FORMAT_URI,
-                    description: 'URL de la imagen'
+                    description: SWAGGER_CONSTANTS.IMAGE_SRC_DESCRIPTION
                   },
                   alt: {
                     type: SWAGGER_CONSTANTS.TYPE_STRING,
-                    description: 'Texto alternativo'
+                    description: SWAGGER_CONSTANTS.IMAGE_ALT_DESCRIPTION
                   },
                   carousel: {
-                    type: 'boolean',
-                    description: 'Si la imagen aparece en el carrusel'
+                    type: SWAGGER_CONSTANTS.TYPE_BOOLEAN,
+                    description: SWAGGER_CONSTANTS.IMAGE_CAROUSEL_DESCRIPTION
                   }
                 }
               },
-              description: 'Imágenes del producto'
+              description: SWAGGER_CONSTANTS.PRODUCT_IMAGES_DESCRIPTION
             },
             price: {
               type: SWAGGER_CONSTANTS.TYPE_NUMBER,
               minimum: 0,
-              description: 'Precio actual del producto',
+              description: SWAGGER_CONSTANTS.PRODUCT_PRICE_DESCRIPTION_CURRENT,
               example: 225000
             },
             previous_price: {
               type: SWAGGER_CONSTANTS.TYPE_NUMBER,
               minimum: 0,
               nullable: true,
-              description: 'Precio anterior del producto (para ofertas)',
+              description: SWAGGER_CONSTANTS.PRODUCT_PREVIOUS_PRICE_DESCRIPTION,
               example: 247500
             },
             description: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: 'Descripción del producto',
-              example: 'Zapatilla Asics Metarise Tokyo Men las de Nishida, la estrella del voley Japones.'
+              description: SWAGGER_CONSTANTS.FIELD_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.PRODUCT_DESCRIPTION_EXAMPLE
             },
             category: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              pattern: '^CAT-\\d{4}-0000$',
-              description: 'ID de la categoría padre (formato CAT-XXXX-0000)',
-              example: 'CAT-0001-0000'
+              pattern: SWAGGER_CONSTANTS.CATEGORY_PATTERN,
+              description: SWAGGER_CONSTANTS.PRODUCT_CATEGORY_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.PRODUCT_CATEGORY_EXAMPLE
             },
             subcategory: {
               type: SWAGGER_CONSTANTS.TYPE_STRING,
-              pattern: '^CAT-\\d{4}-\\d{4}$',
-              description: 'ID de la subcategoría (formato CAT-XXXX-YYYY)',
-              example: 'CAT-0001-0001'
+              pattern: SWAGGER_CONSTANTS.SUBCATEGORY_PATTERN,
+              description: SWAGGER_CONSTANTS.PRODUCT_SUBCATEGORY_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.PRODUCT_SUBCATEGORY_EXAMPLE
             },
             outstanding: {
-              type: 'boolean',
-              description: 'Si el producto es destacado',
+              type: SWAGGER_CONSTANTS.TYPE_BOOLEAN,
+              description: SWAGGER_CONSTANTS.PRODUCT_OUTSTANDING_DESCRIPTION,
               example: true
             },
             createdAt: {
@@ -220,7 +220,30 @@ const swaggerUiOptions = {
   customfavIcon: SWAGGER_CONSTANTS.FAVICON_PATH,
   swaggerOptions: {
     persistAuthorization: true,
-    displayRequestDuration: true
+    displayRequestDuration: true,
+    tagsSorter: (a, b) => {
+      try {
+        // Orden personalizado mejorado y más seguro
+        const order = ['System', 'Health', 'Auth', 'Products', 'Category and Subcategory'];
+        const indexA = order.indexOf(a);
+        const indexB = order.indexOf(b);
+        
+        // Si ambos están en el orden, usar índices
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        
+        // Si solo uno está en el orden, priorizarlo
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // Fallback a orden alfabético
+        return String(a).localeCompare(String(b));
+      } catch (error) {
+        // En caso de error, fallback a orden alfabético
+        return String(a).localeCompare(String(b));
+      }
+    }
   }
 };
 

@@ -38,6 +38,7 @@ const CATEGORIES_MESSAGES = {
   GET_HIERARCHY_ERROR: "🚨 Error al obtener jerarquía de categorías",
   NOT_FOUND: (id) => `🔍 No se encontró ninguna categoría con el ID: ${id}`,
   NOT_FOUND_SUBCATEGORIES: (parentId) => `📂 No se encontraron subcategorías para la categoría: ${parentId}`,
+  NOT_FOUND_SUBCATEGORIES_ALL: "📂 No se encontraron subcategorías en el sistema",
   NOT_FOUND_PARENT: "🔍 Categoría padre no encontrada",
   EMPTY_CATEGORIES: "📂 No se encontraron categorías. Crea la primera categoría.",
 
@@ -357,6 +358,16 @@ const SYSTEM_MESSAGES = {
   FIREBASE_ORDER_ASC: "asc",
   FIREBASE_ORDER_DESC: "desc",
 
+  // Operadores de filtros
+  FIREBASE_EQUALITY_OPERATOR: "==",
+  FIREBASE_NOT_EQUAL_OPERATOR: "!=",
+  FIREBASE_GREATER_THAN_OPERATOR: ">",
+  FIREBASE_GREATER_EQUAL_OPERATOR: ">=",
+  FIREBASE_LESS_THAN_OPERATOR: "<",
+  FIREBASE_LESS_EQUAL_OPERATOR: "<=",
+  FIREBASE_IN_OPERATOR: "in",
+  FIREBASE_NOT_IN_OPERATOR: "not-in",
+
   // Separadores y formatos
   FIREBASE_ERROR_SEPARATOR: ", ",
   FIREBASE_VALIDATION_PREFIX: "validation",
@@ -500,6 +511,10 @@ const VALIDATION_MESSAGES = {
   ALT_TEXT_REQUIRED: "El texto alternativo es requerido",
   ALT_TEXT_MAX_200_CHARS: "El texto alternativo no puede exceder 200 caracteres",
   MAX_10_IMAGES: "No se pueden agregar más de 10 imágenes",
+  MIN_1_IMAGE: "Se requiere al menos una imagen",
+  SUBCATEGORY_TEXT_REQUIRED: "El texto descriptivo de la subcategoría es requerido",
+  SUBCATEGORY_IMG_REQUIRED: "Las imágenes de la subcategoría son requeridas",
+  MAX_20_SUBCATEGORIES: "No se pueden agregar más de 20 subcategorías",
   PROVIDE_AT_LEAST_ONE_FIELD: "Debe proporcionar al menos un campo para actualizar",
   CATEGORY_ID_FORMAT_INVALID: "El ID de categoría debe tener el formato CAT-XXXX-YYYY",
   CATEGORY_ID_REQUIRED: "El ID de categoría es requerido",
@@ -605,6 +620,7 @@ const SERVICE_MESSAGES = {
   CATEGORY_ID_FIELD: "categoryId",
   SUBCATEGORY_ID_FIELD: "subcategoryId",
   PARENT_CATEGORY_ID_FIELD: "parentCategoryId",
+  IS_PARENT_FIELD: "isParent",
   UPDATED_FIELDS_FIELD: "updatedFields",
   DELETED_SUBCATEGORY_FIELD: "deletedSubcategory",
   CATEGORY_DATA_FIELD: "categoryData",
@@ -612,7 +628,192 @@ const SERVICE_MESSAGES = {
   UPDATE_DATA_FIELD: "updateData",
   OPTIONS_FIELD: "options",
   TITLE_FIELD: "title",
-  SERVICE_FIELD: "service"
+  SERVICE_FIELD: "service",
+  
+  // Mensajes de error para clases de error personalizadas
+  VALIDATION_ERROR_DEFAULT: "Datos de entrada inválidos",
+  AUTHENTICATION_ERROR_DEFAULT: "Credenciales de autenticación inválidas",
+  AUTHORIZATION_ERROR_DEFAULT: "No tienes permisos para acceder a este recurso",
+  NOT_FOUND_ERROR_DEFAULT: "Recurso no encontrado",
+  CONFLICT_ERROR_DEFAULT: "Conflicto en la operación solicitada",
+  RATE_LIMIT_ERROR_DEFAULT: "Demasiadas solicitudes. Intenta más tarde",
+  INTERNAL_SERVER_ERROR_DEFAULT: "Error interno del servidor",
+  DATABASE_ERROR_DEFAULT: "Error en la base de datos",
+  EXTERNAL_SERVICE_ERROR_DEFAULT: "Error en servicio externo",
+  CONFIGURATION_ERROR_DEFAULT: "Error de configuración del sistema",
+  
+  // Mensajes específicos de JWT
+  INVALID_TOKEN: "Token inválido",
+  EXPIRED_TOKEN: "Token expirado",
+  TOKEN_ERROR: "Error en el token de autenticación",
+  
+  // Mensajes específicos de base de datos
+  DUPLICATE_FIELD_ERROR: "Campo duplicado",
+  INVALID_FIELD_FORMAT: "Formato de campo inválido"
+};
+
+// Constantes para clases de error y códigos de estado
+const ERROR_CONSTANTS = {
+  // Status types para AppError
+  STATUS_FAIL: 'fail',
+  STATUS_ERROR: 'error',
+  
+  // Códigos de error para clases personalizadas
+  VALIDATION_ERROR_CODE: 'VALIDATION_ERROR',
+  AUTHENTICATION_ERROR_CODE: 'AUTHENTICATION_ERROR',
+  AUTHORIZATION_ERROR_CODE: 'AUTHORIZATION_ERROR',
+  NOT_FOUND_ERROR_CODE: 'NOT_FOUND_ERROR',
+  CONFLICT_ERROR_CODE: 'CONFLICT_ERROR',
+  RATE_LIMIT_ERROR_CODE: 'RATE_LIMIT_ERROR',
+  INTERNAL_SERVER_ERROR_CODE: 'INTERNAL_SERVER_ERROR',
+  DATABASE_ERROR_CODE: 'DATABASE_ERROR',
+  EXTERNAL_SERVICE_ERROR_CODE: 'EXTERNAL_SERVICE_ERROR',
+  CONFIGURATION_ERROR_CODE: 'CONFIGURATION_ERROR',
+  
+  // Nombres de errores estándar de JavaScript/Node.js
+  VALIDATION_ERROR_NAME: 'ValidationError',
+  CAST_ERROR_NAME: 'CastError',
+  JSON_WEB_TOKEN_ERROR_NAME: 'JsonWebTokenError',
+  TOKEN_EXPIRED_ERROR_NAME: 'TokenExpiredError',
+  
+  // Códigos específicos para errores de base de datos
+  DUPLICATE_FIELD_CODE: 'DUPLICATE_FIELD',
+  MONGOOSE_VALIDATION_CODE: 'MONGOOSE_VALIDATION',
+  INVALID_FORMAT_CODE: 'INVALID_FORMAT',
+  DATABASE_OPERATION_FAILED_CODE: 'DATABASE_OPERATION_FAILED',
+  
+  // Códigos específicos para errores de JWT
+  INVALID_JWT_CODE: 'INVALID_JWT',
+  EXPIRED_JWT_CODE: 'EXPIRED_JWT',
+  JWT_ERROR_CODE: 'JWT_ERROR'
+};
+
+// Constantes para controladores avanzados
+const ADVANCED_CONTROLLER_CONSTANTS = {
+  // Tipos de datos para validación
+  TYPE_STRING: 'string',
+  
+  // Campos comunes
+  FIELD_ID: 'id',
+  FIELD_PRODUCT_ID: 'productId',
+  FIELD_CURRENT_PRICE: 'currentPrice',
+  FIELD_PREVIOUS_PRICE: 'previousPrice',
+  FIELD_EXISTING_PRODUCT_ID: 'existingProductId',
+  FIELD_DUPLICATE_TITLE: 'duplicateTitle',
+  FIELD_FIELD: 'field',
+  FIELD_VALUE: 'value',
+  FIELD_EXPECTED_PATTERN: 'expectedPattern',
+  FIELD_SEARCHED_AT: 'searchedAt',
+  
+  // Patrones de validación
+  PATTERN_VA_XXXXXXX: 'VA-XXXXXXX',
+  
+  // Mensajes de validación específicos
+  ID_REQUIRED_AND_STRING_MESSAGE: 'ID de producto es requerido y debe ser una cadena',
+  INVALID_ID_FORMAT_MESSAGE: 'Formato de ID inválido. Debe seguir el patrón VA-XXXXXXX',
+  PRODUCT_NOT_FOUND_MESSAGE: 'Producto con ID {id} no encontrado',
+  PRODUCT_NOT_FOUND_FOR_UPDATE_MESSAGE: 'Producto con ID {id} no encontrado para actualizar',
+  PRICE_VALIDATION_MESSAGE: 'El precio actual no puede ser mayor o igual al precio anterior',
+  DUPLICATE_TITLE_MESSAGE: 'Ya existe un producto con ese título',
+  
+  // Códigos de error específicos
+  PRODUCT_NOT_FOUND_CODE: 'PRODUCT_NOT_FOUND',
+  UPDATE_PRODUCT_NOT_FOUND_CODE: 'UPDATE_PRODUCT_NOT_FOUND',
+  DUPLICATE_PRODUCT_TITLE_CODE: 'DUPLICATE_PRODUCT_TITLE',
+  
+  // Nombres de controladores para logging
+  CONTROLLER_GET_PRODUCT_ADVANCED: 'ProductController.getProductWithAdvancedErrorHandling',
+  CONTROLLER_CREATE_PRODUCT_VALIDATION: 'ProductController.createProductWithValidation',
+  CONTROLLER_UPDATE_PRODUCT_DB_ERROR: 'ProductController.updateProductWithDbErrorHandling'
+};
+
+// Constantes para middleware de validación de errores
+const ERROR_VALIDATION_MIDDLEWARE_CONSTANTS = {
+  // Rutas de archivos
+  EXPRESS_VALIDATOR_PACKAGE: 'express-validator',
+  
+  // Propiedades de objetos de error
+  FIELD_PATH: 'path',
+  FIELD_PARAM: 'param',
+  FIELD_MSG: 'msg',
+  FIELD_VALUE: 'value',
+  FIELD_LOCATION: 'location',
+  FIELD_TYPE: 'type',
+  FIELD_FIELD: 'field',
+  FIELD_MAX_SIZE: 'maxSize',
+  FIELD_MAX_FILES: 'maxFiles',
+  
+  // Propiedades específicas de Joi
+  JOI_IS_JOI_PROPERTY: 'isJoi',
+  JOI_DETAILS_PROPERTY: 'details',
+  JOI_PATH_SEPARATOR: '.',
+  JOI_CONTEXT_VALUE: 'value',
+  
+  // Códigos de error de Multer
+  MULTER_LIMIT_FILE_SIZE: 'LIMIT_FILE_SIZE',
+  MULTER_LIMIT_FILE_COUNT: 'LIMIT_FILE_COUNT',
+  MULTER_LIMIT_UNEXPECTED_FILE: 'LIMIT_UNEXPECTED_FILE',
+  
+  // Mensajes de error de archivo
+  FILE_TOO_LARGE_MESSAGE: 'El archivo es demasiado grande',
+  TOO_MANY_FILES_MESSAGE: 'Demasiados archivos',
+  UNEXPECTED_FILE_FIELD_MESSAGE: 'Campo de archivo inesperado',
+  
+  // Códigos de error para validación
+  EXPRESS_VALIDATOR_ERROR_CODE: 'EXPRESS_VALIDATOR_ERROR',
+  JOI_VALIDATION_ERROR_CODE: 'JOI_VALIDATION_ERROR',
+  FILE_TOO_LARGE_CODE: 'FILE_TOO_LARGE',
+  TOO_MANY_FILES_CODE: 'TOO_MANY_FILES',
+  UNEXPECTED_FILE_FIELD_CODE: 'UNEXPECTED_FILE_FIELD'
+};
+
+// Constantes para async utilities
+const ASYNC_UTILS_CONSTANTS = {
+  
+  // Valores por defecto
+  UNKNOWN_DEFAULT: 'Unknown',
+  UNKNOWN_ERROR_CODE: 'UNKNOWN_ERROR',
+  ANONYMOUS_USER: 'anonymous',
+  PRODUCTION_ENV: 'production',
+  
+  // Headers HTTP
+  X_REQUEST_ID_HEADER: 'X-Request-ID',
+  USER_AGENT_HEADER: 'User-Agent',
+  
+  // Propiedades de objetos
+  CONTROLLER_CONTEXT_PROP: 'controllerContext',
+  REQUEST_ID_PROP: 'requestId',
+  SERVICE_CONTEXT_PROP: 'serviceContext',
+  SERVICE_ARGS_PROP: 'serviceArgs',
+  IS_OPERATIONAL_PROP: 'isOperational',
+  
+  // Propiedades de response
+  MESSAGE_PROP: 'message',
+  PAYLOAD_PROP: 'payload',
+  STATUS_CODE_PROP: 'statusCode',
+  ERROR_CODE_PROP: 'errorCode',
+  TIMESTAMP_PROP: 'timestamp',
+  PATH_PROP: 'path',
+  METHOD_PROP: 'method',
+  DETAILS_PROP: 'details',
+  DEVELOPMENT_PROP: 'development',
+  STACK_PROP: 'stack',
+  
+  // Propiedades de request
+  ID_PROP: 'id',
+  ORIGINAL_URL_PROP: 'originalUrl',
+  IP_PROP: 'ip',
+  USER_PROP: 'user',
+  
+  // Propiedades de error data
+  URL_PROP: 'url',
+  USER_AGENT_PROP: 'userAgent',
+  USER_ID_PROP: 'userId',
+  
+  // Mensajes de log
+  SERVER_ERROR_MESSAGE: 'Server Error:',
+  CLIENT_ERROR_MESSAGE: 'Client Error:',
+  ERROR_INFO_MESSAGE: 'Error Info:'
 };
 
 // Claves de error de Joi
@@ -651,7 +852,6 @@ const CATEGORY_CONSTANTS = {
 const SWAGGER_CONSTANTS = {
   PACKAGE_SWAGGER_JSDOC: 'swagger-jsdoc',
   PACKAGE_SWAGGER_UI: 'swagger-ui-express',
-  UTILS_URL_PATH: '../utils/url.utils.js',
   FAVICON_PATH: '/favicon.ico',
   CSS_TOPBAR_HIDDEN: '.swagger-ui .topbar { display: none }',
   TYPE_STRING: 'string',
@@ -691,9 +891,14 @@ const SWAGGER_CONSTANTS = {
   
   // Propiedades de esquemas
   FIELD_NAME: 'name',
+  FIELD_TITLE: 'title',
+  FIELD_IMG: 'img',
   FIELD_DESCRIPTION: 'description',
   FIELD_PRICE: 'price',
+  FIELD_PREVIOUS_PRICE: 'previous_price',
   FIELD_CATEGORY: 'category',
+  FIELD_SUBCATEGORY: 'subcategory',
+  FIELD_OUTSTANDING: 'outstanding',
   FIELD_STOCK: 'stock',
   FIELD_EMAIL: 'email',
   FIELD_PASSWORD: 'password',
@@ -743,7 +948,39 @@ const SWAGGER_CONSTANTS = {
   JWT_TOKEN_DESCRIPTION: 'Token JWT para autenticación',
   ERROR_MESSAGE_DESCRIPTION: 'Mensaje de error',
   ERROR_LIST_DESCRIPTION: 'Lista detallada de errores',
-  RESPONSE_DATA_DESCRIPTION: 'Datos de respuesta'
+  RESPONSE_DATA_DESCRIPTION: 'Datos de respuesta',
+  ERROR_DETAILS_DESCRIPTION: 'Detalles técnicos del error',
+  
+  // Descripciones específicas de productos
+  PRODUCT_ID_DESCRIPTION: 'ID único del producto (formato VA-XXXXX)',
+  PRODUCT_ID_EXAMPLE: 'VA-0000001',
+  PRODUCT_TITLE_DESCRIPTION: 'Título del producto',
+  PRODUCT_TITLE_EXAMPLE: 'Zapatilla Asics Metarise Tokyo Men',
+  PRODUCT_IMAGES_DESCRIPTION: 'Imágenes del producto',
+  PRODUCT_PRICE_DESCRIPTION_CURRENT: 'Precio actual del producto',
+  PRODUCT_PREVIOUS_PRICE_DESCRIPTION: 'Precio anterior del producto (para ofertas)',
+  PRODUCT_DESCRIPTION_EXAMPLE: 'Zapatilla Asics Metarise Tokyo Men las de Nishida, la estrella del voley Japones.',
+  PRODUCT_CATEGORY_DESCRIPTION: 'ID de la categoría padre (formato CAT-XXXX-0000)',
+  PRODUCT_CATEGORY_EXAMPLE: 'CAT-0001-0000',
+  PRODUCT_SUBCATEGORY_DESCRIPTION: 'ID de la subcategoría (formato CAT-XXXX-YYYY)',
+  PRODUCT_SUBCATEGORY_EXAMPLE: 'CAT-0001-0001',
+  PRODUCT_OUTSTANDING_DESCRIPTION: 'Si el producto es destacado',
+  
+  // Propiedades de imagen
+  IMAGE_SRC_DESCRIPTION: 'URL de la imagen',
+  IMAGE_ALT_DESCRIPTION: 'Texto alternativo',
+  IMAGE_CAROUSEL_DESCRIPTION: 'Si la imagen aparece en el carrusel',
+  
+  // Patrones de validación
+  CATEGORY_PATTERN: '^CAT-\\d{4}-0000$',
+  SUBCATEGORY_PATTERN: '^CAT-\\d{4}-\\d{4}$',
+  
+  // Tipos específicos
+  TYPE_BOOLEAN: 'boolean',
+  
+  // Tags específicos para ordenamiento
+  TAG_SYSTEM: 'System',
+  TAG_CATEGORY_SUBCATEGORY: 'Category and Subcategory'
 };
 
 // Constantes de seguridad
@@ -821,6 +1058,137 @@ const OPTIMIZATION_CONSTANTS = {
   FIELD_SEPARATOR: ','
 };
 
+// Constantes de Query Processing
+const QUERY_CONSTANTS = {
+  // Operadores de filtro - mapeo de nombres amigables a operadores de Firestore
+  OPERATORS: {
+    EQ: 'eq',           // igual
+    NE: 'ne',           // no igual  
+    GT: 'gt',           // mayor que
+    GTE: 'gte',         // mayor o igual
+    LT: 'lt',           // menor que
+    LTE: 'lte',         // menor o igual
+    IN: 'in',           // en array
+    NIN: 'nin',         // no en array
+    CONTAINS: 'contains',
+    STARTS_WITH: 'startsWith',
+    ENDS_WITH: 'endsWith'
+  },
+  
+  // Operadores de Firestore reales
+  FIRESTORE_OPERATORS: {
+    EQ: '==',
+    NE: '!=',
+    GT: '>',
+    GTE: '>=',
+    LT: '<',
+    LTE: '<=',
+    IN: 'in',
+    NOT_IN: 'not-in',
+    ARRAY_CONTAINS: 'array-contains',
+    STARTS_WITH: 'startsWith',
+    ENDS_WITH: 'endsWith'
+  },
+  
+  // Tipos de paginación
+  PAGINATION_TYPES: {
+    OFFSET: 'offset',
+    CURSOR: 'cursor'
+  },
+  
+  // Direcciones de paginación cursor
+  PAGINATION_DIRECTIONS: {
+    NEXT: 'next',
+    PREV: 'prev'
+  },
+  
+  // Direcciones de ordenamiento
+  SORT_DIRECTIONS: {
+    ASC: 'asc',
+    DESC: 'desc'
+  },
+  
+  // Campos de búsqueda por defecto
+  DEFAULT_SEARCH_FIELDS: {
+    PRODUCTS: ['title', 'description'],
+    CATEGORIES: ['title'],
+    SUBCATEGORIES: ['title', 'text']
+  },
+  
+  // Separadores
+  SEPARATORS: {
+    FILTER: ',',
+    SORT: ',',
+    FIELD: ','
+  },
+  
+  // Prefijos especiales
+  PREFIXES: {
+    DESC_SORT: '-'
+  },
+  
+  // Valores especiales para parsing
+  SPECIAL_VALUES: {
+    TRUE: 'true',
+    FALSE: 'false',
+    NULL: 'null'
+  },
+  
+  // Patrones regex para validación
+  PATTERNS: {
+    ISO_DATE: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+    FILTER_BRACKET: /^(.+)\[(.+)\]$/
+  },
+  
+  // Parámetros de query URL
+  QUERY_PARAMS: {
+    PAGE: 'page',
+    LIMIT: 'limit',
+    CURSOR: 'cursor',
+    DIRECTION: 'direction',
+    SORT: 'sort',
+    SEARCH: 'search',
+    FIELDS: 'fields',
+    EXCLUDE: 'exclude',
+    COUNT: 'count',
+    SUM: 'sum',
+    AVG: 'avg',
+    MIN: 'min',
+    MAX: 'max',
+    CASE_SENSITIVE: 'caseSensitive',
+    EXACT: 'exact'
+  },
+  
+  // Campos permitidos para filtros y ordenamiento por entidad
+  ALLOWED_FIELDS: {
+    PRODUCTS: {
+      FILTERS: ['category', 'subcategory', 'price', 'outstanding', 'createdAt'],
+      SORT: ['price', 'createdAt', 'title', 'outstanding']
+    },
+    CATEGORIES: {
+      FILTERS: ['isParent', 'parentCategoryId', 'createdAt'],
+      SORT: ['title', 'createdAt']
+    },
+    SUBCATEGORIES: {
+      FILTERS: ['parentCategoryId', 'createdAt'],
+      SORT: ['title', 'createdAt']
+    }
+  },
+  
+  // Configuraciones por defecto para cada entidad
+  DEFAULT_CONFIGS: {
+    PRODUCTS: {
+      SORT: 'createdAt'
+    },
+    CATEGORIES: {
+      SORT: 'createdAt'
+    },
+    SUBCATEGORIES: {
+      SORT: 'createdAt'
+    }
+  }
+};
+
 // Constantes de logger
 const LOGGER_CONSTANTS = {
   // Colores de logging
@@ -884,5 +1252,188 @@ module.exports = {
   SECURITY_CONSTANTS,
   OPTIMIZATION_CONSTANTS,
   LOGGER_CONSTANTS,
-  JWT_CONSTANTS
+  JWT_CONSTANTS,
+  QUERY_CONSTANTS,
+  ERROR_CONSTANTS,
+  ADVANCED_CONTROLLER_CONSTANTS,
+  ERROR_VALIDATION_MIDDLEWARE_CONSTANTS,
+  ASYNC_UTILS_CONSTANTS
+};
+
+// Constantes para health checks avanzados
+const HEALTH_CONSTANTS = {
+  // Estados de salud
+  STATUS_HEALTHY: 'healthy',
+  STATUS_UNHEALTHY: 'unhealthy', 
+  STATUS_DEGRADED: 'degraded',
+  STATUS_UNKNOWN: 'unknown',
+  
+  // Niveles de alerta
+  ALERT_INFO: 'info',
+  ALERT_WARNING: 'warning',
+  ALERT_CRITICAL: 'critical',
+  
+  // Tipos de servicios
+  SERVICE_DATABASE: 'database',
+  SERVICE_CACHE: 'cache',
+  SERVICE_EXTERNAL_API: 'external_api',
+  SERVICE_FILESYSTEM: 'filesystem',
+  
+  // Mensajes de health check
+  HEALTH_CHECK_PASSED: 'Health check passed successfully',
+  HEALTH_CHECK_FAILED: 'Health check failed',
+  DEPENDENCY_HEALTHY: 'Dependency is healthy',
+  DEPENDENCY_UNHEALTHY: 'Dependency is unhealthy',
+  
+  // Umbrales por defecto
+  MEMORY_WARNING_THRESHOLD: 85,
+  MEMORY_CRITICAL_THRESHOLD: 95,
+  RESPONSE_TIME_WARNING: 1000,
+  RESPONSE_TIME_CRITICAL: 2000,
+  ERROR_RATE_WARNING: 5,
+  ERROR_RATE_CRITICAL: 10,
+  
+  // Tiempos de timeout
+  HEALTH_CHECK_TIMEOUT: 5000,
+  DEPENDENCY_CHECK_TIMEOUT: 3000
+};
+
+// ==============================================================
+// 📊 CONSTANTES PARA MÉTRICAS Y MONITOREO EXTENDIDAS
+// ==============================================================
+const METRICS_CONSTANTS = {
+  // Mensajes de error
+  ERROR_OBTAINING_METRICS: 'Error al obtener métricas',
+  ERROR_GENERATING_METRICS: '# Error generating metrics:',
+  
+  // Content Types
+  CONTENT_TYPE_HEADER: 'Content-Type',
+  CONTENT_TYPE_TEXT_PLAIN: 'text/plain',
+  
+  // Valores por defecto
+  DEFAULT_VERSION: '1.0.0',
+  DEFAULT_ENVIRONMENT: 'development',
+  
+  // Estados adicionales para sistema público
+  STATUS_OPERATIONAL: 'operational',
+  STATUS_DOWN: 'down',
+  
+  // Estados de servicios
+  SERVICE_UNKNOWN: 'unknown',
+  SERVICE_ERROR: 'error',
+  
+  // Valores de fallback
+  CPU_USAGE_NOT_AVAILABLE: 'N/A',
+  
+  // Unidades de medida
+  UNIT_MS: 'ms',
+  UNIT_PERCENT: '%',
+  UNIT_REQ_PER_SEC: 'req/s',
+  
+  // Colecciones de base de datos
+  HEALTH_CHECK_COLLECTION: 'health_check',
+  
+  // Proveedores
+  FIREBASE_FIRESTORE_PROVIDER: 'Firebase Firestore',
+  
+  // Estados de servidor HTTP
+  HTTP_SERVER_OPERATIONAL: 'operational',
+  
+  // Estados de Promise
+  PROMISE_STATUS_FULFILLED: 'fulfilled',
+  
+  // Formatos Prometheus
+  PROMETHEUS_HELP_PREFIX: '# HELP',
+  PROMETHEUS_TYPE_PREFIX: '# TYPE',
+  PROMETHEUS_EMPTY_LABELS: '',
+  PROMETHEUS_LABEL_SEPARATOR: ',',
+  PROMETHEUS_NEWLINE: '\n',
+  
+  // Tipos de métricas Prometheus
+  PROMETHEUS_TYPE_GAUGE: 'gauge',
+  PROMETHEUS_TYPE_COUNTER: 'counter',
+  PROMETHEUS_TYPE_HISTOGRAM: 'histogram',
+  
+  // Nombres de métricas Prometheus
+  METRIC_API_MEMORY_USAGE_BYTES: 'api_memory_usage_bytes',
+  METRIC_API_MEMORY_HEAP_BYTES: 'api_memory_heap_bytes',
+  METRIC_API_UPTIME_SECONDS: 'api_uptime_seconds',
+  METRIC_API_CPU_USAGE_PERCENT: 'api_cpu_usage_percent',
+  METRIC_API_REQUESTS_TOTAL: 'api_requests_total',
+  METRIC_API_REQUESTS_ERRORS_TOTAL: 'api_requests_errors_total',
+  METRIC_API_RESPONSE_TIME_SECONDS: 'api_response_time_seconds',
+  METRIC_API_RESPONSE_TIME_P95_SECONDS: 'api_response_time_p95_seconds',
+  METRIC_API_DATABASE_CONNECTIONS_ACTIVE: 'api_database_connections_active',
+  METRIC_API_DATABASE_QUERY_TIME_SECONDS: 'api_database_query_time_seconds',
+  METRIC_API_DATABASE_STATUS: 'api_database_status',
+  METRIC_API_CACHE_HIT_RATIO: 'api_cache_hit_ratio',
+  METRIC_API_CACHE_SIZE_BYTES: 'api_cache_size_bytes',
+  METRIC_API_CACHE_KEYS_TOTAL: 'api_cache_keys_total',
+  
+  // Descripciones de métricas Prometheus
+  METRIC_DESC_MEMORY_USAGE: 'Memory usage in bytes',
+  METRIC_DESC_HEAP_MEMORY: 'Heap memory usage in bytes',
+  METRIC_DESC_UPTIME: 'Application uptime in seconds',
+  METRIC_DESC_CPU_USAGE: 'CPU usage percentage',
+  METRIC_DESC_REQUESTS_TOTAL: 'Total number of API requests',
+  METRIC_DESC_REQUESTS_ERRORS: 'Total number of API request errors',
+  METRIC_DESC_RESPONSE_TIME: 'API response time in seconds',
+  METRIC_DESC_RESPONSE_TIME_P95: '95th percentile response time in seconds',
+  METRIC_DESC_DB_CONNECTIONS: 'Active database connections',
+  METRIC_DESC_DB_QUERY_TIME: 'Database query time in seconds',
+  METRIC_DESC_DB_STATUS: 'Database status (1=healthy, 0=unhealthy)',
+  METRIC_DESC_CACHE_HIT_RATIO: 'Cache hit ratio (0-1)',
+  METRIC_DESC_CACHE_SIZE: 'Cache size in bytes',
+  METRIC_DESC_CACHE_KEYS: 'Total number of cache keys',
+  
+  // Mensajes de alertas
+  ALERT_HIGH_MEMORY_USAGE: 'High memory usage:',
+  ALERT_HIGH_RESPONSE_TIME: 'High average response time:',
+  ALERT_HIGH_ERROR_RATE: 'High error rate:',
+  ALERT_TOO_MANY_REQUESTS: 'Too many concurrent requests:',
+  
+  // Umbrales como string
+  THRESHOLD_MEMORY_85_PERCENT: '85%',
+  THRESHOLD_RESPONSE_TIME_1000MS: '1000ms',
+  THRESHOLD_ERROR_RATE_5_PERCENT: '5%',
+  THRESHOLD_CONCURRENT_REQUESTS_50: '50'
+};
+
+module.exports = {
+  PRODUCTS_MESSAGES,
+  CATEGORIES_MESSAGES, 
+  AUTH_MESSAGES,
+  GENERAL_MESSAGES,
+  VALIDATION_MESSAGES,
+  CONTROLLER_MESSAGES,
+  SERVICE_MESSAGES,
+  LOG_MESSAGES,
+  SWAGGER_DESCRIPTIONS,
+  SYSTEM_CONSTANTS,
+  SYSTEM_MESSAGES,
+  RESPONSE_FIELDS,
+  FIREBASE_CONSTANTS,
+  JOI_ERROR_KEYS,
+  VALIDATION_MESSAGES,
+  VERSION_MESSAGES,
+  SANITIZATION_MESSAGES,
+  PERFORMANCE_MESSAGES,
+  LOGGING_MESSAGES,
+  CACHE_MESSAGES,
+  AUTH_MIDDLEWARE_MESSAGES,
+  CATEGORY_CONSTANTS,
+  SWAGGER_CONSTANTS,
+  SECURITY_CONSTANTS,
+  OPTIMIZATION_CONSTANTS,
+  LOGGER_CONSTANTS,
+  JWT_CONSTANTS,
+  QUERY_CONSTANTS,
+  ERROR_CONSTANTS,
+  ADVANCED_CONTROLLER_CONSTANTS,
+  ERROR_VALIDATION_MIDDLEWARE_CONSTANTS,
+  ASYNC_UTILS_CONSTANTS,
+  HEALTH_CONSTANTS,
+  
+  // 📊 Nuevas constantes para métricas y endpoints
+  METRICS_CONSTANTS
 };

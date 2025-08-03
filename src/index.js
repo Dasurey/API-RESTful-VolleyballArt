@@ -7,7 +7,9 @@ const {
   HTTP_METHODS,
   NODE_EVENTS,
   LOG_LEVELS,
-  COMMON_VALUES
+  COMMON_VALUES,
+  HTTP_STATUS,
+  API_ENDPOINTS_PATHS
 } = require('./config/paths.config.js');
 
 const express = require(EXTERNAL_PACKAGES.EXPRESS);
@@ -23,6 +25,7 @@ if (!process.env.NODE_ENV) {
 const Logger = require(PATHS.CONFIG.LOGGER);
 const { httpLogger, devLogger, requestLogger } = require(PATHS.MIDDLEWARES.LOGGER);
 const { errorHandler, jsonErrorHandler, notFoundHandler } = require(PATHS.MIDDLEWARES.ERROR);
+const { requestIdMiddleware } = require(PATHS.UTILS.ASYNC_UTILS);
 
 // 🛡️ Sistema de seguridad
 const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require(PATHS.CONFIG.SECURITY);
@@ -50,9 +53,24 @@ const authRoutes = require(PATHS.ROUTES.AUTH);
 const categoryRoutes = require(PATHS.ROUTES.CATEGORY);
 
 const { authentication } = require(PATHS.MIDDLEWARES.AUTHENTICATION);
-const { GENERAL_MESSAGES, LOG_MESSAGES, SYSTEM_MESSAGES } = require('./utils/messages.utils.js');
+const { 
+  GENERAL_MESSAGES, 
+  LOG_MESSAGES, 
+  SYSTEM_MESSAGES,
+  HEALTH_CONSTANTS,
+  METRICS_CONSTANTS
+} = require('./utils/messages.utils.js');
 const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require(PATHS.MIDDLEWARES.VERSION);
 const { getVersionInfo } = require(PATHS.CONFIG.API_VERSIONS);
+
+// 🏥 Importar utilidades de health checks avanzados
+const { 
+  runFullHealthCheck, 
+  quickHealthCheck, 
+  getHealthHistory,
+  calculatePerformanceMetrics,
+  formatMetricsForPrometheus
+} = require(PATHS.UTILS.HEALTH_UTILS);
 
 // 🔧 Utilidades para URLs y paths (incluyendo middleware dinámico para Swagger)
 const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl } = require(PATHS.UTILS.URL_UTILS);
@@ -112,6 +130,9 @@ app.use(express.static(join(projectDir, API_ENDPOINTS.PUBLIC_DIR)));
 app.use(sanitizeInput); // Prevenir NoSQL injection
 app.use(sanitizeHtml); // Limpiar HTML/XSS
 
+// 🆔 Middleware para asignar ID único a cada request
+app.use(requestIdMiddleware);
+
 // 📊 Logging HTTP - aplicar antes de las rutas
 app.use(process.env.NODE_ENV === ENV_CONFIG.NODE_ENV_DEVELOPMENT ? devLogger : httpLogger);
 app.use(requestLogger);
@@ -153,6 +174,21 @@ registerVersionInfoEndpoints(app);
 
 /**
  * @swagger
+ * tags:
+ *   - name: System
+ *     description: Endpoints de información general y configuración del sistema
+ *   - name: Health
+ *     description: Endpoints de estado y salud de la API - monitoreo básico y completo
+ *   - name: Metrics
+ *     description: Endpoints de métricas y rendimiento del sistema - datos para dashboards
+ *   - name: Debug
+ *     description: Endpoints de información técnica y debugging para administradores
+ *   - name: Auth
+ *     description: Endpoints de autenticación y autorización de usuarios
+ *   - name: Products
+ *     description: Gestión completa de productos de volleyball
+ *   - name: Category and Subcategory
+ *     description: Gestión de categorías y subcategorías de productos
  * /api:
  *   get:
  *     summary: Información de la API
@@ -199,13 +235,19 @@ app.get(API_ENDPOINTS.API_ROOT, (req, res) => {
   });
 });
 
+// ==============================================================
+// HEALTH CHECK Y MÉTRICAS ENDPOINTS
+// ==============================================================
+
 /**
  * @swagger
  * /api/health:
  *   get:
- *     summary: Verificación de estado del servidor con métricas avanzadas
- *     description: Retorna información completa sobre el estado del servidor incluyendo métricas de rendimiento
- *     tags: [System]
+ *     summary: Health Check básico del servidor
+ *     description: |
+ *       Verificación rápida de estado del servidor para balanceadores de carga.
+ *       Retorna información básica sobre el estado del servidor sin verificar dependencias.
+ *     tags: [Health]
  *     responses:
  *       200:
  *         description: Servidor funcionando correctamente
@@ -216,37 +258,362 @@ app.get(API_ENDPOINTS.API_ROOT, (req, res) => {
  *               properties:
  *                 status:
  *                   type: string
+ *                   enum: [healthy, unhealthy]
  *                   example: healthy
  *                 timestamp:
  *                   type: string
  *                   format: date-time
+ *       503:
+ *         description: Servidor con problemas de rendimiento
+ */
+app.get(API_ENDPOINTS.HEALTH, (req, res) => {
+  const healthReport = quickHealthCheck();
+  const statusCode = healthReport.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
+  res.status(statusCode).json(healthReport);
+});
+
+/**
+ * @swagger
+ * /api/health/full:
+ *   get:
+ *     summary: Health Check completo del sistema
+ *     description: |
+ *       Verificación completa del estado del sistema incluyendo:
+ *       - Estado de la base de datos
+ *       - Estado del cache
+ *       - Métricas de rendimiento
+ *       - Alertas del sistema
+ *       - Dependencias externas
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Información completa del estado del sistema
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [healthy, degraded, unhealthy]
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 version:
+ *                   type: string
  *                 uptime:
  *                   type: object
- *                 memory:
+ *                 system:
+ *                   type: object
+ *                 dependencies:
  *                   type: object
  *                 performance:
+ *                   type: object
+ *                 alerts:
+ *                   type: array
+ */
+app.get(API_ENDPOINTS_PATHS.HEALTH_FULL, async (req, res) => {
+  try {
+    const healthReport = await runFullHealthCheck();
+    const statusCode = healthReport.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? HTTP_STATUS.OK : 
+                       healthReport.status === HEALTH_CONSTANTS.STATUS_DEGRADED ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
+    res.status(statusCode).json(healthReport);
+  } catch (error) {
+    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
+      status: HEALTH_CONSTANTS.STATUS_UNHEALTHY,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/health/history:
+ *   get:
+ *     summary: Historial de health checks
+ *     description: |
+ *       Retorna el historial de verificaciones de salud realizadas,
+ *       incluyendo estadísticas de disponibilidad del sistema.
+ *     tags: [Health]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Historial de health checks obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 checks:
+ *                   type: array
+ *                   description: Últimos 50 health checks
+ *                 summary:
+ *                   type: object
+ *                   properties:
+ *                     totalChecks:
+ *                       type: number
+ *                     uptime:
+ *                       type: number
+ *                     degraded:
+ *                       type: number
+ *                     unhealthy:
+ *                       type: number
+ *       401:
+ *         description: Token de acceso requerido
+ */
+app.get(API_ENDPOINTS_PATHS.HEALTH_HISTORY, authentication, (req, res) => {
+  const history = getHealthHistory();
+  res.json(history);
+});
+
+/**
+ * @swagger
+ * /api/metrics:
+ *   get:
+ *     summary: Métricas en tiempo real del sistema
+ *     description: |
+ *       Proporciona métricas detalladas de rendimiento del sistema incluyendo:
+ *       - CPU y memoria
+ *       - Tiempos de respuesta de la API
+ *       - Estadísticas de base de datos
+ *       - Métricas de cache
+ *     tags: [Metrics]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Métricas del sistema obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 system:
+ *                   type: object
+ *                   properties:
+ *                     cpu:
+ *                       type: object
+ *                     memory:
+ *                       type: object
+ *                     uptime:
+ *                       type: number
+ *                 api:
+ *                   type: object
+ *                   properties:
+ *                     requests:
+ *                       type: object
+ *                     responseTime:
+ *                       type: object
+ *                     errors:
+ *                       type: object
+ *                 database:
  *                   type: object
  *                 cache:
  *                   type: object
  */
-app.get(API_ENDPOINTS.HEALTH, healthCheckWithMetrics);
+app.get(API_ENDPOINTS_PATHS.METRICS, authentication, async (req, res) => {
+  try {
+    const metrics = await calculatePerformanceMetrics();
+    res.json({
+      timestamp: new Date().toISOString(),
+      ...metrics
+    });
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      error: METRICS_CONSTANTS.ERROR_OBTAINING_METRICS,
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/metrics/prometheus:
+ *   get:
+ *     summary: Métricas en formato Prometheus
+ *     description: |
+ *       Endpoint para exportar métricas en formato Prometheus para monitoreo
+ *       con herramientas como Grafana y sistemas de alertas.
+ *     tags: [Metrics]
+ *     security:
+ *       - bearerAuth: []
+ *     produces:
+ *       - text/plain
+ *     responses:
+ *       200:
+ *         description: Métricas en formato Prometheus
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: |
+ *                 # HELP api_requests_total Total number of API requests
+ *                 # TYPE api_requests_total counter
+ *                 api_requests_total 1234
+ */
+app.get(API_ENDPOINTS_PATHS.METRICS_PROMETHEUS, authentication, async (req, res) => {
+  try {
+    const metrics = await calculatePerformanceMetrics();
+    const prometheusFormat = formatMetricsForPrometheus(metrics);
+    res.set(METRICS_CONSTANTS.CONTENT_TYPE_HEADER, METRICS_CONSTANTS.CONTENT_TYPE_TEXT_PLAIN);
+    res.send(prometheusFormat);
+  } catch (error) {
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send(`${METRICS_CONSTANTS.ERROR_GENERATING_METRICS} ${error.message}`);
+  }
+});
+
+/**
+ * @swagger
+ * /api/status:
+ *   get:
+ *     summary: Estado resumido del sistema
+ *     description: |
+ *       Proporciona un resumen del estado del sistema sin autenticación
+ *       para dashboards públicos o páginas de estado.
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Estado del sistema obtenido exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [operational, degraded, down]
+ *                 services:
+ *                   type: object
+ *                   properties:
+ *                     api:
+ *                       type: string
+ *                     database:
+ *                       type: string
+ *                     cache:
+ *                       type: string
+ *                 lastUpdated:
+ *                   type: string
+ *                   format: date-time
+ */
+app.get(API_ENDPOINTS_PATHS.STATUS, async (req, res) => {
+  try {
+    const healthReport = await runFullHealthCheck();
+    const systemStatus = {
+      status: healthReport.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? METRICS_CONSTANTS.STATUS_OPERATIONAL :
+              healthReport.status === HEALTH_CONSTANTS.STATUS_DEGRADED ? HEALTH_CONSTANTS.STATUS_DEGRADED : METRICS_CONSTANTS.STATUS_DOWN,
+      services: {
+        api: healthReport.dependencies?.api?.status || METRICS_CONSTANTS.SERVICE_UNKNOWN,
+        database: healthReport.dependencies?.database?.status || METRICS_CONSTANTS.SERVICE_UNKNOWN,
+        cache: healthReport.dependencies?.cache?.status || METRICS_CONSTANTS.SERVICE_UNKNOWN
+      },
+      lastUpdated: healthReport.timestamp
+    };
+    
+    res.json(systemStatus);
+  } catch (error) {
+    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
+      status: METRICS_CONSTANTS.STATUS_DOWN,
+      services: {
+        api: METRICS_CONSTANTS.SERVICE_ERROR,
+        database: METRICS_CONSTANTS.SERVICE_UNKNOWN,
+        cache: METRICS_CONSTANTS.SERVICE_UNKNOWN
+      },
+      lastUpdated: new Date().toISOString(),
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/debug/info:
+ *   get:
+ *     summary: Información de debug del sistema
+ *     description: |
+ *       Proporciona información detallada para debugging y soporte técnico.
+ *       Solo disponible en modo desarrollo o para administradores.
+ *     tags: [Debug]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Información de debug obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 environment:
+ *                   type: string
+ *                 version:
+ *                   type: string
+ *                 nodeVersion:
+ *                   type: string
+ *                 platform:
+ *                   type: string
+ *                 startTime:
+ *                   type: string
+ *                 config:
+ *                   type: object
+ */
+app.get(API_ENDPOINTS_PATHS.DEBUG_INFO, authentication, (req, res) => {
+  const debugInfo = {
+    environment: process.env.NODE_ENV || METRICS_CONSTANTS.DEFAULT_ENVIRONMENT,
+    version: process.env.npm_package_version || METRICS_CONSTANTS.DEFAULT_VERSION,
+    nodeVersion: process.version,
+    platform: process.platform,
+    architecture: process.arch,
+    startTime: process.env.START_TIME || new Date().toISOString(),
+    uptime: process.uptime(),
+    workingDirectory: process.cwd(),
+    config: {
+      port: process.env.PORT || ENV_CONFIG.PORT_DEFAULT,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      locale: Intl.DateTimeFormat().resolvedOptions().locale
+    },
+    memoryUsage: process.memoryUsage(),
+    resourceUsage: process.resourceUsage ? process.resourceUsage() : null
+  };
+  
+  res.json(debugInfo);
+});
+
+// ==============================================================
+// ENDPOINTS DE AUTENTICACIÓN
+// ==============================================================
 
 /**
  * @swagger
  * /api/metrics:
  *   get:
  *     summary: Métricas detalladas de rendimiento
- *     description: Retorna métricas completas de rendimiento, cache y sistema
- *     tags: [System]
+ *     description: Retorna métricas completas de rendimiento, memoria, cache y sistema (requiere autenticación)
+ *     tags: [Health]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Métricas del sistema
+ *         description: Métricas del sistema obtenidas exitosamente
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "📊 Métricas del sistema obtenidas exitosamente"
+ *                 payload:
+ *                   type: object
+ *       401:
+ *         description: Token de acceso requerido
+ *       403:
+ *         description: Token inválido o expirado
  */
 app.get(API_ENDPOINTS.METRICS, authentication, (req, res) => {
   const metrics = getPerformanceMetrics();
@@ -258,13 +625,27 @@ app.get(API_ENDPOINTS.METRICS, authentication, (req, res) => {
  * /api/cache/stats:
  *   get:
  *     summary: Estadísticas de cache
- *     description: Retorna estadísticas detalladas del sistema de cache
- *     tags: [System]
+ *     description: Retorna estadísticas detalladas del sistema de cache (requiere autenticación)
+ *     tags: [Health]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Estadísticas de cache
+ *         description: Estadísticas de cache obtenidas exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "📊 Estadísticas de cache obtenidas exitosamente"
+ *                 payload:
+ *                   type: object
+ *       401:
+ *         description: Token de acceso requerido
+ *       403:
+ *         description: Token inválido o expirado
  */
 app.get(API_ENDPOINTS.CACHE_STATS, authentication, (req, res) => {
   const cacheStats = getCacheStats();
@@ -275,14 +656,28 @@ app.get(API_ENDPOINTS.CACHE_STATS, authentication, (req, res) => {
  * @swagger
  * /api/cache/clear:
  *   post:
- *     summary: Limpiar cache
- *     description: Limpia todo el cache del sistema
- *     tags: [System]
+ *     summary: Limpiar cache del sistema
+ *     description: Limpia todo el cache del sistema y reinicia las estadísticas (requiere autenticación)
+ *     tags: [Health]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Cache limpiado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "🧹 Cache limpiado exitosamente"
+ *                 payload:
+ *                   type: object
+ *       401:
+ *         description: Token de acceso requerido
+ *       403:
+ *         description: Token inválido o expirado
  */
 app.post(API_ENDPOINTS.CACHE_CLEAR, authentication, (req, res) => {
   resetCacheStats();

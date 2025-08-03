@@ -36,7 +36,7 @@ const EXTERNAL_PACKAGES = {
     // Logging
     MORGAN: 'morgan',
     WINSTON: 'winston',
-    
+
     // Optimización y compresión
     COMPRESSION: 'compression',
     EXPRESS_SLOW_DOWN: 'express-slow-down',
@@ -71,7 +71,9 @@ const PATHS = {
         URL_UTILS: './utils/url.utils.js',
         FIREBASE_UTILS: './utils/firebase.utils.js',
         CONTROLLER_UTILS: './utils/controller.utils.js',
-        CATEGORY_UTILS: './utils/category.utils.js'
+        CATEGORY_UTILS: './utils/category.utils.js',
+        ASYNC_UTILS: './utils/async.utils.js',
+        HEALTH_UTILS: './utils/health.utils.js'
     },
 
     // Modelos
@@ -154,6 +156,7 @@ const API_ENDPOINTS = {
     CATEGORY_HIERARCHY: '/hierarchy',
     CATEGORY_CREATE: '/create',
     CATEGORY_SUBCATEGORY: '/:parentId/subcategory',
+    CATEGORY_SUBCATEGORY_ALL: '/subcategory',
     CATEGORY_SUBCATEGORY_CREATE: '/:id/subcategory/create',
     CATEGORY_SUBCATEGORY_BY_IDS: '/:categoryId/subcategory/:subcategoryId',
 
@@ -187,6 +190,25 @@ const HTTP_METHODS = {
     DELETE: 'DELETE'
 };
 
+// ==============================================================
+// 🌐 ENDPOINTS DE LA API CENTRALIZADOS
+// ==============================================================  
+const API_ENDPOINTS_PATHS = {
+    // Health Check endpoints
+    HEALTH_FULL: '/api/health/full',
+    HEALTH_HISTORY: '/api/health/history',
+
+    // Métricas endpoints  
+    METRICS: '/api/metrics',
+    METRICS_PROMETHEUS: '/api/metrics/prometheus',
+
+    // Estado del sistema
+    STATUS: '/api/status',
+
+    // Debug endpoints
+    DEBUG_INFO: '/api/debug/info'
+};
+
 // Códigos de estado HTTP
 const HTTP_STATUS = {
     // Códigos de éxito
@@ -205,6 +227,9 @@ const HTTP_STATUS = {
     // Códigos de error del servidor
     INTERNAL_SERVER_ERROR: 500,
     SERVICE_UNAVAILABLE: 503
+    , CONFLICT: 409
+    , TOO_MANY_REQUESTS: 429
+    , BAD_GATEWAY: 502
 };
 
 // Eventos de Node.js
@@ -247,8 +272,6 @@ const CONFIG_VALUES = {
     UNKNOWN: 'unknown',
     CACHE_DEFAULT_NAME: 'cache',
     TIME_UNIT_MS: 'ms',
-    DEFAULT_TTL: 300,
-    BAD_REQUEST_CODE: 400,
 
     // Valores específicos de middleware
     ASYNC: 'async',
@@ -275,7 +298,8 @@ const RELATIVE_PATHS = {
         CONFIG_JWT: '../config/jwt.config.js',
         CONFIG_CACHE: '../config/cache.config.js',
         UTILS_FIREBASE: '../utils/firebase.utils.js',
-        UTILS_RESPONSE: '../utils/response.utils.js'
+        UTILS_RESPONSE: '../utils/response.utils.js',
+        UTILS_QUERY: '../utils/query.utils.js'
     },
 
     // Desde controllers/ hacia otros directorios  
@@ -308,7 +332,9 @@ const RELATIVE_PATHS = {
         RESPONSE_UTILS: './response.utils.js',
         FIREBASE_UTILS: './firebase.utils.js',
         CONTROLLER_UTILS: './controller.utils.js',
-        CATEGORY_UTILS: './category.utils.js'
+        CATEGORY_UTILS: './category.utils.js',
+        UTILS_ERROR_PATH: '../error.utils.js',
+        UTILS_ERROR: '../utils/error.utils.js'
     },
 
     // Desde services/ hacia otros directorios
@@ -326,6 +352,7 @@ const RELATIVE_PATHS = {
         CONTROLLERS_CATEGORY: '../controllers/category.controller.js',
         MIDDLEWARES_VALIDATION: '../middlewares/validation.middleware.js',
         MIDDLEWARES_AUTH: '../middlewares/authentication.middleware.js',
+        MIDDLEWARES_QUERY: '../middlewares/query.middleware.js',
         SCHEMAS_AUTH: '../schemas/auth.schema.js',
         SCHEMAS_PRODUCTS: '../schemas/products.schema.js',
         SCHEMAS_CATEGORY: '../schemas/category.schema.js',
@@ -333,7 +360,8 @@ const RELATIVE_PATHS = {
         CONFIG_SECURITY: '../config/security.config.js',
         CONFIG_CACHE: '../config/cache.config.js',
         CONFIG_OPTIMIZATION: '../config/optimization.config.js'
-    }
+    },
+    ERROR_UTILS: './error.utils.js'
 };
 
 // Formatos y separadores
@@ -508,6 +536,28 @@ const AUTHENTICATION = {
     TOKEN_INDEX: 1
 };
 
+// Configuración de cache
+const CACHE_CONFIG = {
+    DEFAULT_TTL: 300,
+    PRODUCTS_TTL: 600,
+    AUTH_TTL: 900,
+    MAX_AGE: 3600
+};
+
+// Configuración de paginación
+const PAGINATION_CONFIG = {
+    DEFAULT_LIMIT: 20,
+    MAX_LIMIT: 100,
+    DEFAULT_PAGE: 1
+};
+
+// Rutas de archivos de configuración para health checks
+const HEALTH_PATHS = {
+    DATABASE_CONFIG: '../config/db.js',
+    CACHE_CONFIG: '../config/cache.config.js',
+    PERFORMANCE_MIDDLEWARE: '../middlewares/performance.middleware.js'
+};
+
 module.exports = {
     EXTERNAL_PACKAGES,
     PATHS,
@@ -530,5 +580,9 @@ module.exports = {
     LOGGING,
     ERROR_HANDLING,
     CACHE,
-    AUTHENTICATION
+    AUTHENTICATION,
+    CACHE_CONFIG,
+    PAGINATION_CONFIG,
+    API_ENDPOINTS_PATHS,
+    HEALTH_PATHS
 };

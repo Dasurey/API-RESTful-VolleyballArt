@@ -9,13 +9,7 @@
  */
 
 const { 
-  CACHE_KEY_ALL_PRODUCTS, 
-  CACHE_KEY_PRODUCT_PREFIX, 
-  CACHE_KEY_PRODUCTS_COUNT,
-  ERROR_SETTING_PRODUCT_CACHE,
-  ERROR_SETTING_GENERAL_CACHE,
-  PERCENTAGE_SYMBOL,
-  ZERO_PERCENTAGE
+  SYSTEM_MESSAGES
 } = require('../utils/messages.utils');
 const { 
   EXTERNAL_PACKAGES,
@@ -132,7 +126,7 @@ const productsCacheManager = {
       return true;
     } catch (error) {
       cacheStats.errors++;
-      console.error(ERROR_SETTING_PRODUCT_CACHE, error);
+      console.error(SYSTEM_MESSAGES.ERROR_SETTING_PRODUCT_CACHE, error);
       return false;
     }
   },
@@ -161,9 +155,9 @@ const productsCacheManager = {
   // Invalidar cache cuando se modifica un producto
   invalidateProduct: (productId) => {
     const keysToDelete = [
-      CACHE_KEY_ALL_PRODUCTS,
-      `${CACHE_KEY_PRODUCT_PREFIX}${productId}`,
-      CACHE_KEY_PRODUCTS_COUNT
+      SYSTEM_MESSAGES.CACHE_KEY_ALL_PRODUCTS,
+      `${SYSTEM_MESSAGES.CACHE_KEY_PRODUCT_PREFIX}${productId}`,
+      SYSTEM_MESSAGES.CACHE_KEY_PRODUCTS_COUNT
     ];
     
     keysToDelete.forEach(key => {
@@ -228,7 +222,7 @@ const generalCacheManager = {
       cacheStats.sets++;
       return true;
     } catch (error) {
-      Logger.error(ERROR_SETTING_GENERAL_CACHE, error);
+      Logger.error(SYSTEM_MESSAGES.ERROR_SETTING_GENERAL_CACHE, error);
       return false;
     }
   },
@@ -274,8 +268,8 @@ const getCacheStats = () => {
       }
     },
     hitRate: cacheStats.hits + cacheStats.misses > 0 
-      ? ((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100).toFixed(2) + PERCENTAGE_SYMBOL
-      : ZERO_PERCENTAGE
+      ? ((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100).toFixed(2) + SYSTEM_MESSAGES.PERCENTAGE_SYMBOL
+      : SYSTEM_MESSAGES.ZERO_PERCENTAGE
   };
 };
 

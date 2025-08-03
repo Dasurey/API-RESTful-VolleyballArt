@@ -26,7 +26,7 @@ const getAllCategories = async (req, res) => {
 };
 const getAllCategory = async (req, res) => {
   return getCategoryResource(
-    () => CategoryService.getAllCategory(),
+    () => CategoryService.getAllCategory(req.queryProcessor),
     req,
     res,
     CATEGORIES_MESSAGES.RESOURCE_CATEGORIES,
@@ -64,13 +64,30 @@ const getSubcategoryByParent = async (req, res) => {
   const { parentId } = req.params;
   
   return getCategoryResource(
-    () => CategoryService.getSubcategoryByParent(parentId),
+    () => CategoryService.getSubcategoryByParent(parentId, req.queryProcessor),
     req,
     res,
     CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
     {
       successMessage: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_SUCCESS,
       notFoundMessage: CATEGORIES_MESSAGES.NOT_FOUND_SUBCATEGORIES(parentId),
+      errorMessage: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_ERROR
+    }
+  );
+};
+
+/**
+ * Obtener todas las subcategorías
+ */
+const getAllSubcategory = async (req, res) => {
+  return getCategoryResource(
+    () => CategoryService.getAllSubcategory(req.queryProcessor),
+    req,
+    res,
+    CATEGORY_CONSTANTS.SUBCATEGORIES_PLURAL,
+    {
+      successMessage: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_SUCCESS,
+      notFoundMessage: CATEGORIES_MESSAGES.NOT_FOUND_SUBCATEGORIES_ALL,
       errorMessage: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_ERROR
     }
   );
@@ -281,6 +298,7 @@ module.exports = {
   getAllCategory,
   getCategoryById,
   getSubcategoryByParent,
+  getAllSubcategory,
   getSubcategorySpecific,
   createCategory,
   createSubcategory,

@@ -142,9 +142,9 @@ const minifyJson = (req, res, next) => {
     try {
       // Solo minificar en producción
       if (process.env.NODE_ENV === OPTIMIZATION_CONSTANTS.NODE_ENV_PRODUCTION) {
-        // Eliminar campos null/undefined
+        // Eliminar solo campos undefined, mantener null
         const minified = JSON.parse(JSON.stringify(data, (key, value) => {
-          if (value === null || value === undefined) return undefined;
+          if (value === undefined) return undefined;
           return value;
         }));
         

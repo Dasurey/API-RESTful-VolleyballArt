@@ -6,9 +6,9 @@ const { logMessage } = require(RELATIVE_PATHS.FROM_SERVICES.UTILS_RESPONSE);
 /**
  * Obtener todas las categoria padre
  */
-const getAllCategory = async () => {
+const getAllCategory = async (queryProcessor = null) => {
   try {
-    const category = await CategoryModel.getAllCategory();
+    const category = await CategoryModel.getAllCategory(queryProcessor);
     
     logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORIES_GET_SUCCESS, {
       [SERVICE_MESSAGES.TOTAL_CATEGORY_FIELD]: category.length,
@@ -55,10 +55,11 @@ const getCategoryById = async (categoryId) => {
 /**
  * Obtener subcategoria de una categoría padre
  * @param {string} parentCategoryId - ID de la categoría padre
+ * @param {object} queryProcessor - Procesador de consultas
  */
-const getSubcategoryByParent = async (parentCategoryId) => {
+const getSubcategoryByParent = async (parentCategoryId, queryProcessor = null) => {
   try {
-    const subcategory = await CategoryModel.getSubcategoryByParent(parentCategoryId);
+    const subcategory = await CategoryModel.getSubcategoryByParent(parentCategoryId, queryProcessor);
     
     logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
       [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
@@ -70,6 +71,28 @@ const getSubcategoryByParent = async (parentCategoryId) => {
   } catch (error) {
     logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_ERROR, {
       [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
+      error: error.message,
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    });
+    throw error;
+  }
+};
+
+/**
+ * Obtener todas las subcategorías
+ */
+const getAllSubcategory = async (queryProcessor = null) => {
+  try {
+    const subcategory = await CategoryModel.getAllSubcategory(queryProcessor);
+    
+    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
+      [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: subcategory.length,
+      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    });
+    
+    return subcategory;
+  } catch (error) {
+    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_ERROR, {
       error: error.message,
       [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
@@ -107,7 +130,7 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
 };
 
 /**
- * Crear nueva categoría padre
+ * Crear nueva categoría padre (opcionalmente con subcategorías)
  * @param {Object} categoryData - Datos de la categoría
  */
 const createCategory = async (categoryData) => {
@@ -117,13 +140,49 @@ const createCategory = async (categoryData) => {
       throw new Error(VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED);
     }
     
-    const newCategory = await CategoryModel.createCategory(categoryData);
+    // Extraer subcategorías si existen
+    const { subcategory, ...parentCategoryData } = categoryData;
+    
+    // Crear la categoría padre primero
+    const newCategory = await CategoryModel.createCategory(parentCategoryData);
     
     logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_CREATE_SUCCESS, {
       [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: newCategory.id,
       [SERVICE_MESSAGES.TITLE_FIELD]: newCategory.title,
       [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
+    
+    // Si hay subcategorías, crearlas
+    if (subcategory && Array.isArray(subcategory) && subcategory.length > 0) {
+      const createdSubcategories = [];
+      
+      for (const subcategoryData of subcategory) {
+        try {
+          const newSubcategory = await CategoryModel.createSubcategory(newCategory.id, subcategoryData);
+          createdSubcategories.push(newSubcategory);
+          
+          logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
+            [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: newSubcategory.id,
+            [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: newCategory.id,
+            [SERVICE_MESSAGES.TITLE_FIELD]: newSubcategory.title,
+            [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+          });
+        } catch (subcategoryError) {
+          logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_ERROR, {
+            [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: newCategory.id,
+            subcategoryData: subcategoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT,
+            error: subcategoryError.message,
+            [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+          });
+          // Continuar con las demás subcategorías aunque una falle
+        }
+      }
+      
+      // Agregar las subcategorías creadas a la respuesta
+      if (createdSubcategories.length > 0) {
+        newCategory.subcategory = createdSubcategories;
+      }
+    }
     
     return newCategory;
   } catch (error) {
@@ -273,6 +332,7 @@ module.exports = {
   getAllCategory,
   getCategoryById,
   getSubcategoryByParent,
+  getAllSubcategory,
   getSubcategorySpecific,
   createCategory,
   createSubcategory,

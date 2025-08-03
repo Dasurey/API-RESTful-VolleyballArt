@@ -3,6 +3,7 @@ const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
 const categoryController = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_CATEGORY);
 const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
 const { authentication } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_AUTH);
+const { categoriesQueryProcessor, subcategoriesQueryProcessor } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_QUERY);
 const {
   createCategorySchema,
   createSubcategorySchema,
@@ -48,11 +49,27 @@ const router = Router();
  *           items:
  *             $ref: '#/components/schemas/Subcategory'
  *           description: Lista de subcategory (solo para category padre)
+ *         isParent:
+ *           type: boolean
+ *           description: Indica si es una categoría padre
+ *           example: true
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Fecha de creación de la categoría
+ *           readOnly: true
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Fecha de última actualización de la categoría
+ *           readOnly: true
  *
  *     Subcategory:
  *       type: object
  *       required:
  *         - title
+ *         - text
+ *         - img
  *       properties:
  *         id:
  *           type: string
@@ -70,59 +87,44 @@ const router = Router();
  *           type: array
  *           items:
  *             type: object
+ *             required:
+ *               - src
+ *               - alt
  *             properties:
  *               src:
  *                 type: string
  *                 description: URL de la imagen
+ *                 example: "https://example.com/image.jpg"
  *               alt:
  *                 type: string
  *                 description: Texto alternativo
+ *                 example: "Descripción de la imagen"
  *           description: Imágenes asociadas a la subcategory
+ *           example:
+ *             - src: "https://example.com/image1.jpg"
+ *               alt: "Primera imagen"
+ *             - src: "https://example.com/image2.jpg"
+ *               alt: "Segunda imagen"
  *         parentCategoryId:
  *           type: string
  *           description: ID de la category padre
  *           example: "CAT-0001-0000"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Fecha de creación de la subcategoría
+ *           readOnly: true
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           description: Fecha de última actualización de la subcategoría
+ *           readOnly: true
  *
- *     CategoryInput:
- *       type: object
- *       required:
- *         - title
- *       properties:
- *         title:
- *           type: string
- *           description: Título de la category
- *           example: "Zapatillas"
- *
- *     SubcategoryInput:
- *       type: object
- *       required:
- *         - title
- *       properties:
- *         title:
- *           type: string
- *           description: Título de la subcategory
- *           example: "Hombre"
- *         text:
- *           type: string
- *           description: Texto descriptivo con HTML
- *           example: "<p>Información importante sobre el producto</p>"
- *         img:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               src:
- *                 type: string
- *                 description: URL de la imagen
- *               alt:
- *                 type: string
- *                 description: Texto alternativo
- *           description: Imágenes asociadas a la subcategory
  */
 
 /**
  * @swagger
- * /api/v1/category/hierarchy:
+ * /api/category/hierarchy:
  *   get:
  *     summary: Obtener jerarquía completa de category con subcategory
  *     tags: ["Category and Subcategory"]
@@ -144,14 +146,50 @@ const router = Router();
  *       500:
  *         description: Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoryController.getCategoryHierarchy);
+router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoriesQueryProcessor, categoryController.getCategoryHierarchy);
 
 /**
  * @swagger
- * /api/v1/category:
+ * /api/category:
  *   get:
  *     summary: Obtener todas las category padre
+ *     description: |
+ *       Devuelve una lista de categorías padre con sistema avanzado de consultas:
+ *       - **Paginación**: `?page=1&limit=10`
+ *       - **Filtros**: `?isParent=true&createdAt[gte]=2024-01-01`
+ *       - **Búsqueda**: `?search=zapatillas`
+ *       - **Ordenamiento**: `?sort=-createdAt,title`
+ *       
+ *       **Campos filtrables:** isParent, parentCategoryId, createdAt
+ *       **Campos ordenables:** title, createdAt
  *     tags: ["Category and Subcategory"]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Elementos por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Búsqueda en título
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *         description: Ordenamiento
+ *         example: "-createdAt,title"
  *     responses:
  *       200:
  *         description: Lista de categoria obtenida exitosamente
@@ -167,16 +205,92 @@ router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoryController.getCategoryHiera
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Category'
+ *                 pagination:
+ *                   type: object
+ *                 queryInfo:
+ *                   type: object
  *       500:
  *         description: Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_ROOT, categoryController.getAllCategory);
+router.get(API_ENDPOINTS.CATEGORY_ROOT, categoriesQueryProcessor, categoryController.getAllCategory);
 
 /**
  * @swagger
- * /api/v1/category/create:
+ * /api/category/subcategory:
+ *   get:
+ *     summary: Obtener todas las subcategorías
+ *     description: |
+ *       Devuelve una lista de todas las subcategorías con sistema avanzado de consultas:
+ *       - **Paginación**: `?page=1&limit=10`
+ *       - **Filtros**: `?parentCategoryId=CAT-0001-0000&createdAt[gte]=2024-01-01`
+ *       - **Búsqueda**: `?search=rodilleras`
+ *       - **Ordenamiento**: `?sort=-createdAt,title`
+ *       
+ *       **Campos filtrables:** parentCategoryId, createdAt
+ *       **Campos ordenables:** title, createdAt
+ *     tags: ["Category and Subcategory"]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Elementos por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Búsqueda en título y texto
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *         description: Ordenamiento
+ *         example: "-createdAt,title"
+ *       - in: query
+ *         name: parentCategoryId
+ *         schema:
+ *           type: string
+ *         description: Filtrar por categoría padre
+ *         example: "CAT-0001-0000"
+ *     responses:
+ *       200:
+ *         description: Lista de todas las subcategorías obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "📂 Subcategorías obtenidas exitosamente"
+ *                 payload:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Subcategory'
+ *                 pagination:
+ *                   type: object
+ *                 queryInfo:
+ *                   type: object
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_ALL, subcategoriesQueryProcessor, categoryController.getAllSubcategory);
+
+/**
+ * @swagger
+ * /api/category/create:
  *   post:
- *     summary: Crear nueva category padre
+ *     summary: Crear nueva category padre (opcionalmente con subcategorías)
  *     tags: ["Category and Subcategory"]
  *     security:
  *       - bearerAuth: []
@@ -185,10 +299,25 @@ router.get(API_ENDPOINTS.CATEGORY_ROOT, categoryController.getAllCategory);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CategoryInput'
+ *             $ref: '#/components/schemas/Category'
+ *           examples:
+ *             solo_categoria:
+ *               summary: Crear solo categoría padre
+ *               value:
+ *                 title: "Indumentaria"
+ *             categoria_con_subcategorias:
+ *               summary: Crear categoría padre con subcategorías
+ *               value:
+ *                 title: "Indumentaria"
+ *                 subcategory:
+ *                   - title: "Camperas y Buzos"
+ *                     text: "<p>CONSEJO: Ver tabla de talles</p>"
+ *                     img:
+ *                       - src: "img/additional_info/jacket.webp"
+ *                         alt: "Talle de Camperas y Buzos"
  *     responses:
  *       201:
- *         description: Categoría creada exitosamente
+ *         description: Categoría creada exitosamente (con o sin subcategorías)
  *         content:
  *           application/json:
  *             schema:
@@ -212,7 +341,7 @@ router.post(API_ENDPOINTS.CATEGORY_CREATE, authentication, validate(createCatego
 
 /**
  * @swagger
- * /api/v1/category/{id}:
+ * /api/category/{id}:
  *   get:
  *     summary: Obtener category por ID con sus subcategory
  *     tags: ["Category and Subcategory"]
@@ -242,11 +371,15 @@ router.post(API_ENDPOINTS.CATEGORY_CREATE, authentication, validate(createCatego
  *       500:
  *         description: Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_BY_ID, validate(categoryIdSchema, VALIDATION_TYPES.PARAMS), categoryController.getCategoryById);
+router.get(API_ENDPOINTS.CATEGORY_BY_ID, 
+  categoriesQueryProcessor,
+  validate(categoryIdSchema, VALIDATION_TYPES.PARAMS), 
+  categoryController.getCategoryById
+);
 
 /**
  * @swagger
- * /api/v1/category/{id}:
+ * /api/category/{id}:
  *   put:
  *     summary: Actualizar category o subcategory
  *     tags: ["Category and Subcategory"]
@@ -266,8 +399,8 @@ router.get(API_ENDPOINTS.CATEGORY_BY_ID, validate(categoryIdSchema, VALIDATION_T
  *         application/json:
  *           schema:
  *             oneOf:
- *               - $ref: '#/components/schemas/CategoryInput'
- *               - $ref: '#/components/schemas/SubcategoryInput'
+ *               - $ref: '#/components/schemas/Category'
+ *               - $ref: '#/components/schemas/Subcategory'
  *     responses:
  *       200:
  *         description: Categoría actualizada exitosamente
@@ -303,7 +436,7 @@ router.put(API_ENDPOINTS.CATEGORY_BY_ID,
 
 /**
  * @swagger
- * /api/v1/category/{id}:
+ * /api/category/{id}:
  *   delete:
  *     summary: Eliminar category o subcategory
  *     tags: ["Category and Subcategory"]
@@ -363,9 +496,18 @@ router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
 
 /**
  * @swagger
- * /api/v1/category/{parentId}/subcategory:
+ * /api/category/{parentId}/subcategory:
  *   get:
  *     summary: Obtener subcategory de una category padre
+ *     description: |
+ *       Devuelve una lista de subcategorías de una categoría padre específica con sistema avanzado de consultas:
+ *       - **Paginación**: `?page=1&limit=10`
+ *       - **Filtros**: `?createdAt[gte]=2024-01-01`
+ *       - **Búsqueda**: `?search=rodilleras`
+ *       - **Ordenamiento**: `?sort=-createdAt,title`
+ *       
+ *       **Campos filtrables:** createdAt
+ *       **Campos ordenables:** title, createdAt
  *     tags: ["Category and Subcategory"]
  *     parameters:
  *       - in: path
@@ -375,6 +517,32 @@ router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
  *           type: string
  *         description: ID de la category padre (CAT-XXXX-0000)
  *         example: "CAT-0001-0000"
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Elementos por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Búsqueda en título y texto
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *         description: Ordenamiento
+ *         example: "-createdAt,title"
  *     responses:
  *       200:
  *         description: Lista de subcategory obtenida exitosamente
@@ -390,16 +558,24 @@ router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Subcategory'
+ *                 pagination:
+ *                   type: object
+ *                 queryInfo:
+ *                   type: object
  *       404:
  *         description: Category padre no encontrada
  *       500:
  *         description: Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY, validate(parentCategoryIdSchema, VALIDATION_TYPES.PARAMS), categoryController.getSubcategoryByParent);
+router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY, 
+  subcategoriesQueryProcessor,
+  validate(parentCategoryIdSchema, VALIDATION_TYPES.PARAMS), 
+  categoryController.getSubcategoryByParent
+);
 
 /**
  * @swagger
- * /api/v1/category/{parentId}/subcategory/create:
+ * /api/category/{parentId}/subcategory/create:
  *   post:
  *     summary: Crear nueva subcategory
  *     tags: ["Category and Subcategory"]
@@ -418,7 +594,7 @@ router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY, validate(parentCategoryIdSchema, 
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/SubcategoryInput'
+ *             $ref: '#/components/schemas/Subcategory'
  *     responses:
  *       201:
  *         description: Subcategory creada exitosamente
@@ -452,7 +628,7 @@ router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
 
 /**
  * @swagger
- * /api/v1/category/{categoryId}/subcategory/{subcategoryId}:
+ * /api/category/{categoryId}/subcategory/{subcategoryId}:
  *   get:
  *     summary: Obtener subcategoría específica por ID
  *     tags: ["Category and Subcategory"]
@@ -492,13 +668,14 @@ router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
  *         description: Error interno del servidor
  */
 router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
+  subcategoriesQueryProcessor,
   // validate(categorySubcategoryParamsSchema, VALIDATION_TYPES.PARAMS),
   categoryController.getSubcategorySpecific
 );
 
 /**
  * @swagger
- * /api/v1/category/{categoryId}/subcategory/{subcategoryId}:
+ * /api/category/{categoryId}/subcategory/{subcategoryId}:
  *   put:
  *     summary: Actualizar subcategoría específica
  *     tags: ["Category and Subcategory"]
@@ -568,7 +745,7 @@ router.put(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
 
 /**
  * @swagger
- * /api/v1/category/{categoryId}/subcategory/{subcategoryId}:
+ * /api/category/{categoryId}/subcategory/{subcategoryId}:
  *   delete:
  *     summary: Eliminar subcategoría específica
  *     tags: ["Category and Subcategory"]
