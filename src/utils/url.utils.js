@@ -55,16 +55,12 @@ function updateSwaggerUrl(req, res, next) {
 
     next();
   } catch (error) {
-    // Usar logMessage si está disponible, sino lanzar error globalizado
-    try {
-      const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
-      logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.ERROR_UPDATING_SWAGGER_URL, { error: error.message });
-    } catch {
-      throw new InternalServerError(undefined, {
-        operation: 'updateSwaggerUrl',
-        originalError: error.message
-      });
-    }
+    // Usar error globalizado de error.utils.js
+    const internalError = new InternalServerError(undefined, {
+      operation: 'updateSwaggerUrl',
+      originalError: error.message
+    });
+    console.error(internalError);
     next();
   }
 }
