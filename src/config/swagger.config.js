@@ -124,6 +124,114 @@ const swaggerOptions = {
             }
           }
         },
+        Category: {
+          type: SWAGGER_CONSTANTS.TYPE_OBJECT,
+          required: [SWAGGER_CONSTANTS.FIELD_TITLE],
+          properties: {
+            id: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.CATEGORY_ID_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.CATEGORY_ID_EXAMPLE
+            },
+            title: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.CATEGORY_TITLE_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.CATEGORY_TITLE_EXAMPLE
+            },
+            subcategory: {
+              type: SWAGGER_CONSTANTS.TYPE_ARRAY,
+              items: {
+                $ref: SWAGGER_CONSTANTS.SCHEMA_REF_SUBCATEGORY
+              },
+              description: SWAGGER_CONSTANTS.CATEGORY_SUBCATEGORY_LIST_DESCRIPTION
+            },
+            isParent: {
+              type: SWAGGER_CONSTANTS.TYPE_BOOLEAN,
+              description: SWAGGER_CONSTANTS.CATEGORY_IS_PARENT_DESCRIPTION,
+              example: true
+            },
+            createdAt: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              format: SWAGGER_CONSTANTS.FORMAT_DATE_TIME,
+              description: SWAGGER_CONSTANTS.CATEGORY_CREATED_AT_DESCRIPTION,
+              readOnly: true
+            },
+            updatedAt: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              format: SWAGGER_CONSTANTS.FORMAT_DATE_TIME,
+              description: SWAGGER_CONSTANTS.CATEGORY_UPDATED_AT_DESCRIPTION,
+              readOnly: true
+            }
+          }
+        },
+        Subcategory: {
+          type: SWAGGER_CONSTANTS.TYPE_OBJECT,
+          required: [SWAGGER_CONSTANTS.FIELD_TITLE, SWAGGER_CONSTANTS.FIELD_TEXT, SWAGGER_CONSTANTS.FIELD_IMG],
+          properties: {
+            id: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.SUBCATEGORY_ID_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.SUBCATEGORY_ID_EXAMPLE
+            },
+            title: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.SUBCATEGORY_TITLE_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.SUBCATEGORY_TITLE_EXAMPLE
+            },
+            text: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.SUBCATEGORY_TEXT_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.SUBCATEGORY_TEXT_EXAMPLE
+            },
+            img: {
+              type: SWAGGER_CONSTANTS.TYPE_ARRAY,
+              items: {
+                type: SWAGGER_CONSTANTS.TYPE_OBJECT,
+                required: [SWAGGER_CONSTANTS.FIELD_SRC, SWAGGER_CONSTANTS.FIELD_ALT],
+                properties: {
+                  src: {
+                    type: SWAGGER_CONSTANTS.TYPE_STRING,
+                    description: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_URL_DESCRIPTION,
+                    example: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_URL_EXAMPLE
+                  },
+                  alt: {
+                    type: SWAGGER_CONSTANTS.TYPE_STRING,
+                    description: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_ALT_DESCRIPTION,
+                    example: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_ALT_EXAMPLE
+                  }
+                }
+              },
+              description: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGES_DESCRIPTION,
+              example: [
+                {
+                  src: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_EXAMPLE_1_URL,
+                  alt: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_EXAMPLE_1_ALT
+                },
+                {
+                  src: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_EXAMPLE_2_URL,
+                  alt: SWAGGER_CONSTANTS.SUBCATEGORY_IMAGE_EXAMPLE_2_ALT
+                }
+              ]
+            },
+            parentCategoryId: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.SUBCATEGORY_PARENT_CATEGORY_ID_DESCRIPTION,
+              example: SWAGGER_CONSTANTS.SUBCATEGORY_PARENT_CATEGORY_ID_EXAMPLE
+            },
+            createdAt: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              format: SWAGGER_CONSTANTS.FORMAT_DATE_TIME,
+              description: SWAGGER_CONSTANTS.SUBCATEGORY_CREATED_AT_DESCRIPTION,
+              readOnly: true
+            },
+            updatedAt: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              format: SWAGGER_CONSTANTS.FORMAT_DATE_TIME,
+              description: SWAGGER_CONSTANTS.SUBCATEGORY_UPDATED_AT_DESCRIPTION,
+              readOnly: true
+            }
+          }
+        },
         AuthRequest: {
           type: SWAGGER_CONSTANTS.TYPE_OBJECT,
           required: [SWAGGER_CONSTANTS.FIELD_EMAIL, SWAGGER_CONSTANTS.FIELD_PASSWORD],
@@ -152,25 +260,28 @@ const swaggerOptions = {
             payload: {
               type: SWAGGER_CONSTANTS.TYPE_OBJECT,
               properties: {
+                user: {
+                  type: SWAGGER_CONSTANTS.TYPE_OBJECT,
+                  properties: {
+                    uid: {
+                      type: SWAGGER_CONSTANTS.TYPE_STRING,
+                      description: SWAGGER_CONSTANTS.USER_ID_DESCRIPTION,
+                      example: SWAGGER_CONSTANTS.EXAMPLE_USER_ID
+                    },
+                    email: {
+                      type: SWAGGER_CONSTANTS.TYPE_STRING,
+                      format: SWAGGER_CONSTANTS.FORMAT_EMAIL,
+                      description: SWAGGER_CONSTANTS.EMAIL_USER_DESCRIPTION,
+                      example: SWAGGER_CONSTANTS.EXAMPLE_EMAIL
+                    }
+                  }
+                },
                 token: {
                   type: SWAGGER_CONSTANTS.TYPE_STRING,
                   description: SWAGGER_CONSTANTS.JWT_TOKEN_DESCRIPTION,
                   example: SWAGGER_CONSTANTS.EXAMPLE_JWT_TOKEN
                 }
               }
-            }
-          }
-        },
-        Error: {
-          type: SWAGGER_CONSTANTS.TYPE_OBJECT,
-          properties: {
-            message: {
-              type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: SWAGGER_CONSTANTS.ERROR_MESSAGE_DESCRIPTION
-            },
-            error: {
-              type: SWAGGER_CONSTANTS.TYPE_STRING,
-              description: SWAGGER_CONSTANTS.ERROR_DETAILS_DESCRIPTION
             }
           }
         },
@@ -186,6 +297,19 @@ const swaggerOptions = {
               description: SWAGGER_CONSTANTS.RESPONSE_DATA_DESCRIPTION
             }
           }
+        },
+        Error: {
+          type: SWAGGER_CONSTANTS.TYPE_OBJECT,
+          properties: {
+            message: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.ERROR_MESSAGE_DESCRIPTION
+            },
+            error: {
+              type: SWAGGER_CONSTANTS.TYPE_STRING,
+              description: SWAGGER_CONSTANTS.ERROR_DETAILS_DESCRIPTION
+            }
+          }
         }
       }
     },
@@ -199,8 +323,28 @@ const swaggerOptions = {
         description: SWAGGER_CONSTANTS.TAG_PRODUCTS_DESCRIPTION
       },
       {
+        name: SWAGGER_CONSTANTS.TAG_CATEGORY_SUBCATEGORY,
+        description: SWAGGER_CONSTANTS.TAG_CATEGORY_SUBCATEGORY_DESCRIPTION
+      },
+      {
+        name: SWAGGER_CONSTANTS.TAG_SYSTEM,
+        description: SWAGGER_CONSTANTS.TAG_SYSTEM_DESCRIPTION
+      },
+      {
         name: SWAGGER_CONSTANTS.TAG_HEALTH,
         description: SWAGGER_CONSTANTS.TAG_HEALTH_DESCRIPTION
+      },
+      {
+        name: SWAGGER_CONSTANTS.TAG_METRICS,
+        description: SWAGGER_CONSTANTS.TAG_METRICS_DESCRIPTION
+      },
+      {
+        name: SWAGGER_CONSTANTS.TAG_DEBUG,
+        description: SWAGGER_CONSTANTS.TAG_DEBUG_DESCRIPTION
+      },
+      {
+        name: SWAGGER_CONSTANTS.TAG_BACKUP,
+        description: SWAGGER_CONSTANTS.TAG_BACKUP_DESCRIPTION
       }
     ]
   },
@@ -224,7 +368,7 @@ const swaggerUiOptions = {
     tagsSorter: (a, b) => {
       try {
         // Orden personalizado mejorado y más seguro
-        const order = SWAGGER_CONSTANTS.ORDER_ITEMS;
+        const order = ['Auth', 'Products', 'Category and Subcategory', 'System', 'Health', 'Metrics', 'Debug', 'Backup'];
         const indexA = order.indexOf(a);
         const indexB = order.indexOf(b);
         

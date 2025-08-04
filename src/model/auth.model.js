@@ -4,6 +4,12 @@ const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = 
 const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
 const { doc, setDoc, getDoc } = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
 const { generateToken } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_JWT);
+const { 
+  AuthenticationError, 
+  ValidationError, 
+  ConflictError, 
+  InternalServerError 
+} = require('../utils/error.utils.js');
 
 const auth = getAuth();
 
@@ -21,19 +27,16 @@ const loginUser = async (req, res, email, password) => {
     return res.status(HTTP_STATUS.OK).json({
       message: AUTH_MESSAGES.LOGIN_SUCCESS,
       payload: {
+        token: jwtToken,
         user: {
-          id: user.uid,
+          uid: user.uid,
           email: user.email,
           ...user.toJSON() // Incluye otros datos del usuario si es necesario
-        },
-        token: jwtToken
+        }
       }
     });
   } catch (error) {
-    return res.status(HTTP_STATUS.UNAUTHORIZED).json({
-      message: AUTH_MESSAGES.INCORRECT_CREDENTIALS,
-      error: error.message
-    });
+    throw new AuthenticationError(AUTH_MESSAGES.INCORRECT_CREDENTIALS);
   }
 };
 
@@ -66,24 +69,15 @@ const registerUser = async (req, res, email, password) => {
       }
     });
   } catch (error) {
-    let errorMessage = AUTH_MESSAGES.REGISTER_ERROR;
-    let statusCode = HTTP_STATUS.INTERNAL_SERVER_ERROR;
-    
     if (error.code === FIREBASE_CONSTANTS.ERROR_EMAIL_ALREADY_IN_USE) {
-      errorMessage = AUTH_MESSAGES.EMAIL_ALREADY_IN_USE;
-      statusCode = HTTP_STATUS.BAD_REQUEST;
+      throw new ConflictError(AUTH_MESSAGES.EMAIL_ALREADY_IN_USE);
     } else if (error.code === FIREBASE_CONSTANTS.ERROR_WEAK_PASSWORD) {
-      errorMessage = AUTH_MESSAGES.WEAK_PASSWORD;
-      statusCode = HTTP_STATUS.BAD_REQUEST;
+      throw new ValidationError(AUTH_MESSAGES.WEAK_PASSWORD);
     } else if (error.code === FIREBASE_CONSTANTS.ERROR_INVALID_EMAIL) {
-      errorMessage = AUTH_MESSAGES.INVALID_EMAIL;
-      statusCode = HTTP_STATUS.BAD_REQUEST;
+      throw new ValidationError(AUTH_MESSAGES.INVALID_EMAIL);
     }
     
-    return res.status(statusCode).json({
-      message: errorMessage,
-      error: error.message
-    });
+    throw new InternalServerError();
   }
 };
 

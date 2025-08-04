@@ -1,6 +1,12 @@
 const { RELATIVE_PATHS } = require('../config/paths.config.js');
 const { SYSTEM_MESSAGES } = require('./messages.utils.js');
 const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
+const { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError, 
+  InternalServerError 
+} = require('./error.utils.js');
 const {
     collection,
     getDocs,
@@ -43,17 +49,10 @@ async function executeFirebaseOperation(firebaseOperation, operationType, collec
 
         return result;
     } catch (error) {
-        // Log detallado del error
-        logMessage(SYSTEM_MESSAGES.FIREBASE_LOG_ERROR, `${SYSTEM_MESSAGES.FIREBASE_OPERATION_ERROR} ${operationType} ${SYSTEM_MESSAGES.FIREBASE_OPERATION_OF} ${collection}`, {
-            collection,
-            operationType,
-            error: error.message,
-            stack: error.stack,
-            timestamp: new Date().toISOString(),
-            ...metadata
-        });
-
-        throw error;
+        throw new InternalServerError(
+            undefined, // Usar mensaje por defecto
+            { operation: operationType, collection, originalError: error.message, stack: error.stack, timestamp: new Date().toISOString(), ...metadata }
+        );
     }
 }
 
@@ -73,7 +72,7 @@ async function createDocument(db, collectionName, data, options = {}) {
             if (validateData) {
                 const validation = validateData(data);
                 if (!validation.isValid) {
-                    throw new Error(`${SYSTEM_MESSAGES.FIREBASE_DATA_INVALID} ${validation.errors.join(SYSTEM_MESSAGES.FIREBASE_ERROR_SEPARATOR)}`);
+                    throw new ValidationError();
                 }
             }
 
@@ -227,7 +226,7 @@ async function updateDocument(db, collectionName, documentId, data, options = {}
             if (validateData) {
                 const validation = validateData(data);
                 if (!validation.isValid) {
-                    throw new Error(`${SYSTEM_MESSAGES.FIREBASE_DATA_INVALID} ${validation.errors.join(SYSTEM_MESSAGES.FIREBASE_ERROR_SEPARATOR)}`);
+                    throw new ValidationError();
                 }
             }
 

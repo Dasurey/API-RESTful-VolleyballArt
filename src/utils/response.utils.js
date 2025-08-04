@@ -6,7 +6,8 @@ const {
     ENV_CONFIG,
     LOG_LEVELS,
     FORMAT_PATTERNS,
-    API_ENDPOINTS
+    API_ENDPOINTS,
+    API_ENDPOINTS_PATHS
 } = require('../config/paths.config.js');
 const { LOG_MESSAGES, SYSTEM_MESSAGES, RESPONSE_FIELDS } = require('./messages.utils.js');
 const Logger = require(RELATIVE_PATHS.FROM_UTILS.CONFIG_LOGGER);
@@ -55,64 +56,22 @@ function successResponse(res, message, payload = null, statusCode = COMMON_VALUE
 }
 
 /**
- * Respuesta de error estandarizada
- * @param {Object} res - Response object de Express
- * @param {string} message - Mensaje de error
- * @param {number} statusCode - Código de estado HTTP
- * @param {Array|string} errors - Errores específicos
- */
-function errorResponse(res, message, statusCode = COMMON_VALUES.SERVER_ERROR_CODE, errors = null) {
-    const response = {
-        [RESPONSE_FIELDS.MESSAGE]: message,
-        [RESPONSE_FIELDS.PAYLOAD]: {
-            [RESPONSE_FIELDS.STATUS_CODE]: statusCode,
-            [RESPONSE_FIELDS.TIMESTAMP]: new Date().toISOString(),
-            ...(errors && { [RESPONSE_FIELDS.ERRORS]: Array.isArray(errors) ? errors : [errors] }),
-            [RESPONSE_FIELDS.META]: {
-                [RESPONSE_FIELDS.TIMESTAMP]: new Date().toISOString(),
-                [RESPONSE_FIELDS.REQUEST_ID]: `${CONFIG_VALUES.REQ_PREFIX}${Date.now()}`,
-                [RESPONSE_FIELDS.CACHED]: false,
-                [RESPONSE_FIELDS.RESPONSE_TIME]: Date.now() - (res.locals.startTime || Date.now())
-            }
-        }
-    };
-
-    return res.status(statusCode).json(response);
-}
-
-/**
- * Wrapper para try-catch con logging automático
- * @param {Function} asyncFn - Función async a ejecutar
- * @param {Object} res - Response object de Express
- * @param {string} errorMessage - Mensaje de error personalizado
- */
-async function safeAsync(asyncFn, res, errorMessage = LOG_MESSAGES.ERROR_INTERNAL) {
-    try {
-        return await asyncFn();
-    } catch (error) {
-        logMessage(LOG_LEVELS.ERROR, `${errorMessage}${FORMAT_PATTERNS.COLON_SEPARATOR}`, {
-            [RESPONSE_FIELDS.ERROR]: error.message,
-            [RESPONSE_FIELDS.STACK]: error.stack,
-            [RESPONSE_FIELDS.TIMESTAMP]: new Date().toISOString()
-        });
-
-        return errorResponse(res, errorMessage, COMMON_VALUES.SERVER_ERROR_CODE, error.message);
-    }
-}
-
-/**
  * URLs de endpoints centralizadas
  * @param {string} baseUrl - URL base del servidor
  * @returns {Object} - Objeto con todas las URLs de endpoints
  */
 function getEndpointUrls(baseUrl) {
     return {
+        [RESPONSE_FIELDS.API]: `${baseUrl}${API_ENDPOINTS.API_ROOT}`,
         [RESPONSE_FIELDS.DOCUMENTATION]: `${baseUrl}${API_ENDPOINTS.API_DOCS}`,
+        [RESPONSE_FIELDS.PRODUCTS]: `${baseUrl}${API_ENDPOINTS.PRODUCTS_BASE}`,
+        [RESPONSE_FIELDS.CATEGORY_HIERARCHY]: `${baseUrl}${API_ENDPOINTS.CATEGORY_HIERARCHY_FULL}`,
+        [RESPONSE_FIELDS.SYSTEM]: `${baseUrl}${API_ENDPOINTS_PATHS.STATUS}`,
+        [RESPONSE_FIELDS.CACHE]: `${baseUrl}${API_ENDPOINTS.CACHE_STATS}`,
         [RESPONSE_FIELDS.HEALTH]: `${baseUrl}${API_ENDPOINTS.HEALTH}`,
         [RESPONSE_FIELDS.METRICS]: `${baseUrl}${API_ENDPOINTS.METRICS}`,
-        [RESPONSE_FIELDS.CACHE]: `${baseUrl}${API_ENDPOINTS.CACHE_STATS}`,
-        [RESPONSE_FIELDS.SWAGGER]: `${baseUrl}${API_ENDPOINTS.SWAGGER_JSON}`,
-        [RESPONSE_FIELDS.API]: `${baseUrl}${API_ENDPOINTS.API_ROOT}`
+        [RESPONSE_FIELDS.DEBUG]: `${baseUrl}${API_ENDPOINTS.DEBUG}`,
+        [RESPONSE_FIELDS.SWAGGER]: `${baseUrl}${API_ENDPOINTS.SWAGGER_JSON}`
     };
 }
 
@@ -135,12 +94,16 @@ function logServerInfo(baseUrl, port) {
     // URLs principales (usar console.log directo para inicio del servidor)
     if (process.env[ENV_VARIABLES.ENABLE_CONSOLE_LOGS] === CONFIG_VALUES.TRUE_STRING || process.env[ENV_VARIABLES.NODE_ENV] === ENV_CONFIG.NODE_ENV_DEVELOPMENT) {
         console.log(`${SYSTEM_MESSAGES.SERVER_RUNNING} ${baseUrl}`);
-        console.log(`${SYSTEM_MESSAGES.API_DOCUMENTATION} ${urls[RESPONSE_FIELDS.DOCUMENTATION]}`);
-        console.log(`${SYSTEM_MESSAGES.SWAGGER_DOCS} ${urls[RESPONSE_FIELDS.DOCUMENTATION]}`);
-        console.log(`${SYSTEM_MESSAGES.HEALTH_CHECK} ${urls[RESPONSE_FIELDS.HEALTH]}`);
-        console.log(`${SYSTEM_MESSAGES.PERFORMANCE_METRICS} ${urls[RESPONSE_FIELDS.METRICS]}`);
-        console.log(`${SYSTEM_MESSAGES.CACHE_STATS} ${urls[RESPONSE_FIELDS.CACHE]}`);
-        console.log(`${SYSTEM_MESSAGES.OPENAPI_SPEC} ${urls[RESPONSE_FIELDS.SWAGGER]}`);
+        console.log(`${SYSTEM_MESSAGES.API_ROOT} ${baseUrl}${API_ENDPOINTS.API_ROOT}`);
+        console.log(`${SYSTEM_MESSAGES.API_DOCUMENTATION} ${baseUrl}${API_ENDPOINTS.API_DOCS}`);
+        console.log(`${SYSTEM_MESSAGES.PRODUCTS} ${baseUrl}${API_ENDPOINTS.PRODUCTS_BASE}`);
+        console.log(`${SYSTEM_MESSAGES.CATEGORY_HIERARCHY} ${baseUrl}${API_ENDPOINTS.CATEGORY_HIERARCHY_FULL}`);
+        console.log(`${SYSTEM_MESSAGES.SYSTEM} ${baseUrl}${API_ENDPOINTS_PATHS.STATUS}`);
+        console.log(`${SYSTEM_MESSAGES.CACHE_STATS} ${baseUrl}${API_ENDPOINTS.CACHE_STATS}`);
+        console.log(`${SYSTEM_MESSAGES.HEALTH_CHECK} ${baseUrl}${API_ENDPOINTS.HEALTH}`);
+        console.log(`${SYSTEM_MESSAGES.PERFORMANCE_METRICS} ${baseUrl}${API_ENDPOINTS.METRICS}`);
+        console.log(`${SYSTEM_MESSAGES.DEBUG} ${baseUrl}${API_ENDPOINTS.DEBUG}`);
+        console.log(`${SYSTEM_MESSAGES.OPENAPI_SPEC} ${baseUrl}${API_ENDPOINTS.SWAGGER_JSON}`);
 
         // Información adicional según el entorno
         if (process.env[ENV_VARIABLES.NODE_ENV] !== ENV_CONFIG.NODE_ENV_PRODUCTION) {
@@ -162,8 +125,6 @@ function logServerInfo(baseUrl, port) {
 module.exports = {
     logMessage,
     successResponse,
-    errorResponse,
-    safeAsync,
     getEndpointUrls,
     logServerInfo
 };

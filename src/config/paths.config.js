@@ -25,9 +25,6 @@ const EXTERNAL_PACKAGES = {
     // Validación
     JOI: 'joi',
 
-    // Firebase/Firestore
-    FIREBASE_FIRESTORE: 'firebase/firestore',
-
     // Node.js core modules
     PATH: 'path',
     FS: 'fs',
@@ -70,10 +67,9 @@ const PATHS = {
         RESPONSE_UTILS: './utils/response.utils.js',
         URL_UTILS: './utils/url.utils.js',
         FIREBASE_UTILS: './utils/firebase.utils.js',
-        CONTROLLER_UTILS: './utils/controller.utils.js',
-        CATEGORY_UTILS: './utils/category.utils.js',
         ASYNC_UTILS: './utils/async.utils.js',
-        HEALTH_UTILS: './utils/health.utils.js'
+        HEALTH_UTILS: './utils/health.utils.js',
+        ERROR_UTILS: './utils/error.utils.js'
     },
 
     // Modelos
@@ -97,7 +93,6 @@ const PATHS = {
     // Middlewares
     MIDDLEWARES: {
         AUTHENTICATION: './middlewares/authentication.middleware.js',
-        ERROR: './middlewares/error.middleware.js',
         LOGGER: './middlewares/logger.middleware.js',
         SANITIZATION: './middlewares/sanitization.middleware.js',
         PERFORMANCE: './middlewares/performance.middleware.js',
@@ -118,7 +113,7 @@ const API_ENDPOINTS = {
     ROOT: '/',
     API_ROOT: '/api',
     TEST: '/test',
-    DEBUG: '/debug',
+    DEBUG: '/debug/info',
 
     // Documentación
     API_DOCS: '/api/docs',
@@ -134,8 +129,6 @@ const API_ENDPOINTS = {
     AUTH: '/auth',
     API_PRODUCTS: '/api/products',
     API_CATEGORY: '/api/category',
-    PRODUCTS_V2: '/products',
-    CATEGORY_V2: '/category',
     USERS: '/users',
 
     // Rutas de recursos
@@ -154,6 +147,7 @@ const API_ENDPOINTS = {
     CATEGORY_ROOT: '/',
     CATEGORY_BY_ID: '/:id',
     CATEGORY_HIERARCHY: '/hierarchy',
+    CATEGORY_HIERARCHY_FULL: '/category/hierarchy',
     CATEGORY_CREATE: '/create',
     CATEGORY_SUBCATEGORY: '/:parentId/subcategory',
     CATEGORY_SUBCATEGORY_ALL: '/subcategory',
@@ -309,9 +303,7 @@ const RELATIVE_PATHS = {
         MODELS_CATEGORY: '../model/category.model.js',
         SERVICES_AUTH: '../services/auth.service.js',
         SERVICES_PRODUCTS: '../services/products.service.js',
-        SERVICES_CATEGORY: '../services/category.service.js',
-        UTILS_CONTROLLER: '../utils/controller.utils.js',
-        UTILS_CATEGORY: '../utils/category.utils.js'
+        SERVICES_CATEGORY: '../services/category.service.js'
     },
 
     // Desde config/ hacia otros directorios
@@ -331,8 +323,6 @@ const RELATIVE_PATHS = {
         CONFIG_SWAGGER: '../config/swagger.config.js',
         RESPONSE_UTILS: './response.utils.js',
         FIREBASE_UTILS: './firebase.utils.js',
-        CONTROLLER_UTILS: './controller.utils.js',
-        CATEGORY_UTILS: './category.utils.js',
         UTILS_ERROR_PATH: '../error.utils.js',
         UTILS_ERROR: '../utils/error.utils.js'
     },
@@ -553,7 +543,7 @@ const PAGINATION_CONFIG = {
 
 // Rutas de archivos de configuración para health checks
 const HEALTH_PATHS = {
-    DATABASE_CONFIG: '../config/db.js',
+    DATABASE_CONFIG: '../config/db.config.js',
     CACHE_CONFIG: '../config/cache.config.js',
     PERFORMANCE_MIDDLEWARE: '../middlewares/performance.middleware.js'
 };

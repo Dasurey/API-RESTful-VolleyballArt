@@ -1,5 +1,6 @@
 const { EXTERNAL_PACKAGES, HTTP_STATUS } = require('../config/paths.config.js');
 const { JOI_ERROR_KEYS, VALIDATION_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const { ValidationError } = require('../utils/error.utils.js');
 const Joi = require(EXTERNAL_PACKAGES.JOI);
 
 // Validación para parámetros de ID
@@ -28,10 +29,9 @@ const validateParams = (schema) => {
     const { error, value } = schema.validate(req.params);
     
     if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: VALIDATION_MESSAGES.PARAM_INVALID,
-        error: error.details[0].message
-      });
+      const validationError = new ValidationError();
+      validationError.details = error.details;
+      return next(validationError);
     }
     
     req.params = value;
@@ -45,10 +45,9 @@ const validateQuery = (schema) => {
     const { error, value } = schema.validate(req.query);
     
     if (error) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: VALIDATION_MESSAGES.QUERY_PARAM_INVALID,
-        error: error.details[0].message
-      });
+      const validationError = new ValidationError();
+      validationError.details = error.details;
+      return next(validationError);
     }
     
     req.query = value;

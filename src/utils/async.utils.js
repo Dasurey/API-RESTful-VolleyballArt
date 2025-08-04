@@ -25,7 +25,12 @@ const controllerWrapper = (fn, controllerName = ASYNC_UTILS_CONSTANTS.UNKNOWN_DE
         error.controllerContext = controllerName;
         error.requestId = req.id || `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
       }
-      throw error;
+      throw new InternalServerError(undefined, {
+        operation: 'controllerWrapper',
+        controllerName,
+        requestId: req.id,
+        originalError: error.message
+      });
     }
   });
 };
@@ -43,7 +48,12 @@ const dbServiceWrapper = (fn, serviceName = ASYNC_UTILS_CONSTANTS.UNKNOWN_DEFAUL
         error.serviceContext = serviceName;
         error.serviceArgs = args.length > 0 ? JSON.stringify(args) : null;
       }
-      throw error;
+      throw new InternalServerError(undefined, {
+        operation: 'dbServiceWrapper',
+        serviceName,
+        serviceArgs: args.length > 0 ? JSON.stringify(args) : null,
+        originalError: error.message
+      });
     }
   };
 };

@@ -124,7 +124,11 @@ const updateProductWithDbErrorHandling = controllerWrapper(async (req, res) => {
   } catch (error) {
     // Los errores de base de datos se procesan automáticamente
     // por el middleware de error usando formatDatabaseError
-    throw error;
+    throw new InternalServerError(undefined, {
+      operation: 'updateProductWithDbErrorHandling',
+      productId: id,
+      originalError: error.message
+    });
   }
 }, ADVANCED_CONTROLLER_CONSTANTS.CONTROLLER_UPDATE_PRODUCT_DB_ERROR);
 

@@ -1,5 +1,6 @@
 const { HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.config.js');
-const { GENERAL_MESSAGES } = require('../utils/messages.utils.js');
+const { SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const { ValidationError } = require('../utils/error.utils.js');
 
 // Middleware para validar datos con Joi
 const validate = (schema) => {
@@ -7,13 +8,15 @@ const validate = (schema) => {
     const { error, value } = schema.validate(req.body);
     
     if (error) {
-      // Extraer solo el primer error para simplicidad
-      const errorMessage = error.details[0].message;
+      // Crear ValidationError con detalles específicos
+      const errorDetails = error.details.map(detail => ({
+        field: detail.path[0],
+        message: detail.message,
+        value: detail.context?.value
+      }));
       
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: GENERAL_MESSAGES.VALIDATION_ERROR,
-        error: errorMessage,
-        field: error.details[0].path[0] // Campo que falló
+      throw new ValidationError(SERVICE_MESSAGES.VALIDATION_ERROR_DEFAULT, { 
+        validationErrors: errorDetails 
       });
     }
     

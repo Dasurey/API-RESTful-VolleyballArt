@@ -1,4 +1,4 @@
-const { SYSTEM_MESSAGES, ERROR_VALIDATION_MIDDLEWARE_CONSTANTS } = require('../utils/messages.utils.js');
+const { SERVICE_MESSAGES, ERROR_VALIDATION_MIDDLEWARE_CONSTANTS } = require('../utils/messages.utils.js');
 const { RELATIVE_PATHS } = require('../config/paths.config.js');
 const { ValidationError } = require(RELATIVE_PATHS.FROM_UTILS.UTILS_ERROR_PATH);
 
@@ -18,7 +18,7 @@ const handleValidationErrors = (req, res, next) => {
         }));
 
         throw new ValidationError(
-            SYSTEM_MESSAGES.VALIDATION_ERROR_DEFAULT,
+            SERVICE_MESSAGES.VALIDATION_ERROR_DEFAULT,
             { validationErrors: errorDetails },
             ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.EXPRESS_VALIDATOR_ERROR_CODE
         );
@@ -40,7 +40,7 @@ const handleJoiValidationErrors = (error, req, res, next) => {
         }));
 
         const validationError = new ValidationError(
-            SYSTEM_MESSAGES.VALIDATION_ERROR_DEFAULT,
+            SERVICE_MESSAGES.VALIDATION_ERROR_DEFAULT,
             { validationErrors: errorDetails },
             ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.JOI_VALIDATION_ERROR_CODE
         );

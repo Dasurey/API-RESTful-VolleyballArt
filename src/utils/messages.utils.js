@@ -9,7 +9,7 @@ const PRODUCTS_MESSAGES = {
   GET_BY_ID_SUCCESS: "🏐 Producto obtenido exitosamente",
   GET_ALL_ERROR: "🚨 Error al obtener productos",
   GET_BY_ID_ERROR: "❌ Error al obtener producto",
-  NOT_FOUND: (id) => `🔍 No se encontró ningún producto con el ID: ${id}`,
+  NOT_FOUND: '🔍 No se encontró ningún producto con el ID',
 
   // Operaciones de escritura
   CREATE_SUCCESS: "✅ Producto creado exitosamente",
@@ -209,6 +209,11 @@ const SYSTEM_MESSAGES = {
   PERFORMANCE_METRICS: "📊 Performance Metrics:",
   CACHE_STATS: "🗄️ Cache Stats:",
   OPENAPI_SPEC: "📄 OpenAPI Spec:",
+  API_ROOT: "🔗 API Root:",
+  PRODUCTS: "🏐 Products API:",
+  CATEGORY_HIERARCHY: "🌳 Category Hierarchy:",
+  SYSTEM: "⚙️ System Info:",
+  DEBUG: "🔍 Debug Endpoint:",
 
   // Modos de entorno
   DEVELOPMENT_MODE: "🔧 Development Mode:",
@@ -425,7 +430,10 @@ const RESPONSE_FIELDS = {
   METRICS: "metrics",
   CACHE: "cache",
   SWAGGER: "swagger",
-  API: "api"
+  API: "api",
+  CATEGORY_HIERARCHY: "categoryHierarchy",
+  PRODUCTS: "products",
+  SYSTEM: "system",
 };
 
 const FIREBASE_CONSTANTS = {
@@ -858,7 +866,6 @@ const SWAGGER_CONSTANTS = {
   MESSAGE_SUCCESS: 'Mensaje de éxito',
   EXAMPLE_IMAGE_URL: 'https://example.com/image1.jpg',
   ENV_PRODUCTION: 'production',
-  ORDER_ITEMS: ['System', 'Health', 'Auth', 'Products', 'Category and Subcategory'],
   SERVER_PRODUCTION: 'Servidor de producción',
   SERVER_DEVELOPMENT: 'Servidor de desarrollo',
   
@@ -894,6 +901,9 @@ const SWAGGER_CONSTANTS = {
   FIELD_NAME: 'name',
   FIELD_TITLE: 'title',
   FIELD_IMG: 'img',
+  FIELD_SRC: 'src',
+  FIELD_ALT: 'alt',
+  FIELD_TEXT: 'text',
   FIELD_DESCRIPTION: 'description',
   FIELD_PRICE: 'price',
   FIELD_PREVIOUS_PRICE: 'previous_price',
@@ -903,6 +913,9 @@ const SWAGGER_CONSTANTS = {
   FIELD_STOCK: 'stock',
   FIELD_EMAIL: 'email',
   FIELD_PASSWORD: 'password',
+  
+  // Referencias de esquemas
+  SCHEMA_REF_SUBCATEGORY: '#/components/schemas/Subcategory',
   
   // Descripciones específicas
   ID_DESCRIPTION: 'Identificador único del producto (formato VA-XXXXX)',
@@ -924,9 +937,19 @@ const SWAGGER_CONSTANTS = {
   TAG_AUTH: 'Auth',
   TAG_PRODUCTS: 'Products',
   TAG_HEALTH: 'Health',
+  TAG_SYSTEM: 'System',
+  TAG_CATEGORY_SUBCATEGORY: 'Category and Subcategory',
+  TAG_DEBUG: 'Debug',
+  TAG_METRICS: 'Metrics',
+  TAG_BACKUP: 'Backup',
   TAG_AUTH_DESCRIPTION: 'Endpoints de autenticación',
   TAG_PRODUCTS_DESCRIPTION: 'Gestión de productos de volleyball',
   TAG_HEALTH_DESCRIPTION: 'Endpoints de estado y salud de la API',
+  TAG_SYSTEM_DESCRIPTION: 'Endpoints de información general y configuración del sistema',
+  TAG_CATEGORY_SUBCATEGORY_DESCRIPTION: 'Gestión de categorías y subcategorías',
+  TAG_DEBUG_DESCRIPTION: 'Endpoints de información técnica y debugging para administradores',
+  TAG_METRICS_DESCRIPTION: 'Endpoints de métricas y rendimiento del sistema - datos para dashboards',
+  TAG_BACKUP_DESCRIPTION: 'Endpoints de respaldo y restauración de datos',
   
   // Descripciones de productos específicas
   PRODUCT_NAME_DESCRIPTION: 'Nombre del producto',
@@ -971,6 +994,37 @@ const SWAGGER_CONSTANTS = {
   IMAGE_SRC_DESCRIPTION: 'URL de la imagen',
   IMAGE_ALT_DESCRIPTION: 'Texto alternativo',
   IMAGE_CAROUSEL_DESCRIPTION: 'Si la imagen aparece en el carrusel',
+  
+  // Descripciones específicas de categorías
+  CATEGORY_ID_DESCRIPTION: 'ID único de la category (formato CAT-XXXX-0000 para category padre)',
+  CATEGORY_ID_EXAMPLE: 'CAT-0001-0000',
+  CATEGORY_TITLE_DESCRIPTION: 'Título de la category',
+  CATEGORY_TITLE_EXAMPLE: 'Zapatillas',
+  CATEGORY_SUBCATEGORY_LIST_DESCRIPTION: 'Lista de subcategory (solo para category padre)',
+  CATEGORY_IS_PARENT_DESCRIPTION: 'Indica si es una categoría padre',
+  CATEGORY_CREATED_AT_DESCRIPTION: 'Fecha de creación de la categoría',
+  CATEGORY_UPDATED_AT_DESCRIPTION: 'Fecha de última actualización de la categoría',
+  
+  // Descripciones específicas de subcategorías
+  SUBCATEGORY_ID_DESCRIPTION: 'ID único de la subcategory (formato CAT-XXXX-YYYY)',
+  SUBCATEGORY_ID_EXAMPLE: 'CAT-0001-0001',
+  SUBCATEGORY_TITLE_DESCRIPTION: 'Título de la subcategory',
+  SUBCATEGORY_TITLE_EXAMPLE: 'Hombre',
+  SUBCATEGORY_TEXT_DESCRIPTION: 'Texto descriptivo con HTML',
+  SUBCATEGORY_TEXT_EXAMPLE: '<p>Información importante sobre el producto</p>',
+  SUBCATEGORY_IMAGE_URL_DESCRIPTION: 'URL de la imagen',
+  SUBCATEGORY_IMAGE_URL_EXAMPLE: 'https://example.com/image.jpg',
+  SUBCATEGORY_IMAGE_ALT_DESCRIPTION: 'Texto alternativo',
+  SUBCATEGORY_IMAGE_ALT_EXAMPLE: 'Descripción de la imagen',
+  SUBCATEGORY_IMAGES_DESCRIPTION: 'Imágenes asociadas a la subcategory',
+  SUBCATEGORY_IMAGE_EXAMPLE_1_URL: 'https://example.com/image1.jpg',
+  SUBCATEGORY_IMAGE_EXAMPLE_1_ALT: 'Primera imagen',
+  SUBCATEGORY_IMAGE_EXAMPLE_2_URL: 'https://example.com/image2.jpg',
+  SUBCATEGORY_IMAGE_EXAMPLE_2_ALT: 'Segunda imagen',
+  SUBCATEGORY_PARENT_CATEGORY_ID_DESCRIPTION: 'ID de la category padre',
+  SUBCATEGORY_PARENT_CATEGORY_ID_EXAMPLE: 'CAT-0001-0000',
+  SUBCATEGORY_CREATED_AT_DESCRIPTION: 'Fecha de creación de la subcategoría',
+  SUBCATEGORY_UPDATED_AT_DESCRIPTION: 'Fecha de última actualización de la subcategoría',
   
   // Patrones de validación
   CATEGORY_PATTERN: '^CAT-\\d{4}-0000$',
@@ -1226,41 +1280,6 @@ const JWT_CONSTANTS = {
   EXPIRATION_1_DAY: '1d'
 };
 
-module.exports = {
-  PRODUCTS_MESSAGES,
-  CATEGORIES_MESSAGES, 
-  AUTH_MESSAGES,
-  GENERAL_MESSAGES,
-  VALIDATION_MESSAGES,
-  CONTROLLER_MESSAGES,
-  SERVICE_MESSAGES,
-  LOG_MESSAGES,
-  SWAGGER_DESCRIPTIONS,
-  SYSTEM_CONSTANTS,
-  SYSTEM_MESSAGES,
-  RESPONSE_FIELDS,
-  FIREBASE_CONSTANTS,
-  JOI_ERROR_KEYS,
-  VALIDATION_MESSAGES,
-  VERSION_MESSAGES,
-  SANITIZATION_MESSAGES,
-  PERFORMANCE_MESSAGES,
-  LOGGING_MESSAGES,
-  CACHE_MESSAGES,
-  AUTH_MIDDLEWARE_MESSAGES,
-  CATEGORY_CONSTANTS,
-  SWAGGER_CONSTANTS,
-  SECURITY_CONSTANTS,
-  OPTIMIZATION_CONSTANTS,
-  LOGGER_CONSTANTS,
-  JWT_CONSTANTS,
-  QUERY_CONSTANTS,
-  ERROR_CONSTANTS,
-  ADVANCED_CONTROLLER_CONSTANTS,
-  ERROR_VALIDATION_MIDDLEWARE_CONSTANTS,
-  ASYNC_UTILS_CONSTANTS
-};
-
 // Constantes para health checks avanzados
 const HEALTH_CONSTANTS = {
   // Estados de salud
@@ -1283,6 +1302,7 @@ const HEALTH_CONSTANTS = {
   // Mensajes de health check
   HEALTH_CHECK_PASSED: 'Health check passed successfully',
   HEALTH_CHECK_FAILED: 'Health check failed',
+  FIRESTORE_INSTANCE_UNAVAILABLE: 'La instancia de Firestore no está disponible',
   DEPENDENCY_HEALTHY: 'Dependency is healthy',
   DEPENDENCY_UNHEALTHY: 'Dependency is unhealthy',
   
@@ -1400,6 +1420,102 @@ const METRICS_CONSTANTS = {
   THRESHOLD_CONCURRENT_REQUESTS_50: '50'
 };
 
+// ==============================================================
+// 💾 CONSTANTES PARA SISTEMA DE BACKUP Y RECOVERY
+// ==============================================================
+const BACKUP_MESSAGES = {
+  // Mensajes de inicio de backup
+  STARTING_FULL_BACKUP: 'Iniciando backup completo:',
+  STARTING_INCREMENTAL_BACKUP: 'Iniciando backup incremental:',
+  STARTING_AUTOMATIC_BACKUP: 'Iniciando backup automático programado',
+  
+  // Mensajes de progreso
+  BACKING_UP_COLLECTION: 'Realizando backup de colección:',
+  COLLECTION_BACKED_UP: 'Colección respaldada exitosamente:',
+  INCREMENTAL_COLLECTION_BACKED_UP: 'Backup incremental de colección:',
+  
+  // Mensajes de completado
+  FULL_BACKUP_COMPLETED: '💾 Backup completo creado exitosamente',
+  INCREMENTAL_BACKUP_COMPLETED: 'Backup incremental finalizado:',
+  
+  // Información de backup
+  BACKUP_SIZE: 'Tamaño del backup:',
+  BACKUP_DURATION: 'Duración del backup:',
+  
+  // Mensajes de error en backup
+  BACKUP_IN_PROGRESS: 'Ya hay un backup en progreso',
+  COLLECTION_BACKUP_FAILED: '⚠️ Error al respaldar colección',
+  BACKUP_FAILED: '❌ Error en el proceso de backup',
+  NO_PREVIOUS_BACKUP_FULL: 'No hay backup previo, realizando backup completo',
+  INVALID_BACKUP_TYPE: 'Tipo de backup inválido. Use "full" o "incremental"',
+  LIST_BACKUPS_ERROR: 'Error al listar backups',
+  BACKUP_STATUS_ERROR: 'Error al obtener estado del backup',
+  BACKUP_INFO_ERROR: 'Error al obtener información del backup',
+  BACKUP_VALIDATION_ERROR: 'Error al validar backup',
+  RECOVERY_IN_PROGRESS: 'Ya hay una operación de restauración en progreso',
+  
+  // Mensajes de recovery
+  STARTING_RECOVERY: '🔄 Iniciando recuperación desde backup',
+  BACKUP_NOT_FOUND: '🔍 Backup no encontrado',
+  BACKUP_CORRUPTED: 'El backup está corrupto o es inválido',
+  BACKUP_VALIDATION_SUCCESS: '✅ Validación de backup exitosa',
+  RESTORING_COLLECTION: 'Restaurando colección:',
+  COLLECTION_RESTORED: 'Colección restaurada exitosamente:',
+  COLLECTION_RESTORE_FAILED: '❌ Error al restaurar colección',
+  RECOVERY_COMPLETED: 'Recuperación completada exitosamente para backup:',
+  RECOVERY_PARTIAL: 'Recuperación parcial completada para backup:',
+  RECOVERY_FAILED: '❌ Error en el proceso de recuperación',
+  RECOVERY_STATS: 'Estadísticas de recuperación',
+  SKIPPING_COLLECTION_ERROR: '⚠️ Omitiendo colección con errores:',
+  
+  // Mensajes de limpieza
+  CLEANING_OLD_BACKUPS: 'Limpiando backups antiguos',
+  BACKUP_DELETED: '🗑️ Backup eliminado exitosamente',
+  BACKUP_DELETE_FAILED: '❌ Error al eliminar backup',
+  CLEANUP_COMPLETED: '🧹 Limpieza de backups completada exitosamente',
+  CLEANUP_FAILED: '❌ Error en limpieza de backups',
+  
+  // Mensajes de programación automática
+  SCHEDULING_AUTOMATIC_BACKUP: 'Programando backup automático',
+  AUTOMATIC_BACKUP_FAILED: '❌ Error en backup automático',
+  
+  // Mensajes adicionales para endpoints
+  LIST_BACKUPS_SUCCESS: '📋 Lista de backups obtenida exitosamente',
+  LIST_BACKUPS_ERROR: '❌ Error al listar backups',
+  BACKUP_STATUS_SUCCESS: '📊 Estado del sistema de backup obtenido exitosamente',
+  BACKUP_STATUS_ERROR: '❌ Error al obtener estado del backup',
+  DOWNLOAD_BACKUP_SUCCESS: '⬇️ Descarga de backup iniciada exitosamente',
+  DOWNLOAD_BACKUP_ERROR: '❌ Error al descargar backup',
+  BACKUP_VALIDATION_ERROR: '❌ Error al validar backup'
+};
+
+const BACKUP_CONFIG = {
+  // Configuración por defecto
+  DEFAULT_BACKUP_DIR: './backups',
+  FULL_BACKUP_INTERVAL: 24 * 60 * 60 * 1000, // 24 horas
+  INCREMENTAL_BACKUP_INTERVAL: 60 * 60 * 1000, // 1 hora
+  
+  // Configuración de archivos
+  FULL_BACKUP_PREFIX: 'full-backup-',
+  INCREMENTAL_BACKUP_PREFIX: 'incremental-backup-',
+  BACKUP_EXTENSION: '.backup.gz',
+  METADATA_EXTENSION: '.metadata.json',
+  
+  // Configuración de retención
+  MAX_FULL_BACKUPS: 7, // Mantener 7 backups completos
+  MAX_INCREMENTAL_BACKUPS: 24, // Mantener 24 backups incrementales
+  
+  // Configuración de colecciones
+  DEFAULT_COLLECTIONS: ['products', 'users', 'orders', 'categories'],
+  
+  // Configuración de compresión
+  COMPRESSION_LEVEL: 6, // Nivel de compresión gzip (1-9)
+  
+  // Configuración de validación
+  CHECKSUM_ALGORITHM: 'sha256',
+  BACKUP_TIMEOUT: 30 * 60 * 1000 // 30 minutos timeout
+};
+
 module.exports = {
   PRODUCTS_MESSAGES,
   CATEGORIES_MESSAGES, 
@@ -1423,6 +1539,7 @@ module.exports = {
   CACHE_MESSAGES,
   AUTH_MIDDLEWARE_MESSAGES,
   CATEGORY_CONSTANTS,
+  SWAGGER_CONSTANTS,
   SECURITY_CONSTANTS,
   OPTIMIZATION_CONSTANTS,
   LOGGER_CONSTANTS,
@@ -1435,5 +1552,9 @@ module.exports = {
   HEALTH_CONSTANTS,
   
   // 📊 Nuevas constantes para métricas y endpoints
-  METRICS_CONSTANTS
+  METRICS_CONSTANTS,
+  
+  // 💾 Nuevas constantes para sistema de backup y recovery
+  BACKUP_MESSAGES,
+  BACKUP_CONFIG
 };

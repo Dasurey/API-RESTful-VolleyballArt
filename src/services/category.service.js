@@ -2,6 +2,12 @@ const { RELATIVE_PATHS, LOG_LEVELS } = require('../config/paths.config.js');
 const { VALIDATION_MESSAGES, CATEGORIES_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
 const CategoryModel = require(RELATIVE_PATHS.FROM_SERVICES.MODELS_CATEGORY);
 const { logMessage } = require(RELATIVE_PATHS.FROM_SERVICES.UTILS_RESPONSE);
+const { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError, 
+  InternalServerError 
+} = require('../utils/error.utils.js');
 
 /**
  * Obtener todas las categoria padre
@@ -17,11 +23,10 @@ const getAllCategory = async (queryProcessor = null) => {
     
     return category;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORIES_GET_ERROR, {
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getAllCategory', originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -43,12 +48,10 @@ const getCategoryById = async (categoryId) => {
     
     return category;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_GET_ERROR, {
-      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getCategoryById', categoryId, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -69,12 +72,10 @@ const getSubcategoryByParent = async (parentCategoryId, queryProcessor = null) =
     
     return subcategory;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_ERROR, {
-      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getSubcategoryByParent', parentCategoryId, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -92,11 +93,10 @@ const getAllSubcategory = async (queryProcessor = null) => {
     
     return subcategory;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_ERROR, {
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getAllSubcategory', originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -119,13 +119,10 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
     
     return subcategory;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_ERROR, {
-      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
-      [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: subcategoryId,
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getSubcategorySpecific', parentCategoryId, subcategoryId, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -137,7 +134,7 @@ const createCategory = async (categoryData) => {
   try {
     // Validar datos requeridos
     if (!categoryData.title || categoryData.title.trim() === SERVICE_MESSAGES.EMPTY_STRING) {
-      throw new Error(VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED);
+      throw new ValidationError();
     }
     
     // Extraer subcategorías si existen
@@ -186,12 +183,10 @@ const createCategory = async (categoryData) => {
     
     return newCategory;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_CREATE_ERROR, {
-      categoryData: categoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT,
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'createCategory', categoryTitle: categoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -204,11 +199,11 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
   try {
     // Validar datos requeridos
     if (!subcategoryData.title || subcategoryData.title.trim() === SERVICE_MESSAGES.EMPTY_STRING) {
-      throw new Error(VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED);
+      throw new ValidationError();
     }
     
     if (!parentCategoryId || !parentCategoryId.endsWith(SERVICE_MESSAGES.PARENT_CATEGORY_SUFFIX)) {
-      throw new Error(VALIDATION_MESSAGES.CATEGORY_PARENT_ID_INVALID);
+      throw new ValidationError();
     }
     
     const newSubcategory = await CategoryModel.createSubcategory(parentCategoryId, subcategoryData);
@@ -222,13 +217,10 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
     
     return newSubcategory;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_ERROR, {
-      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
-      subcategoryData: subcategoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT,
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'createSubcategory', parentCategoryId, subcategoryTitle: subcategoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -241,7 +233,7 @@ const updateCategory = async (categoryId, updateData) => {
   try {
     // Validar que hay datos para actualizar
     if (!updateData || Object.keys(updateData).length === 0) {
-      throw new Error(SERVICE_MESSAGES.NO_UPDATE_DATA_ERROR);
+      throw new ValidationError();
     }
     
     const updatedCategory = await CategoryModel.updateCategory(categoryId, updateData);
@@ -256,13 +248,10 @@ const updateCategory = async (categoryId, updateData) => {
     
     return updatedCategory;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_UPDATE_ERROR, {
-      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
-      updateData: Object.keys(updateData || {}),
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'updateCategory', categoryId, updateFields: Object.keys(updateData || {}), originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -279,7 +268,7 @@ const deleteCategory = async (categoryId, options = {}) => {
     if (categoryId.endsWith(SERVICE_MESSAGES.PARENT_CATEGORY_SUFFIX) && !deleteSubcategory) {
       const subcategory = await CategoryModel.getSubcategoryByParent(categoryId);
       if (subcategory.length > 0) {
-        throw new Error(CATEGORIES_MESSAGES.CANNOT_DELETE_HAS_SUBCATEGORIES);
+        throw new ConflictError();
       }
     }
     
@@ -295,13 +284,10 @@ const deleteCategory = async (categoryId, options = {}) => {
     
     return result;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_CATEGORY_DELETE_ERROR, {
-      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
-      options,
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'deleteCategory', categoryId, options, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 
@@ -320,11 +306,10 @@ const getCategoryHierarchy = async () => {
     
     return hierarchy;
   } catch (error) {
-    logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_HIERARCHY_GET_ERROR, {
-      error: error.message,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getCategoryHierarchy', originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+    );
   }
 };
 

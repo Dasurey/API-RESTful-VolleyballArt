@@ -152,7 +152,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  *         content:
  *           application/json:
  *             schema:

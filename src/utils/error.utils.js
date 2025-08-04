@@ -1,4 +1,4 @@
-const { HTTP_STATUS } = require('../config/paths.config.js');
+const { HTTP_STATUS, DATABASE_ERROR_CODES } = require('../config/paths.config.js');
 const { SERVICE_MESSAGES, ERROR_CONSTANTS } = require('./messages.utils.js');
 
 /**

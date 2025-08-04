@@ -1,5 +1,6 @@
-const { AUTH_MESSAGES, JWT_CONSTANTS } = require('../utils/messages.utils.js');
-const { EXTERNAL_PACKAGES, HTTP_STATUS } = require('./paths.config.js');
+const { JWT_CONSTANTS, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const { EXTERNAL_PACKAGES, HTTP_STATUS, RELATIVE_PATHS } = require('./paths.config.js');
+const { AuthenticationError } = require('../utils/error.utils.js');
 const jwt = require(EXTERNAL_PACKAGES.JSONWEBTOKEN);
 
 const secret_key = process.env.JWT_SECRET_KEY;
@@ -15,14 +16,11 @@ const generateToken = (userData) => {
   return jwt.sign(user, secret_key, expiration);
 };
 
-const verifyToken = (token, res) => {
+const verifyToken = (token) => {
   try {
     return jwt.verify(token, secret_key);
   } catch (error) {
-    return res.status(HTTP_STATUS.UNAUTHORIZED).json({
-      message: AUTH_MESSAGES.TOKEN_INVALID,
-      error: error.message
-    });
+    throw new AuthenticationError();
   }
 };
 

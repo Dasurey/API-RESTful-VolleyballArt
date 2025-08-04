@@ -1,5 +1,6 @@
 const { HTTP_STATUS, RELATIVE_PATHS, EXTERNAL_PACKAGES, SANITIZATION } = require('../config/paths.config.js');
 const { SANITIZATION_MESSAGES } = require('../utils/messages.utils.js');
+const { ValidationError, InternalServerError } = require('../utils/error.utils.js');
 const { body, validationResult } = require(EXTERNAL_PACKAGES.EXPRESS_VALIDATOR);
 
 // Middleware personalizado para sanitizar datos de entrada evitando problemas con req.query
@@ -38,7 +39,13 @@ const sanitizeInput = (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error(SANITIZATION_MESSAGES.SANITIZATION_ERROR, error.message);
+    // Log error estructurado pero no bloquear requests - middleware no crítico
+    const sanitizationError = new InternalServerError(undefined, {
+      operation: 'sanitizeInput',
+      originalError: error.message,
+      requestPath: req.path
+    });
+    console.error(SANITIZATION_MESSAGES.SANITIZATION_ERROR, sanitizationError);
     next(); // Continuar sin bloquear la request
   }
 };
@@ -102,10 +109,9 @@ const sanitizePassword = body(SANITIZATION.FIELD_PASSWORD)
 const checkValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(HTTP_STATUS.BAD_REQUEST).json({
-      message: SANITIZATION_MESSAGES.INVALID_DATA,
-      errors: errors.array()
-    });
+    const validationError = new ValidationError();
+    validationError.details = errors.array();
+    return next(validationError);
   }
   next();
 };

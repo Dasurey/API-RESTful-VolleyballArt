@@ -7,6 +7,12 @@ const {
 } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_FIREBASE);
 const { logMessage } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_RESPONSE);
 const { processQuery, getQueryProcessingInfo } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_QUERY);
+const { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError, 
+  InternalServerError 
+} = require('../utils/error.utils.js');
 const {
   collection,
   doc,
@@ -43,7 +49,10 @@ const structureSubcategory = (subcategoryData) => {
   return {
     id: subcategoryData.id,
     title: subcategoryData.title,
-    img: subcategoryData.img || [],
+    img: {
+      src: subcategoryData.img?.src,
+      alt: subcategoryData.img?.alt
+    } || [],
     text: subcategoryData.text || VERSION_MIDDLEWARE.EMPTY_LINE,
     parentCategoryId: subcategoryData.parentCategoryId,
     createdAt: subcategoryData.createdAt,
@@ -164,11 +173,10 @@ const getAllCategory = async (queryProcessor = null) => {
     
     return structuredCategories;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_CATEGORIES_FIREBASE, {
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getAllCategory', originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -228,12 +236,10 @@ const getCategoryById = async (categoryId) => {
     // Estructurar la categoría principal
     return structureParentCategory(category);
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_CATEGORY_FIREBASE, {
-      categoryId,
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getCategoryById', categoryId, originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -283,12 +289,10 @@ const getSubcategoryByParent = async (parentCategoryId, queryProcessor = null) =
     
     return structuredSubcategories;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_SUBCATEGORIES_FIREBASE, {
-      parentCategoryId,
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getSubcategoryByParent', parentCategoryId, originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -333,11 +337,10 @@ const getAllSubcategory = async (queryProcessor = null) => {
     
     return structuredSubcategories;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_SUBCATEGORIES_FIREBASE, {
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getAllSubcategory', originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -381,13 +384,10 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
     // Estructurar subcategoría con orden específico
     return structureSubcategory(subcategory);
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_SUBCATEGORIES_FIREBASE, {
-      parentCategoryId,
-      subcategoryId,
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getSubcategorySpecific', parentCategoryId, subcategoryId, originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -435,7 +435,7 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
   // Verificar que la categoría padre existe
   const parentCategory = await getDocumentById(db, COLLECTION_NAME, parentCategoryId);
   if (!parentCategory) {
-    throw new Error(SYSTEM_MESSAGES.CATEGORIES_MESSAGES.NOT_FOUND_PARENT);
+    throw new NotFoundError();
   }
   
   const newId = await generateNextSubcategoryId(parentCategoryId);
@@ -483,7 +483,7 @@ const updateCategory = async (categoryId, updateData) => {
     const categorySnap = await getDoc(categoryRef);
     
     if (!categorySnap.exists()) {
-      throw new Error(`${SYSTEM_MESSAGES.CATEGORY_NOT_FOUND_PREFIX} ${categoryId}`);
+      throw new NotFoundError();
     }
     
     // Agregar updatedAt automáticamente
@@ -516,12 +516,10 @@ const updateCategory = async (categoryId, updateData) => {
       return structureSubcategory(updatedCategory);
     }
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_UPDATING_CATEGORY_FIREBASE, {
-      categoryId,
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'updateCategory', categoryId, originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -539,7 +537,7 @@ const deleteCategory = async (categoryId, options = {}) => {
     const categorySnap = await getDoc(categoryRef);
     
     if (!categorySnap.exists()) {
-      throw new Error(`${SYSTEM_MESSAGES.CATEGORY_NOT_FOUND_PREFIX} ${categoryId}`);
+      throw new NotFoundError();
     }
     
     // Si es una categoría padre y se especifica eliminar subcategorías
@@ -568,12 +566,10 @@ const deleteCategory = async (categoryId, options = {}) => {
     
     return true;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_DELETING_CATEGORY_FIREBASE, {
-      categoryId,
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'deleteCategory', categoryId, originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -633,11 +629,10 @@ const getCategoryHierarchy = async () => {
     
     return hierarchy;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_HIERARCHY_FIREBASE, {
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getCategoryHierarchy', originalError: error.message, stack: error.stack }
+    );
   }
 };
 

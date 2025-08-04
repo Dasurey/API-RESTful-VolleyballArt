@@ -1,59 +1,11 @@
 const { RELATIVE_PATHS, LOG_LEVELS, HTTP_HEADERS, HTTP_STATUS, CONFIG_VALUES } = require('../config/paths.config.js');
-const { LOG_MESSAGES, SYSTEM_MESSAGES } = require('./messages.utils.js');
-const { logMessage, errorResponse } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
+const { LOG_MESSAGES, SYSTEM_MESSAGES, SERVICE_MESSAGES } = require('./messages.utils.js');
+const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
+const { ValidationError, AuthenticationError, InternalServerError } = require('./error.utils.js');
 
 /**
  * Utilidades específicas para middlewares
  */
-
-/**
- * Crear respuesta de error estándar para middlewares
- * @param {Object} res - Response object
- * @param {string} message - Mensaje de error
- * @param {number} statusCode - Código de estado HTTP
- * @param {Object} additionalData - Datos adicionales para la respuesta
- * @param {Object} logData - Datos adicionales para el log
- */
-function middlewareError(res, message, statusCode = HTTP_STATUS.BAD_REQUEST, additionalData = {}, logData = {}) {
-    logMessage(LOG_LEVELS.WARN, message, {
-        statusCode,
-        middleware: true,
-        ...logData
-    });
-
-    return errorResponse(res, message, statusCode, null, {
-        ...additionalData,
-        timestamp: new Date().toISOString()
-    });
-}
-
-/**
- * Crear respuesta de validación para middlewares
- * @param {Object} res - Response object  
- * @param {string} field - Campo que falló la validación
- * @param {Array} errors - Array de errores de validación
- * @param {Object} logData - Datos adicionales para el log
- */
-function validationError(res, field, errors, logData = {}) {
-    const message = `${SYSTEM_MESSAGES.MIDDLEWARE_VALIDATION_ERROR} en ${field}`;
-
-    logMessage(LOG_LEVELS.WARN, message, {
-        field,
-        errors,
-        validationError: true,
-        ...logData
-    });
-
-    return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message,
-        payload: {
-            errors,
-            field,
-            timestamp: new Date().toISOString(),
-            validationError: true
-        }
-    });
-}
 
 /**
  * Wrapper para logging de requests con metadata estándar
@@ -151,45 +103,6 @@ function createLoggingMiddleware(middlewareName, options = {}) {
 }
 
 /**
- * Crear middleware de manejo de errores estándar
- * @param {string} middlewareName - Nombre del middleware
- * @param {Object} options - Opciones del middleware
- */
-function createErrorMiddleware(middlewareName, options = {}) {
-    const {
-        includeStack = false,
-        logLevel = LOG_LEVELS.ERROR,
-        defaultMessage = LOG_MESSAGES.ERROR_INTERNAL
-    } = options;
-
-    return (error, req, res, next) => {
-        const errorData = {
-            middleware: middlewareName,
-            error: error.message,
-            url: req.originalUrl || req.url,
-            method: req.method,
-            ip: req.ip || req.connection?.remoteAddress
-        };
-
-        if (includeStack && error.stack) {
-            errorData.stack = error.stack;
-        }
-
-        logMessage(logLevel, `${SYSTEM_MESSAGES.MIDDLEWARE_ERROR} [${middlewareName.toUpperCase()}] ${SYSTEM_MESSAGES.MIDDLEWARE_ERROR_OCCURRED}`, errorData);
-
-        // Si ya se envió una respuesta, pasar al siguiente middleware
-        if (res.headersSent) {
-            return next(error);
-        }
-
-        const statusCode = error.statusCode || error.status || HTTP_STATUS.INTERNAL_SERVER_ERROR;
-        const message = error.message || defaultMessage;
-
-        return errorResponse(res, message, statusCode, includeStack ? error.stack : null);
-    };
-}
-
-/**
  * Wrapper para operaciones async en middlewares
  * @param {Function} asyncFn - Función async del middleware
  * @param {string} middlewareName - Nombre del middleware para logging
@@ -263,12 +176,9 @@ function createCacheMiddleware(cacheManager, options = {}) {
 }
 
 module.exports = {
-    middlewareError,
-    validationError,
     logRequest,
     logResponse,
     createLoggingMiddleware,
-    createErrorMiddleware,
     asyncMiddleware,
     createCacheMiddleware
 };

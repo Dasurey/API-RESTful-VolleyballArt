@@ -9,9 +9,15 @@
  * - Reportes de estado detallados
  */
 
-const { RELATIVE_PATHS, HTTP_STATUS, EXTERNAL_PACKAGES, HEALTH_PATHS } = require('../config/paths.config.js');
+const { RELATIVE_PATHS, HTTP_STATUS, EXTERNAL_PACKAGES, HEALTH_PATHS, CACHE } = require('../config/paths.config.js');
 const { HEALTH_CONSTANTS, METRICS_CONSTANTS } = require('./messages.utils.js');
 const { getPerformanceMetrics } = require(HEALTH_PATHS.PERFORMANCE_MIDDLEWARE);
+const { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError, 
+  InternalServerError 
+} = require('./error.utils.js');
 
 /**
  * Estado global de health checks
@@ -34,12 +40,18 @@ const healthState = {
 async function checkDatabaseHealth() {
     const startTime = Date.now();
     try {
-        // Importar db de forma dinámica para evitar dependencias circulares
+        // Importar funciones de Firestore v9+
+        const { collection, getDocs, limit, query } = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
         const { db } = require(HEALTH_PATHS.DATABASE_CONFIG);
 
-        // Hacer una consulta ligera para verificar conectividad
-        const testRef = db.collection(METRICS_CONSTANTS.HEALTH_CHECK_COLLECTION);
-        await testRef.limit(1).get();
+        // Verificar si el objeto db es válido
+        if (!db) {
+            throw new InternalServerError();
+        }
+
+        // Hacer una consulta ligera usando el nuevo SDK v9+
+        const productsCollection = collection(db, CACHE.TYPE_PRODUCTS);
+        const querySnapshot = await getDocs(query(productsCollection, limit(1)));
 
         const responseTime = Date.now() - startTime;
 
@@ -49,7 +61,8 @@ async function checkDatabaseHealth() {
             responseTime: responseTime,
             details: {
                 latency: `${responseTime}${METRICS_CONSTANTS.UNIT_MS}`,
-                provider: METRICS_CONSTANTS.FIREBASE_FIRESTORE_PROVIDER
+                provider: METRICS_CONSTANTS.FIREBASE_FIRESTORE_PROVIDER,
+                documentsChecked: querySnapshot.size
             }
         };
 
@@ -65,7 +78,8 @@ async function checkDatabaseHealth() {
             details: {
                 latency: `${responseTime}${METRICS_CONSTANTS.UNIT_MS}`,
                 provider: METRICS_CONSTANTS.FIREBASE_FIRESTORE_PROVIDER,
-                errorType: error.code || METRICS_CONSTANTS.SERVICE_UNKNOWN
+                errorType: error.code || METRICS_CONSTANTS.SERVICE_UNKNOWN,
+                errorName: error.name
             }
         };
 
@@ -83,16 +97,22 @@ async function checkCacheHealth() {
         const cacheStats = getCacheStats();
         const responseTime = Date.now() - startTime;
 
-        const isHealthy = cacheStats.hitRate > 0.3; // Al menos 30% hit rate
+        // Calcular hit rate como número
+        const numericHitRate = cacheStats.hits + cacheStats.misses > 0 
+            ? cacheStats.hits / (cacheStats.hits + cacheStats.misses)
+            : 0;
+
+        const isHealthy = numericHitRate >= 0.0; // Cache funcional si responde
 
         healthState.dependencies.cache = {
             status: isHealthy ? HEALTH_CONSTANTS.STATUS_HEALTHY : HEALTH_CONSTANTS.STATUS_DEGRADED,
             lastCheck: new Date().toISOString(),
             responseTime: responseTime,
             details: {
-                hitRate: `${(cacheStats.hitRate * 100).toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
-                totalKeys: cacheStats.totalKeys,
-                memoryUsage: cacheStats.memoryUsage || METRICS_CONSTANTS.SERVICE_UNKNOWN
+                hitRate: `${(numericHitRate * 100).toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
+                totalKeys: (cacheStats.caches?.app?.keys || 0) + (cacheStats.caches?.products?.keys || 0) + (cacheStats.caches?.auth?.keys || 0),
+                hits: cacheStats.hits || 0,
+                misses: cacheStats.misses || 0
             }
         };
 

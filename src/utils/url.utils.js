@@ -7,6 +7,7 @@ const {
   EXTERNAL_PACKAGES
 } = require('../config/paths.config.js');
 const { SYSTEM_MESSAGES } = require('./messages.utils.js');
+const { InternalServerError } = require('./error.utils.js');
 
 // Usar paquetes centralizados
 const { dirname, join } = require(EXTERNAL_PACKAGES.PATH);
@@ -54,12 +55,15 @@ function updateSwaggerUrl(req, res, next) {
 
     next();
   } catch (error) {
-    // Usar logMessage si está disponible, sino console.error como fallback
+    // Usar logMessage si está disponible, sino lanzar error globalizado
     try {
       const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
       logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.ERROR_UPDATING_SWAGGER_URL, { error: error.message });
     } catch {
-      console.error(SYSTEM_MESSAGES.ERROR_UPDATING_SWAGGER_URL, error);
+      throw new InternalServerError(undefined, {
+        operation: 'updateSwaggerUrl',
+        originalError: error.message
+      });
     }
     next();
   }

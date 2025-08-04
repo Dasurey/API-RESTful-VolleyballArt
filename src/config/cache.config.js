@@ -17,6 +17,7 @@ const {
   HTTP_METHODS,
   HTTP_STATUS
 } = require('./paths.config');
+const { InternalServerError } = require('../utils/error.utils.js');
 
 const NodeCache = require(EXTERNAL_PACKAGES.NODE_CACHE);
 
@@ -126,8 +127,11 @@ const productsCacheManager = {
       return true;
     } catch (error) {
       cacheStats.errors++;
-      console.error(SYSTEM_MESSAGES.ERROR_SETTING_PRODUCT_CACHE, error);
-      return false;
+      throw new InternalServerError(undefined, {
+        operation: 'setProductCache',
+        key,
+        originalError: error.message
+      });
     }
   },
 
@@ -189,7 +193,11 @@ const authCacheManager = {
       return true;
     } catch (error) {
       cacheStats.errors++;
-      return false;
+      throw new InternalServerError(undefined, {
+        operation: 'setAuthCache',
+        key,
+        originalError: error.message
+      });
     }
   },
 
@@ -222,8 +230,11 @@ const generalCacheManager = {
       cacheStats.sets++;
       return true;
     } catch (error) {
-      Logger.error(SYSTEM_MESSAGES.ERROR_SETTING_GENERAL_CACHE, error);
-      return false;
+      throw new InternalServerError(undefined, {
+        operation: 'setGeneralCache',
+        key,
+        originalError: error.message
+      });
     }
   },
 

@@ -11,7 +11,7 @@
  */
 
 const { QUERY_CONSTANTS, SWAGGER_CONSTANTS } = require('../utils/messages.utils.js');
-const { QUERY_PROCESSING } = require('../config/paths.config.js');
+const { InternalServerError } = require('../utils/error.utils.js');
 
 /**
  * Middleware principal de query processing
@@ -101,7 +101,7 @@ const processPagination = (query, defaultLimit, maxLimit, enableCursor) => {
  */
 const processFilters = (query, allowedFilters) => {
     const filters = {};
-    const operators = QUERY_PROCESSING.OPERATOR_MAPPINGS;
+    const operators = QUERY_CONSTANTS.OPERATORS;
 
     Object.keys(query).forEach(key => {
         // Buscar filtros con formato: campo[operador]=valor

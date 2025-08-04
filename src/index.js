@@ -9,7 +9,9 @@ const {
   LOG_LEVELS,
   COMMON_VALUES,
   HTTP_STATUS,
-  API_ENDPOINTS_PATHS
+  API_ENDPOINTS_PATHS,
+  ERROR_HANDLING,
+  DATABASE_ERROR_CODES
 } = require('./config/paths.config.js');
 
 const express = require(EXTERNAL_PACKAGES.EXPRESS);
@@ -24,7 +26,6 @@ if (!process.env.NODE_ENV) {
 // �📊 Sistema de logging
 const Logger = require(PATHS.CONFIG.LOGGER);
 const { httpLogger, devLogger, requestLogger } = require(PATHS.MIDDLEWARES.LOGGER);
-const { errorHandler, jsonErrorHandler, notFoundHandler } = require(PATHS.MIDDLEWARES.ERROR);
 const { requestIdMiddleware } = require(PATHS.UTILS.ASYNC_UTILS);
 
 // 🛡️ Sistema de seguridad
@@ -55,10 +56,10 @@ const categoryRoutes = require(PATHS.ROUTES.CATEGORY);
 const { authentication } = require(PATHS.MIDDLEWARES.AUTHENTICATION);
 const { 
   GENERAL_MESSAGES, 
-  LOG_MESSAGES, 
   SYSTEM_MESSAGES,
   HEALTH_CONSTANTS,
-  METRICS_CONSTANTS
+  METRICS_CONSTANTS,
+  SERVICE_MESSAGES
 } = require('./utils/messages.utils.js');
 const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require(PATHS.MIDDLEWARES.VERSION);
 const { getVersionInfo } = require(PATHS.CONFIG.API_VERSIONS);
@@ -76,7 +77,17 @@ const {
 const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl } = require(PATHS.UTILS.URL_UTILS);
 
 // 🔧 Utilidades centralizadas para respuestas y logging
-const { logMessage, successResponse, errorResponse, safeAsync, getEndpointUrls, logServerInfo } = require(PATHS.UTILS.RESPONSE_UTILS);
+const { logMessage, successResponse, getEndpointUrls, logServerInfo } = require(PATHS.UTILS.RESPONSE_UTILS);
+
+// 🔧 Clases de error personalizadas
+const { 
+  InternalServerError, 
+  ValidationError, 
+  NotFoundError, 
+  AppError, 
+  formatDatabaseError, 
+  formatJWTError 
+} = require(PATHS.UTILS.ERROR_UTILS);
 
 // 🌐 Configuración de variables de entorno
 // Ya configurado con require('dotenv').config() arriba
@@ -85,13 +96,15 @@ const PORT = process.env.PORT || ENV_CONFIG.PORT_DEFAULT;
 const app = express();
 
 // � Manejador de errores no capturados (especialmente importante en Vercel)
-process.on(NODE_EVENTS.UNCAUGHT_EXCEPTION, (err) => {
-  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNCAUGHT_EXCEPTION, { error: err.message, stack: err.stack });
+process.on(NODE_EVENTS.UNCAUGHT_EXCEPTION, (error) => {
+  const internalError = new InternalServerError(error.message);
+  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNCAUGHT_EXCEPTION, internalError);
   process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
 });
 
 process.on(NODE_EVENTS.UNHANDLED_REJECTION, (reason, promise) => {
-  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNHANDLED_REJECTION, { reason, promise });
+  const internalError = new InternalServerError(typeof reason === 'string' ? reason : reason?.message || 'Unhandled Promise Rejection');
+  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNHANDLED_REJECTION, internalError);
   process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
 });
 
@@ -138,7 +151,12 @@ app.use(process.env.NODE_ENV === ENV_CONFIG.NODE_ENV_DEVELOPMENT ? devLogger : h
 app.use(requestLogger);
 
 // ⚠️ Middleware para capturar errores de JSON malformado
-app.use(jsonErrorHandler);
+app.use((error, req, res, next) => {
+  if (error instanceof SyntaxError && error.status === HTTP_STATUS.BAD_REQUEST && ERROR_HANDLING.BODY_PROPERTY in error) {
+    return next(new ValidationError(GENERAL_MESSAGES.JSON_MALFORMED.replace("📝 ", "")));
+  }
+  next(error);
+});
 
 app.use(cors(corsOptions));
 
@@ -312,18 +330,14 @@ app.get(API_ENDPOINTS.HEALTH, (req, res) => {
  *                 alerts:
  *                   type: array
  */
-app.get(API_ENDPOINTS_PATHS.HEALTH_FULL, async (req, res) => {
+app.get(API_ENDPOINTS_PATHS.HEALTH_FULL, async (req, res, next) => {
   try {
     const healthReport = await runFullHealthCheck();
     const statusCode = healthReport.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? HTTP_STATUS.OK : 
                        healthReport.status === HEALTH_CONSTANTS.STATUS_DEGRADED ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
     res.status(statusCode).json(healthReport);
   } catch (error) {
-    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
-      status: HEALTH_CONSTANTS.STATUS_UNHEALTHY,
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
+    next(new InternalServerError());
   }
 });
 
@@ -416,7 +430,7 @@ app.get(API_ENDPOINTS_PATHS.HEALTH_HISTORY, authentication, (req, res) => {
  *                 cache:
  *                   type: object
  */
-app.get(API_ENDPOINTS_PATHS.METRICS, authentication, async (req, res) => {
+app.get(API_ENDPOINTS_PATHS.METRICS, authentication, async (req, res, next) => {
   try {
     const metrics = await calculatePerformanceMetrics();
     res.json({
@@ -424,11 +438,7 @@ app.get(API_ENDPOINTS_PATHS.METRICS, authentication, async (req, res) => {
       ...metrics
     });
   } catch (error) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      error: METRICS_CONSTANTS.ERROR_OBTAINING_METRICS,
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
+    next(new InternalServerError());
   }
 });
 
@@ -457,14 +467,14 @@ app.get(API_ENDPOINTS_PATHS.METRICS, authentication, async (req, res) => {
  *                 # TYPE api_requests_total counter
  *                 api_requests_total 1234
  */
-app.get(API_ENDPOINTS_PATHS.METRICS_PROMETHEUS, authentication, async (req, res) => {
+app.get(API_ENDPOINTS_PATHS.METRICS_PROMETHEUS, authentication, async (req, res, next) => {
   try {
     const metrics = await calculatePerformanceMetrics();
     const prometheusFormat = formatMetricsForPrometheus(metrics);
     res.set(METRICS_CONSTANTS.CONTENT_TYPE_HEADER, METRICS_CONSTANTS.CONTENT_TYPE_TEXT_PLAIN);
     res.send(prometheusFormat);
   } catch (error) {
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).send(`${METRICS_CONSTANTS.ERROR_GENERATING_METRICS} ${error.message}`);
+    next(new InternalServerError());
   }
 });
 
@@ -501,7 +511,7 @@ app.get(API_ENDPOINTS_PATHS.METRICS_PROMETHEUS, authentication, async (req, res)
  *                   type: string
  *                   format: date-time
  */
-app.get(API_ENDPOINTS_PATHS.STATUS, async (req, res) => {
+app.get(API_ENDPOINTS_PATHS.STATUS, async (req, res, next) => {
   try {
     const healthReport = await runFullHealthCheck();
     const systemStatus = {
@@ -517,16 +527,7 @@ app.get(API_ENDPOINTS_PATHS.STATUS, async (req, res) => {
     
     res.json(systemStatus);
   } catch (error) {
-    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
-      status: METRICS_CONSTANTS.STATUS_DOWN,
-      services: {
-        api: METRICS_CONSTANTS.SERVICE_ERROR,
-        database: METRICS_CONSTANTS.SERVICE_UNKNOWN,
-        cache: METRICS_CONSTANTS.SERVICE_UNKNOWN
-      },
-      lastUpdated: new Date().toISOString(),
-      error: error.message
-    });
+    next(new InternalServerError());
   }
 });
 
@@ -689,16 +690,18 @@ app.post(API_ENDPOINTS.CACHE_CLEAR, authentication, (req, res) => {
 });
 
 // Redirigir la ruta raíz a la documentación de la API
-app.get(API_ENDPOINTS.ROOT, (req, res) => {
-  safeAsync(async () => {
+app.get(API_ENDPOINTS.ROOT, (req, res, next) => {
+  try {
     logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.ROOT_REDIRECT);
-    //res.redirect(API_ENDPOINTS.API_ROOT);
-  }, res, LOG_MESSAGES.ROOT_ROUTE_ERROR);
+    res.redirect(API_ENDPOINTS.API_ROOT);
+  } catch (error) {
+    next(new InternalServerError());
+  }
 });
 
 // 🔍 Endpoint de debug para Vercel
-app.get(API_ENDPOINTS.DEBUG, (req, res) => {
-  safeAsync(async () => {
+app.get(API_ENDPOINTS.DEBUG, (req, res, next) => {
+  try {
     successResponse(res, SYSTEM_MESSAGES.DEBUG_INFO, {
       nodeVersion: process.version,
       environment: process.env.NODE_ENV,
@@ -707,14 +710,44 @@ app.get(API_ENDPOINTS.DEBUG, (req, res) => {
       baseUrl: getBaseUrl(),
       headers: req.headers
     });
-  }, res, SYSTEM_MESSAGES.DEBUG_ENDPOINT_ERROR);
+  } catch (error) {
+    next(new InternalServerError());
+  }
 });
 
 // 🚫 Middleware para rutas no encontradas (debe ir antes del error handler)
-app.use(notFoundHandler);
+app.use((req, res, next) => {
+  next(new NotFoundError(`Ruta ${req.method} ${req.originalUrl} no encontrada`));
+});
 
 // 🚨 Middleware global de manejo de errores (debe ir al final)
-app.use(errorHandler);
+app.use((error, req, res, next) => {
+  // Convertir errores nativos a AppError si es necesario
+  let appError = error;
+  if (!(error instanceof AppError)) {
+    if (error.code === DATABASE_ERROR_CODES.MONGODB_DUPLICATE_KEY || 
+        error.name === 'ValidationError' || 
+        error.name === 'CastError') {
+      appError = formatDatabaseError(error);
+    } else if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      appError = formatJWTError(error);
+    } else {
+      appError = new InternalServerError(error.message || SERVICE_MESSAGES.INTERNAL_SERVER_ERROR_DEFAULT);
+    }
+  }
+
+  // Respuesta usando la estructura del AppError
+  res.status(appError.statusCode).json({
+    message: appError.message,
+    payload: {
+      statusCode: appError.statusCode,
+      timestamp: appError.timestamp,
+      path: req.originalUrl,
+      method: req.method,
+      ...(appError.details && { details: appError.details })
+    }
+  });
+});
 
 // 🎧 Iniciar servidor
 app.listen(PORT, () => {

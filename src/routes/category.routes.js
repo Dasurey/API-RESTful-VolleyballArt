@@ -144,7 +144,7 @@ const router = Router();
  *                   items:
  *                     $ref: '#/components/schemas/Category'
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoriesQueryProcessor, categoryController.getCategoryHierarchy);
 
@@ -210,7 +210,7 @@ router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoriesQueryProcessor, categoryC
  *                 queryInfo:
  *                   type: object
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.get(API_ENDPOINTS.CATEGORY_ROOT, categoriesQueryProcessor, categoryController.getAllCategory);
 
@@ -282,7 +282,7 @@ router.get(API_ENDPOINTS.CATEGORY_ROOT, categoriesQueryProcessor, categoryContro
  *                 queryInfo:
  *                   type: object
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_ALL, subcategoriesQueryProcessor, categoryController.getAllSubcategory);
 
@@ -335,7 +335,7 @@ router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_ALL, subcategoriesQueryProcessor, 
  *       403:
  *         description: Token inválido o expirado
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.post(API_ENDPOINTS.CATEGORY_CREATE, authentication, validate(createCategorySchema), categoryController.createCategory);
 
@@ -369,7 +369,7 @@ router.post(API_ENDPOINTS.CATEGORY_CREATE, authentication, validate(createCatego
  *       404:
  *         description: Category no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.get(API_ENDPOINTS.CATEGORY_BY_ID, 
   categoriesQueryProcessor,
@@ -425,7 +425,7 @@ router.get(API_ENDPOINTS.CATEGORY_BY_ID,
  *       404:
  *         description: Category no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.put(API_ENDPOINTS.CATEGORY_BY_ID,
   authentication,
@@ -485,7 +485,7 @@ router.put(API_ENDPOINTS.CATEGORY_BY_ID,
  *       404:
  *         description: Category no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
   authentication,
@@ -565,7 +565,7 @@ router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
  *       404:
  *         description: Category padre no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY, 
   subcategoriesQueryProcessor,
@@ -617,7 +617,7 @@ router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
  *       404:
  *         description: Category padre no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
   authentication,
@@ -665,7 +665,7 @@ router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
  *       404:
  *         description: Subcategoría no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
   subcategoriesQueryProcessor,
@@ -734,7 +734,7 @@ router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
  *       404:
  *         description: Subcategoría no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.put(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
   authentication,
@@ -786,7 +786,7 @@ router.put(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
  *       404:
  *         description: Subcategoría no encontrada
  *       500:
- *         description: Error interno del servidor
+ *         description: 🚨 Error interno del servidor
  */
 router.delete(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
   authentication,

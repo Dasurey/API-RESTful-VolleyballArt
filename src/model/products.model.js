@@ -11,6 +11,12 @@ const {
   executeFirebaseOperation 
 } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_FIREBASE);
 const { logMessage } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_RESPONSE);
+const { 
+  ValidationError, 
+  NotFoundError, 
+  ConflictError, 
+  InternalServerError 
+} = require('../utils/error.utils.js');
 const {
   addDoc,
   collection,
@@ -79,7 +85,11 @@ const getProductsWithQuery = async (queryProcessor) => {
       const product = {
         id: doc.id,
         title: data.title,
-        img: data.img || [],
+        img: {
+          src: data.img?.src,
+          alt: data.img?.alt,
+          carousel: data.img?.carousel
+        } || [],
         price: data.price,
         previous_price: data.previous_price ?? null,
         description: data.description,
@@ -175,11 +185,10 @@ const getProductsWithQuery = async (queryProcessor) => {
 
     return products;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_PRODUCTS_FIREBASE, {
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getProductsWithQuery', originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -210,7 +219,11 @@ const getAllProducts = async (queryProcessor = null) => {
       const product = {
         id: doc.id,
         title: data.title,
-        img: data.img || [],
+        img: {
+          src: data.img?.src,
+          alt: data.img?.alt,
+          carousel: data.img?.carousel
+        } || [],
         price: data.price,
         previous_price: data.previous_price ?? null,
         description: data.description,
@@ -237,11 +250,10 @@ const getAllProducts = async (queryProcessor = null) => {
     
     return products;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_PRODUCTS_FIREBASE, {
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getAllProducts', originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -270,7 +282,11 @@ const getProductById = async (id) => {
       const product = {
         id: docSnap.id,
         title: data.title,
-        img: data.img || [],
+        img: {
+          src: data.img?.src,
+          alt: data.img?.alt,
+          carousel: data.img?.carousel
+        } || [],
         price: data.price,
         previous_price: data.previous_price ?? null,
         description: data.description,
@@ -301,12 +317,10 @@ const getProductById = async (id) => {
       return null;
     }
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_GETTING_PRODUCT_FIREBASE, {
-      productId: id,
-      error: error.message,
-      stack: error.stack
-    });
-    throw error;
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'getProductById', productId: id, originalError: error.message, stack: error.stack }
+    );
   }
 };
 
@@ -335,7 +349,11 @@ const createProduct = async (productData) => {
     const newProduct = {
       id: newId,
       title: productData.title,
-      img: productData.img || [],
+      img: {
+        src: productData.img?.src,
+        alt: productData.img?.alt,
+        carousel: productData.img?.carousel
+      } || [],
       price: productData.price,
       previous_price: productData.previous_price ?? null,
       description: productData.description,
@@ -349,7 +367,11 @@ const createProduct = async (productData) => {
     logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCT_CREATED_SUCCESS, {
       productId: newId,
       title: productData.title,
-      img: productData.img || [],
+      img: {
+        src: productData.img?.src,
+        alt: productData.img?.alt,
+        carousel: productData.img?.carousel
+      } || [],
       price: productData.price,
       previous_price: productData.previous_price ?? null,
       description: productData.description,
@@ -364,14 +386,10 @@ const createProduct = async (productData) => {
     // Retornar solo los datos, sin enviar respuesta HTTP
     return newProduct;
   } catch (error) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_ERROR, SYSTEM_MESSAGES.ERROR_CREATING_PRODUCT_DATABASE, {
-      error: error.message,
-      stack: error.stack,
-      productData: productData
-    });
-    
-    // Lanzar error para que el controlador lo maneje
-    throw new Error(`${SYSTEM_MESSAGES.ERROR_CREATING_PRODUCT_PREFIX} ${error.message}`);
+    throw new InternalServerError(
+      undefined, // Usar mensaje por defecto
+      { operation: 'createProduct', originalError: error.message, stack: error.stack, productData }
+    );
   }
 };
 
@@ -395,7 +413,11 @@ const updateProduct = async (id, data) => {
     const structuredProduct = {
       id: updatedProduct.id,
       title: updatedProduct.title,
-      img: updatedProduct.img || [],
+      img: {
+        src: updatedProduct.img?.src,
+        alt: updatedProduct.img?.alt,
+        carousel: updatedProduct.img?.carousel
+      } || [],
       price: updatedProduct.price,
       previous_price: updatedProduct.previous_price ?? null,
       description: updatedProduct.description,

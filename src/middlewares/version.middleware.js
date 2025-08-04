@@ -1,5 +1,6 @@
 const { VERSION_MIDDLEWARE, HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.config.js');
 const { VERSION_MESSAGES } = require('../utils/messages.utils.js');
+const { ValidationError, NotFoundError } = require('../utils/error.utils.js');
 const { API_CONFIG, getVersionInfo } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_API_VERSIONS);
 
 /**
@@ -59,11 +60,13 @@ const versionMiddleware = (req, res, next) => {
       next();
     } else {
       // Versión no soportada
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: `${VERSION_MESSAGES.VERSION_NOT_SUPPORTED} ${requestedVersion}`,
+      const validationError = new ValidationError();
+      validationError.details = {
+        requestedVersion,
         supportedVersions: API_CONFIG.supportedVersions,
         currentVersion: API_CONFIG.currentVersion
-      });
+      };
+      return next(validationError);
     }
   } else {
     // Sin versión específica, usar la versión actual
@@ -107,13 +110,11 @@ const registerVersionInfoEndpoints = (app) => {
   API_CONFIG.supportedVersions.forEach(version => {
     const versionInfoPath = `${VERSION_MIDDLEWARE.API_PREFIX}/${version}${VERSION_MIDDLEWARE.DOCS_ENDPOINT}`;
     
-    app.get(versionInfoPath, (req, res) => {
+    app.get(versionInfoPath, (req, res, next) => {
       const versionInfo = API_CONFIG.versions[version];
       
       if (!versionInfo) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({
-          message: `${VERSION_MESSAGES.VERSION_INFO_NOT_FOUND} ${version} ${VERSION_MESSAGES.VERSION_INFO_NOT_FOUND_SUFFIX}`
-        });
+        return next(new NotFoundError());
       }
       
       res.json({
@@ -131,7 +132,7 @@ const registerVersionInfoEndpoints = (app) => {
       });
     });
     
-    console.log(`  ${VERSION_MESSAGES.REGISTER_DOCS_FOR} ${versionInfoPath} ${VERSION_MESSAGES.REGISTER_DOCS_SUFFIX} ${version}`);
+    console.log(` ${VERSION_MESSAGES.REGISTER_DOCS_FOR} ${versionInfoPath} ${VERSION_MESSAGES.REGISTER_DOCS_SUFFIX} ${version}`);
   });
   
   console.log(VERSION_MIDDLEWARE.EMPTY_LINE);

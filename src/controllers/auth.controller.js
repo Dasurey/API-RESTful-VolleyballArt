@@ -1,41 +1,27 @@
 const { RELATIVE_PATHS } = require('../config/paths.config.js');
 const { AUTH_MESSAGES } = require('../utils/messages.utils.js');
 const authService = require(RELATIVE_PATHS.FROM_CONTROLLERS.SERVICES_AUTH);
-const { executeController } = require(RELATIVE_PATHS.FROM_CONTROLLERS.UTILS_CONTROLLER);
+const { controllerWrapper } = require('../utils/async.utils.js');
 
-const loginUser = async (req, res) => {
+const loginUser = controllerWrapper(async (req, res) => {
   const { email, password } = req.body;
   
-  return executeController(
-    () => authService.loginUser(req, res, email, password),
-    req,
-    res,
-    AUTH_MESSAGES.LOGIN_SUCCESS,
-    AUTH_MESSAGES.LOGIN_ERROR,
-    { 
-      operation: AUTH_MESSAGES.OPERATION_LOGIN,
-      email: email // No incluir password por seguridad
-    }
-  );
-};
+  const result = await authService.loginUser(req, res, email, password);
+  
+  // El servicio ya maneja la respuesta HTTP directamente
+  return result;
+});
 
 // Registro temporalmente deshabilitado - TODO: Implementar sistema de roles
 /*
-const registerUser = async (req, res) => {
+const registerUser = controllerWrapper(async (req, res) => {
   const { email, password } = req.body;
   
-  return executeController(
-    () => authService.registerUser(req, res, email, password),
-    req,
-    res,
-    AUTH_MESSAGES.REGISTER_SUCCESS,
-    AUTH_MESSAGES.REGISTER_ERROR,
-    { 
-      operation: AUTH_MESSAGES.OPERATION_REGISTER,
-      email: email // No incluir password por seguridad
-    }
-  );
-};
+  const result = await authService.registerUser(req, res, email, password);
+  
+  // El servicio ya maneja la respuesta HTTP directamente
+  return result;
+});
 */
 
 module.exports = {
