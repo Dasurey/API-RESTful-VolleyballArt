@@ -1,13 +1,6 @@
-const { RELATIVE_PATHS } = require('../config/paths.config.js');
-const { SERVICE_MESSAGES } = require('../utils/messages.utils.js');
-const CategoryModel = require(RELATIVE_PATHS.FROM_SERVICES.MODELS_CATEGORY);
-const { logAndExecute } = require('../utils/log.utils.js');
-const { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError, 
-  InternalServerError 
-} = require('../utils/error.utils.js');
+const CategoryModel = require('../model/category.model');
+const { logAndExecute } = require('../utils/log.utils');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../utils/error.utils');
 
 /**
  * Obtener todas las categoria padre
@@ -16,16 +9,16 @@ const getAllCategory = async (queryProcessor = null) => {
   try {
     const category = await CategoryModel.getAllCategory(queryProcessor);
     
-    logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORIES_GET_SUCCESS, {
+    logAndExecute('info', '📋 Categorías obtenidas exitosamente', {
       totalCategory: category.length,
-      service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+      service: 'category'
     }, 'API');
     
     return category;
   } catch (error) {
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'getAllCategory', originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'getAllCategory', originalError: error.message, service: 'category' }
     );
   }
 };
@@ -38,19 +31,28 @@ const getCategoryById = async (categoryId) => {
   try {
     const category = await CategoryModel.getCategoryById(categoryId);
     
-    if (category) {
-      logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_GET_SUCCESS, {
-        [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
-        [SERVICE_MESSAGES.HAS_SUBCATEGORY_FIELD]: !!(category.subcategory && category.subcategory.length > 0),
-        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-      });
+    // Si no se encuentra la categoría, lanzar NotFoundError (404)
+    if (!category) {
+      throw new NotFoundError(`🔍 Categoría con ID ${categoryId} no encontrada`);
     }
+    
+    logAndExecute('info', '📂 Categoría obtenida exitosamente', {
+      categoryId: categoryId,
+      hasSubcategory: !!(category.subcategory && category.subcategory.length > 0),
+      service: 'category'
+    });
     
     return category;
   } catch (error) {
+    // Si ya es un error de validación/no encontrado, re-lanzarlo
+    if (error instanceof NotFoundError || error instanceof ValidationError) {
+      throw error;
+    }
+    
+    // Solo para errores internos reales
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'getCategoryById', categoryId, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'getCategoryById', categoryId, originalError: error.message, service: 'category' }
     );
   }
 };
@@ -64,17 +66,17 @@ const getSubcategoryByParent = async (parentCategoryId, queryProcessor = null) =
   try {
     const subcategory = await CategoryModel.getSubcategoryByParent(parentCategoryId, queryProcessor);
     
-    logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
-      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
-      [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: subcategory.length,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    logAndExecute('info', '📂 Subcategoria obtenidas exitosamente', {
+      parentCategoryId: parentCategoryId,
+      totalSubcategory: subcategory.length,
+      service: 'category'
     });
     
     return subcategory;
   } catch (error) {
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'getSubcategoryByParent', parentCategoryId, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'getSubcategoryByParent', parentCategoryId, originalError: error.message, service: 'category' }
     );
   }
 };
@@ -86,16 +88,16 @@ const getAllSubcategory = async (queryProcessor = null) => {
   try {
     const subcategory = await CategoryModel.getAllSubcategory(queryProcessor);
     
-    logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
-      [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: subcategory.length,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    logAndExecute('info', '📂 Subcategoria obtenidas exitosamente', {
+      totalSubcategory: subcategory.length,
+      service: 'category'
     });
     
     return subcategory;
   } catch (error) {
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'getAllSubcategory', originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'getAllSubcategory', originalError: error.message, service: 'category' }
     );
   }
 };
@@ -107,21 +109,36 @@ const getAllSubcategory = async (queryProcessor = null) => {
  */
 const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
   try {
+    // Validar que subcategoryId corresponde al parentCategoryId
+    const parentNumber = parentCategoryId.split('-')[1];
+    if (!subcategoryId.startsWith(`CAT-${parentNumber}-`)) {
+      throw new ValidationError(`La subcategoría ${subcategoryId} no pertenece a la categoría padre ${parentCategoryId}`);
+    }
+    
     const subcategory = await CategoryModel.getSubcategorySpecific(parentCategoryId, subcategoryId);
     
-    if (subcategory) {
-      logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
-        [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
-        [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: subcategoryId,
-        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-      });
+    // Si no se encuentra la subcategoría, lanzar NotFoundError (404)
+    if (!subcategory) {
+      throw new NotFoundError(`🔍 Subcategoría con ID ${subcategoryId} no encontrada en categoría padre ${parentCategoryId}`);
     }
+    
+    logAndExecute('info', '📂 Subcategoria obtenidas exitosamente', {
+      parentCategoryId: parentCategoryId,
+      subcategoryId: subcategoryId,
+      service: 'category'
+    });
     
     return subcategory;
   } catch (error) {
+    // Si ya es un error de validación/no encontrado, re-lanzarlo
+    if (error instanceof NotFoundError || error instanceof ValidationError) {
+      throw error;
+    }
+    
+    // Solo para errores internos reales
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'getSubcategorySpecific', parentCategoryId, subcategoryId, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'getSubcategorySpecific', parentCategoryId, subcategoryId, originalError: error.message, service: 'category' }
     );
   }
 };
@@ -133,8 +150,8 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
 const createCategory = async (categoryData) => {
   try {
     // Validar datos requeridos
-    if (!categoryData.title || categoryData.title.trim() === SERVICE_MESSAGES.EMPTY_STRING) {
-      throw new ValidationError();
+    if (!categoryData.title || categoryData.title.trim() === '') {
+      throw new ValidationError('El título de la categoría es obligatorio');
     }
     
     // Extraer subcategorías si existen
@@ -143,10 +160,10 @@ const createCategory = async (categoryData) => {
     // Crear la categoría padre primero
     const newCategory = await CategoryModel.createCategory(parentCategoryData);
     
-    logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_CREATE_SUCCESS, {
-      [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: newCategory.id,
-      [SERVICE_MESSAGES.TITLE_FIELD]: newCategory.title,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    logAndExecute('info', '✅ Categoría creada exitosamente', {
+      categoryId: newCategory.id,
+      title: newCategory.title,
+      service: 'category'
     });
     
     // Si hay subcategorías, crearlas
@@ -158,18 +175,18 @@ const createCategory = async (categoryData) => {
           const newSubcategory = await CategoryModel.createSubcategory(newCategory.id, subcategoryData);
           createdSubcategories.push(newSubcategory);
           
-          logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
-            [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: newSubcategory.id,
-            [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: newCategory.id,
-            [SERVICE_MESSAGES.TITLE_FIELD]: newSubcategory.title,
-            [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+          logAndExecute('info', '✅ Subcategoría creada exitosamente', {
+            subcategoryId: newSubcategory.id,
+            parentCategoryId: newCategory.id,
+            title: newSubcategory.title,
+            service: 'category'
           });
         } catch (subcategoryError) {
-          logAndExecute('error', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_ERROR, {
-            [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: newCategory.id,
-            subcategoryData: subcategoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT,
+          logAndExecute('error', '🚨 Error en servicio al crear subcategoría', {
+            parentCategoryId: newCategory.id,
+            subcategoryData: subcategoryData.title || 'Sin título',
             error: subcategoryError.message,
-            [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+            service: 'category'
           });
           // Continuar con las demás subcategorías aunque una falle
         }
@@ -183,9 +200,15 @@ const createCategory = async (categoryData) => {
     
     return newCategory;
   } catch (error) {
+    // Si ya es un error de validación/no encontrado, re-lanzarlo
+    if (error instanceof NotFoundError || error instanceof ValidationError) {
+      throw error;
+    }
+    
+    // Solo para errores internos reales
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'createCategory', categoryTitle: categoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'createCategory', categoryTitle: categoryData.title || 'Sin título', originalError: error.message, service: 'category' }
     );
   }
 };
@@ -198,28 +221,39 @@ const createCategory = async (categoryData) => {
 const createSubcategory = async (parentCategoryId, subcategoryData) => {
   try {
     // Validar datos requeridos
-    if (!subcategoryData.title || subcategoryData.title.trim() === SERVICE_MESSAGES.EMPTY_STRING) {
-      throw new ValidationError();
+    if (!subcategoryData.title || subcategoryData.title.trim() === '') {
+      throw new ValidationError('El título de la subcategoría es obligatorio');
     }
     
-    if (!parentCategoryId || !parentCategoryId.endsWith(SERVICE_MESSAGES.PARENT_CATEGORY_SUFFIX)) {
-      throw new ValidationError();
+    if (!parentCategoryId || !parentCategoryId.endsWith('-0000')) {
+      throw new ValidationError('ID de categoría padre inválido');
     }
     
     const newSubcategory = await CategoryModel.createSubcategory(parentCategoryId, subcategoryData);
     
-    logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
-      [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: newSubcategory.id,
-      [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
-      [SERVICE_MESSAGES.TITLE_FIELD]: newSubcategory.title,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    // Si el modelo retorna null, significa que la categoría padre no existe
+    if (!newSubcategory) {
+      throw new NotFoundError(`🔍 Categoría padre con ID ${parentCategoryId} no encontrada`);
+    }
+    
+    logAndExecute('info', '✅ Subcategoría creada exitosamente', {
+      subcategoryId: newSubcategory.id,
+      parentCategoryId: parentCategoryId,
+      title: newSubcategory.title,
+      service: 'category'
     });
     
     return newSubcategory;
   } catch (error) {
+    // Si ya es un error de validación/no encontrado, re-lanzarlo
+    if (error instanceof NotFoundError || error instanceof ValidationError) {
+      throw error;
+    }
+    
+    // Solo para errores internos reales
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'createSubcategory', parentCategoryId, subcategoryTitle: subcategoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'createSubcategory', parentCategoryId, subcategoryTitle: subcategoryData.title || 'Sin título', originalError: error.message, service: 'category' }
     );
   }
 };
@@ -233,24 +267,33 @@ const updateCategory = async (categoryId, updateData) => {
   try {
     // Validar que hay datos para actualizar
     if (!updateData || Object.keys(updateData).length === 0) {
-      throw new ValidationError();
+      throw new ValidationError('No se proporcionaron datos para actualizar');
     }
     
     const updatedCategory = await CategoryModel.updateCategory(categoryId, updateData);
     
-    if (updatedCategory) {
-      logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_UPDATE_SUCCESS, {
-        [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
-        [SERVICE_MESSAGES.UPDATED_FIELDS_FIELD]: Object.keys(updateData),
-        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-      });
+    // Si el modelo retorna null, significa que la categoría no existe
+    if (!updatedCategory) {
+      throw new NotFoundError(`🔍 Categoría con ID ${categoryId} no encontrada para actualizar`);
     }
+    
+    logAndExecute('info', '✅ Categoría actualizada exitosamente', {
+      categoryId: categoryId,
+      updatedFields: Object.keys(updateData),
+      service: 'category'
+    });
     
     return updatedCategory;
   } catch (error) {
+    // Si ya es un error de validación/no encontrado, re-lanzarlo
+    if (error instanceof NotFoundError || error instanceof ValidationError) {
+      throw error;
+    }
+    
+    // Solo para errores internos reales
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'updateCategory', categoryId, updateFields: Object.keys(updateData || {}), originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'updateCategory', categoryId, updateFields: Object.keys(updateData || {}), originalError: error.message, service: 'category' }
     );
   }
 };
@@ -265,28 +308,37 @@ const deleteCategory = async (categoryId, options = {}) => {
     const { deleteSubcategory = false } = options;
     
     // Si es categoría padre y no se especifica eliminar subcategoria, verificar que no tenga subcategoria
-    if (categoryId.endsWith(SERVICE_MESSAGES.PARENT_CATEGORY_SUFFIX) && !deleteSubcategory) {
+    if (categoryId.endsWith('-0000') && !deleteSubcategory) {
       const subcategory = await CategoryModel.getSubcategoryByParent(categoryId);
       if (subcategory.length > 0) {
-        throw new ConflictError();
+        throw new ConflictError('No se puede eliminar la categoría padre porque tiene subcategorías asociadas');
       }
     }
     
     const result = await CategoryModel.deleteCategory(categoryId, options);
     
-    if (result) {
-      logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_DELETE_SUCCESS, {
-        [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
-        [SERVICE_MESSAGES.DELETED_SUBCATEGORY_FIELD]: deleteSubcategory,
-        [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-      });
+    // Si el modelo retorna null, significa que la categoría no existe
+    if (!result) {
+      throw new NotFoundError(`🔍 Categoría con ID ${categoryId} no encontrada para eliminar`);
     }
+    
+    logAndExecute('info', '✅ Categoría eliminada exitosamente', {
+      categoryId: categoryId,
+      deletedSubcategory: deleteSubcategory,
+      service: 'category'
+    });
     
     return result;
   } catch (error) {
+    // Si ya es un error de validación/no encontrado/conflicto, re-lanzarlo
+    if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof ConflictError) {
+      throw error;
+    }
+    
+    // Solo para errores internos reales
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'deleteCategory', categoryId, options, originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'deleteCategory', categoryId, options, originalError: error.message, service: 'category' }
     );
   }
 };
@@ -297,18 +349,18 @@ const deleteCategory = async (categoryId, options = {}) => {
 const getCategoryHierarchy = async () => {
   try {
     const hierarchy = await CategoryModel.getCategoryHierarchy();
-    
-    logAndExecute('info', SERVICE_MESSAGES.SERVICE_HIERARCHY_GET_SUCCESS, {
-      [SERVICE_MESSAGES.TOTAL_PARENT_CATEGORY_FIELD]: hierarchy.length,
-      [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: hierarchy.reduce((acc, cat) => acc + (cat.subcategory?.length || 0), 0),
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+
+    logAndExecute('info', '🌳 Jerarquía de categoría obtenida exitosamente', {
+      totalParentCategory: hierarchy.length,
+      totalSubcategory: hierarchy.reduce((acc, cat) => acc + (cat.subcategory?.length || 0), 0),
+      service: 'category'
     });
     
     return hierarchy;
   } catch (error) {
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
-      { operation: 'getCategoryHierarchy', originalError: error.message, service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY }
+      { operation: 'getCategoryHierarchy', originalError: error.message, service: 'category' }
     );
   }
 };

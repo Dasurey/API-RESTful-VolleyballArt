@@ -1,11 +1,8 @@
 const { db } = require('../config/db.config');
-const {
-  getDocumentById,
-  executeFirebaseOperation
-} = require('../utils/firebase.utils');
+const { getDocumentById, executeFirebaseOperation } = require('../utils/firebase.utils');
 const { logDatabase } = require('../utils/log.utils');
 const { processQuery, getQueryProcessingInfo } = require('../middlewares/query.middleware');
-const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../utils/error.utils');
+const { InternalServerError } = require('../utils/error.utils');
 const { collection, doc, getDoc, getDocs, setDoc, deleteDoc } = require('firebase/firestore');
 
 const COLLECTION_NAME = 'category';
@@ -337,12 +334,6 @@ const getAllSubcategory = async (queryProcessor = null) => {
  */
 const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
   try {
-    // Verificar que subcategoryId corresponde al parentCategoryId
-    const parentNumber = parentCategoryId.split('-')[1];
-    if (!subcategoryId.startsWith(`CAT-${parentNumber}-`)) {
-      return null;
-    }
-
     // Obtener documento directamente por ID
     const categoryRef = doc(db, COLLECTION_NAME, subcategoryId);
     const docSnap = await getDoc(categoryRef);
@@ -352,7 +343,7 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
         parentCategoryId,
         subcategoryId
       });
-      return null;
+      return null; // Solo retornar null, no lanzar errores
     }
 
     const data = docSnap.data();
@@ -370,6 +361,7 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
     // Estructurar subcategoría con orden específico
     return structureSubcategory(subcategory);
   } catch (error) {
+    // Solo para errores reales de Firebase/Sistema
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
       { operation: 'getSubcategorySpecific', parentCategoryId, subcategoryId, originalError: error.message, stack: error.stack }
@@ -421,7 +413,7 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
   // Verificar que la categoría padre existe
   const parentCategory = await getDocumentById(db, COLLECTION_NAME, parentCategoryId);
   if (!parentCategory) {
-    throw new NotFoundError();
+    return null; // Solo retornar null, el servicio decidirá el error
   }
 
   const newId = await generateNextSubcategoryId(parentCategoryId);
@@ -469,7 +461,7 @@ const updateCategory = async (categoryId, updateData) => {
     const categorySnap = await getDoc(categoryRef);
 
     if (!categorySnap.exists()) {
-      throw new NotFoundError();
+      return null; // Solo retornar null, el servicio decidirá el error
     }
 
     // Agregar updatedAt automáticamente
@@ -502,6 +494,7 @@ const updateCategory = async (categoryId, updateData) => {
       return structureSubcategory(updatedCategory);
     }
   } catch (error) {
+    // Solo para errores reales de Firebase/Sistema
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
       { operation: 'updateCategory', categoryId, originalError: error.message, stack: error.stack }
@@ -523,7 +516,7 @@ const deleteCategory = async (categoryId, options = {}) => {
     const categorySnap = await getDoc(categoryRef);
 
     if (!categorySnap.exists()) {
-      throw new NotFoundError();
+      return null; // Solo retornar null, el servicio decidirá el error
     }
 
     // Si es una categoría padre y se especifica eliminar subcategorías
@@ -552,6 +545,7 @@ const deleteCategory = async (categoryId, options = {}) => {
 
     return true;
   } catch (error) {
+    // Solo para errores reales de Firebase/Sistema
     throw new InternalServerError(
       undefined, // Usar mensaje por defecto
       { operation: 'deleteCategory', categoryId, originalError: error.message, stack: error.stack }

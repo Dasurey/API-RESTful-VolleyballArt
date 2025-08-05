@@ -1,22 +1,8 @@
-const { RELATIVE_PATHS, EXTERNAL_PACKAGES } = require('../config/paths.config.js');
-const { SYSTEM_MESSAGES } = require('../utils/messages.utils.js');
-const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
-const { productsCacheManager } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_CACHE);
-const { 
-  getAllDocuments, 
-  getDocumentById, 
-  createDocument, 
-  updateDocument, 
-  deleteDocument,
-  executeFirebaseOperation 
-} = require(RELATIVE_PATHS.FROM_MODEL.UTILS_FIREBASE);
-const { logDatabase } = require('../utils/log.utils.js');
-const { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError, 
-  InternalServerError 
-} = require('../utils/error.utils.js');
+const { db } = require('../config/db.config');
+const { productsCacheManager } = require('../config/cache.config');
+const { getAllDocuments, getDocumentById, createDocument, updateDocument, deleteDocument,executeFirebaseOperation } = require('../utils/firebase.utils');
+const { logDatabase } = require('../utils/log.utils');
+const { InternalServerError } = require('../utils/error.utils');
 const {
   addDoc,
   collection,
@@ -26,9 +12,9 @@ const {
   getDocs,
   updateDoc,
   setDoc,
-} = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
+} = require('firebase/firestore');
 
-const COLLECTION_NAME = SYSTEM_MESSAGES.COLLECTION_PRODUCTS;
+const COLLECTION_NAME = 'products';
 const CACHE_TTL = 1800; // 30 minutos
 const CACHE_TTL_SHORT = 300; // 5 minutos para productos no encontrados
 
@@ -43,14 +29,14 @@ const generateNextId = async () => {
       
       if (snapshot.empty) {
         // Si no hay productos, empezar con VA-0000001
-        return SYSTEM_MESSAGES.PRODUCT_ID_INITIAL;
+        return 'VA-0000001';
       }
       
       // Obtener todos los IDs y encontrar el número más alto
       let maxNumber = 0;
       snapshot.forEach((doc) => {
         const id = doc.id;
-        if (id.startsWith(SYSTEM_MESSAGES.PRODUCT_ID_PREFIX)) {
+        if (id.startsWith('VA-')) {
           const number = parseInt(id.split('-')[1]);
           if (number > maxNumber) {
             maxNumber = number;
@@ -62,11 +48,11 @@ const generateNextId = async () => {
       const nextNumber = maxNumber + 1;
       
       // Formatear con padding de ceros (7 dígitos)
-      return `${SYSTEM_MESSAGES.PRODUCT_ID_PREFIX}${nextNumber.toString().padStart(7, SYSTEM_MESSAGES.PADDING_ZERO)}`;
+      return `VA-${nextNumber.toString().padStart(7, '0')}`;
     },
-    SYSTEM_MESSAGES.OPERATION_GENERATE_ID_KEY,
+    'generateId',
     COLLECTION_NAME,
-    { operation: SYSTEM_MESSAGES.OPERATION_GENERATE_ID }
+    { operation: 'generateId' }
   );
 };
 
@@ -122,28 +108,28 @@ const getProductsWithQuery = async (queryProcessor) => {
       Object.entries(queryProcessor.filters).forEach(([field, filterArray]) => {
         filterArray.forEach(({ operator, value }) => {
           switch (operator) {
-            case SYSTEM_MESSAGES.FIREBASE_EQUALITY_OPERATOR:
+            case '==':
               products = products.filter(product => product[field] === value);
               break;
-            case SYSTEM_MESSAGES.FIREBASE_NOT_EQUAL_OPERATOR:
+            case '!=':
               products = products.filter(product => product[field] !== value);
               break;
-            case SYSTEM_MESSAGES.FIREBASE_GREATER_THAN_OPERATOR:
+            case '>':
               products = products.filter(product => product[field] > value);
               break;
-            case SYSTEM_MESSAGES.FIREBASE_GREATER_EQUAL_OPERATOR:
+            case '>=':
               products = products.filter(product => product[field] >= value);
               break;
-            case SYSTEM_MESSAGES.FIREBASE_LESS_THAN_OPERATOR:
+            case '<':
               products = products.filter(product => product[field] < value);
               break;
-            case SYSTEM_MESSAGES.FIREBASE_LESS_EQUAL_OPERATOR:
+            case '<=':
               products = products.filter(product => product[field] <= value);
               break;
-            case SYSTEM_MESSAGES.FIREBASE_IN_OPERATOR:
+            case 'in':
               products = products.filter(product => value.includes(product[field]));
               break;
-            case SYSTEM_MESSAGES.FIREBASE_NOT_IN_OPERATOR:
+            case 'not-in':
               products = products.filter(product => !value.includes(product[field]));
               break;
           }
@@ -157,8 +143,8 @@ const getProductsWithQuery = async (queryProcessor) => {
       products.sort((a, b) => {
         const aVal = a[sort.field];
         const bVal = b[sort.field];
-        
-        if (sort.direction === SYSTEM_MESSAGES.FIREBASE_ORDER_DESC) {
+
+        if (sort.direction === 'desc') {
           return bVal > aVal ? 1 : bVal < aVal ? -1 : 0;
         } else {
           return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
@@ -166,7 +152,7 @@ const getProductsWithQuery = async (queryProcessor) => {
       });
     } else {
       // Ordenamiento por defecto por título
-      products.sort((a, b) => (a.title || SYSTEM_MESSAGES.EMPTY_STRING).localeCompare(b.title || SYSTEM_MESSAGES.EMPTY_STRING));
+      products.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     }
 
     // Aplicar paginación
@@ -177,7 +163,7 @@ const getProductsWithQuery = async (queryProcessor) => {
       }
     }
 
-    logDatabase( SYSTEM_MESSAGES.PRODUCTS_FROM_FIREBASE_CACHED, {
+    logDatabase('📦 Productos obtenidos desde Firebase y cacheados', {
       count: products.length,
       searchApplied: !!(queryProcessor && queryProcessor.search && queryProcessor.search.term),
       filtersApplied: !!(queryProcessor && Object.keys(queryProcessor.filters || {}).length > 0),
@@ -200,11 +186,11 @@ const getAllProducts = async (queryProcessor = null) => {
   }
 
   // Intentar obtener del cache primero solo para consultas básicas
-  const cacheKey = SYSTEM_MESSAGES.CACHE_KEY_ALL_PRODUCTS;
+  const cacheKey = 'all_products';
   const cachedProducts = productsCacheManager.get(cacheKey);
   
   if (cachedProducts) {
-    logDatabase( SYSTEM_MESSAGES.PRODUCTS_FROM_CACHE, { cacheHit: true });
+    logDatabase('📦 Productos obtenidos desde cache', { cacheHit: true });
     return cachedProducts;
   }
 
@@ -238,12 +224,12 @@ const getAllProducts = async (queryProcessor = null) => {
     });
     
     // Ordenar los productos por título en el código
-    products.sort((a, b) => (a.title || SYSTEM_MESSAGES.EMPTY_STRING).localeCompare(b.title || SYSTEM_MESSAGES.EMPTY_STRING));
-    
+    products.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+
     // Guardar en cache por 30 minutos
     productsCacheManager.set(cacheKey, products, CACHE_TTL);
     
-    logDatabase( SYSTEM_MESSAGES.PRODUCTS_FROM_FIREBASE_CACHED, {
+    logDatabase('📦 Productos obtenidos desde Firebase y cacheados', {
       count: products.length,
       cached: true,
       ttl: CACHE_TTL
@@ -260,12 +246,12 @@ const getAllProducts = async (queryProcessor = null) => {
 
 const getProductById = async (id) => {
   // Intentar obtener del cache primero (ignorar valores null del cache)
-  const cacheKey = `${SYSTEM_MESSAGES.CACHE_KEY_PRODUCT_PREFIX}${id}`;
+  const cacheKey = `product_${id}`;
   const cachedProduct = productsCacheManager.get(cacheKey);
   
   if (cachedProduct !== undefined && cachedProduct !== null) {
-    logDatabase( SYSTEM_MESSAGES.PRODUCT_FROM_CACHE, { 
-      productId: id, 
+    logDatabase('📦 Producto obtenido desde cache', {
+      productId: id,
       cacheHit: true,
       found: true 
     });
@@ -301,7 +287,7 @@ const getProductById = async (id) => {
       // Guardar en cache por 30 minutos
       productsCacheManager.set(cacheKey, product, CACHE_TTL);
       
-      logDatabase( SYSTEM_MESSAGES.PRODUCT_FROM_FIREBASE_CACHED, { 
+      logDatabase('📦 Producto obtenido desde Firebase y cacheado', { 
         productId: id,
         cached: true,
         ttl: CACHE_TTL
@@ -310,7 +296,7 @@ const getProductById = async (id) => {
       return product;
     } else {
       // NO cachear productos no encontrados para evitar problemas futuros
-      logDatabase( SYSTEM_MESSAGES.PRODUCT_NOT_FOUND_FIREBASE, { 
+      logDatabase('📦 Producto no encontrado en Firebase', { 
         productId: id,
         found: false
       });
@@ -365,7 +351,7 @@ const createProduct = async (productData) => {
       updatedAt: now
     };
     
-    logDatabase( SYSTEM_MESSAGES.PRODUCT_CREATED_SUCCESS, {
+    logDatabase('✅ Producto creado exitosamente en modelo', {
       productId: newId,
       title: productData.title,
       img: {
@@ -404,7 +390,7 @@ const updateProduct = async (id, data) => {
     // Invalidar cache del producto específico y de la lista
     productsCacheManager.invalidateProduct(id);
     
-    logDatabase( SYSTEM_MESSAGES.PRODUCT_UPDATED_SUCCESS, {
+    logDatabase('✅ Producto actualizado exitosamente', {
       productId: id,
       updatedFields: Object.keys(data),
       cacheInvalidated: true
@@ -444,7 +430,7 @@ const deleteProduct = async (id) => {
     // Invalidar cache del producto específico y de la lista
     productsCacheManager.invalidateProduct(id);
     
-    logDatabase( SYSTEM_MESSAGES.PRODUCT_DELETED_SUCCESS, {
+    logDatabase('🗑️ Producto eliminado exitosamente', {
       productId: id,
       cacheInvalidated: true
     });

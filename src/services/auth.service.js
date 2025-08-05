@@ -1,6 +1,5 @@
-const { RELATIVE_PATHS } = require('../config/paths.config.js');
-const authModel = require(RELATIVE_PATHS.FROM_SERVICES.MODELS_AUTH);
-const { generateToken } = require(RELATIVE_PATHS.FROM_SERVICES.CONFIG_JWT);
+const authModel = require('../model/auth.model');
+const { generateToken } = require('../config/jwt.config');
 
 const loginUser = async (req, res, email, password) => {
   return authModel.loginUser(req, res, email, password);

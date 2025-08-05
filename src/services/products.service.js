@@ -1,4 +1,3 @@
-const { RELATIVE_PATHS } = require('../config/paths.config');
 const productsModel = require('../model/products.model');
 
 const getAllProducts = async (queryProcessor = null) => productsModel.getAllProducts(queryProcessor);

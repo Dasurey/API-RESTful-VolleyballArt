@@ -1,5 +1,5 @@
-const { EXTERNAL_PACKAGES } = require('../config/paths.config.js');
-const { JOI_ERROR_KEYS, VALIDATION_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const { EXTERNAL_PACKAGES } = require('../config/paths.config');
+const { JOI_ERROR_KEYS, VALIDATION_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils');
 const Joi = require(EXTERNAL_PACKAGES.JOI);
 
 /**
@@ -12,10 +12,10 @@ const createSubcategorySchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED,
-      [JOI_ERROR_KEYS.STRING_MIN]: VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED
+      'string.empty': 'El título de la subcategoría es requerido',
+      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
+      'any.required': 'El título de la subcategoría es requerido'
     }),
     
   text: Joi.string()
@@ -23,9 +23,9 @@ const createSubcategorySchema = Joi.object({
     .max(5000)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS,
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.SUBCATEGORY_TEXT_REQUIRED,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.SUBCATEGORY_TEXT_REQUIRED
+      'string.max': VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS,
+      'string.empty': VALIDATION_MESSAGES.SUBCATEGORY_TEXT_REQUIRED,
+      'any.required': VALIDATION_MESSAGES.SUBCATEGORY_TEXT_REQUIRED
     }),
     
   img: Joi.array()
@@ -36,15 +36,15 @@ const createSubcategorySchema = Joi.object({
           .required()
           .messages({
             [JOI_ERROR_KEYS.STRING_URI]: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
-            [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
+            'any.required': VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
           }),
         alt: Joi.string()
           .trim()
           .max(200)
           .required()
           .messages({
-            [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
-            [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
+            'string.max': VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
+            'any.required': VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
           })
       })
     )
@@ -54,7 +54,7 @@ const createSubcategorySchema = Joi.object({
     .messages({
       [JOI_ERROR_KEYS.ARRAY_MAX]: VALIDATION_MESSAGES.MAX_10_IMAGES,
       [JOI_ERROR_KEYS.ARRAY_MIN]: VALIDATION_MESSAGES.MIN_1_IMAGE,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.SUBCATEGORY_IMG_REQUIRED
+      'any.required': VALIDATION_MESSAGES.SUBCATEGORY_IMG_REQUIRED
     })
 });
 
@@ -68,10 +68,10 @@ const createCategorySchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED,
-      [JOI_ERROR_KEYS.STRING_MIN]: VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED
+      'string.empty': VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED,
+      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
+      'any.required': VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED
     }),
     
   subcategory: Joi.array()
@@ -93,10 +93,10 @@ const createSubcategorySimpleSchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED,
-      [JOI_ERROR_KEYS.STRING_MIN]: VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.SUBCATEGORY_TITLE_REQUIRED
+      'string.empty': 'El título de la subcategoría es requerido',
+      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
+      'any.required': 'El título de la subcategoría es requerido'
     }),
     
   text: Joi.string()
@@ -105,7 +105,7 @@ const createSubcategorySimpleSchema = Joi.object({
     .allow('', null)
     .optional()
     .messages({
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
+      'string.max': VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
     }),
     
   img: Joi.array()
@@ -116,15 +116,15 @@ const createSubcategorySimpleSchema = Joi.object({
           .required()
           .messages({
             [JOI_ERROR_KEYS.STRING_URI]: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
-            [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
+            'any.required': VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
           }),
         alt: Joi.string()
           .trim()
           .max(200)
           .required()
           .messages({
-            [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
-            [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
+            'string.max': VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
+            'any.required': VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
           })
       })
     )
@@ -145,9 +145,9 @@ const updateCategorySchema = Joi.object({
     .max(100)
     .optional()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
-      [JOI_ERROR_KEYS.STRING_MIN]: VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
+      'string.empty': VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
+      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
     })
 }).min(1).messages({
   [JOI_ERROR_KEYS.OBJECT_MIN]: VALIDATION_MESSAGES.PROVIDE_AT_LEAST_ONE_FIELD
@@ -163,9 +163,9 @@ const updateSubcategorySchema = Joi.object({
     .max(100)
     .optional()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
-      [JOI_ERROR_KEYS.STRING_MIN]: VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
+      'string.empty': VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
+      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
+      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
     }),
     
   text: Joi.string()
@@ -174,7 +174,7 @@ const updateSubcategorySchema = Joi.object({
     .allow('', null)
     .optional()
     .messages({
-      [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
+      'string.max': VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
     }),
     
   img: Joi.array()
@@ -185,7 +185,7 @@ const updateSubcategorySchema = Joi.object({
           .required()
           .messages({
             [JOI_ERROR_KEYS.STRING_URI]: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
-            [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
+            'any.required': VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
           }),
         alt: Joi.string()
           .trim()
@@ -193,7 +193,7 @@ const updateSubcategorySchema = Joi.object({
           .allow('', null)
           .optional()
           .messages({
-            [JOI_ERROR_KEYS.STRING_MAX]: VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS
+            'string.max': VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS
           })
       })
     )
@@ -216,7 +216,7 @@ const categoryIdSchema = Joi.object({
     .required()
     .messages({
       [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.CATEGORY_ID_FORMAT_INVALID,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.CATEGORY_ID_REQUIRED
+      'any.required': VALIDATION_MESSAGES.CATEGORY_ID_REQUIRED
     })
 });
 
@@ -229,7 +229,7 @@ const parentCategoryIdSchema = Joi.object({
     .required()
     .messages({
       [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
+      'any.required': VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
     })
 });
 
@@ -242,7 +242,7 @@ const categoryParentIdSchema = Joi.object({
     .required()
     .messages({
       [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
+      'any.required': VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
     })
 });
 
@@ -255,7 +255,7 @@ const categorySubcategoryParamsSchema = Joi.object({
     .required()
     .messages({
       [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
+      'any.required': VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
     }),
   subcategoryId: Joi.string()
     .pattern(/^CAT-\d{4}-\d{4}$/)
@@ -268,7 +268,7 @@ const categorySubcategoryParamsSchema = Joi.object({
     .required()
     .messages({
       [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.SUBCATEGORY_ID_FORMAT_INVALID,
-      [JOI_ERROR_KEYS.ANY_REQUIRED]: VALIDATION_MESSAGES.SUBCATEGORY_ID_REQUIRED
+      'any.required': VALIDATION_MESSAGES.SUBCATEGORY_ID_REQUIRED
     })
 });
 

@@ -1,13 +1,9 @@
 const backupUtils = require('../utils/backup.utils');
 const path = require('path');
 const fs = require('fs').promises;
-const { BACKUP_CONFIG, BACKUP_MESSAGES } = require('../utils/messages.utils');
-const { 
-  ValidationError, 
-  ConflictError, 
-  InternalServerError, 
-  NotFoundError 
-} = require('../utils/error.utils');
+const { ValidationError, ConflictError, InternalServerError, NotFoundError } = require('../utils/error.utils');
+const { createSuccessWithLog } = require('../utils/success.utils');
+const { logAndExecute } = require('../utils/log.utils');
 
 // Estado global del sistema de backup
 let backupState = {
@@ -28,12 +24,10 @@ let backupState = {
 const createBackup = async (options) => {
   const { type = 'full', collections = null, compression = true, requestedBy = 'system' } = options;
 
-  // Verificar si ya hay un backup en progreso
   if (backupState.inProgress) {
-    throw new ConflictError(BACKUP_MESSAGES.BACKUP_IN_PROGRESS);
+    throw new ConflictError('Ya hay un backup en progreso');
   }
 
-  // Marcar backup como en progreso
   backupState.inProgress = true;
   backupState.currentOperation = {
     type,
@@ -45,11 +39,10 @@ const createBackup = async (options) => {
 
   try {
     let result;
-    
     if (type === 'full') {
-      console.log(BACKUP_MESSAGES.STARTING_FULL_BACKUP);
+      logAndExecute('info', 'Iniciando backup completo...');
       result = await backupUtils.createFullBackup({
-        collections: collections || BACKUP_CONFIG.DEFAULT_COLLECTIONS,
+        collections: collections || ['products', 'users', 'orders', 'category'],
         compression,
         onProgress: (progress, collection) => {
           backupState.currentOperation.progress = progress;
@@ -57,9 +50,9 @@ const createBackup = async (options) => {
         }
       });
     } else if (type === 'incremental') {
-      console.log(BACKUP_MESSAGES.STARTING_INCREMENTAL_BACKUP);
+      logAndExecute('info', 'Iniciando backup incremental...');
       result = await backupUtils.createIncrementalBackup({
-        collections: collections || BACKUP_CONFIG.DEFAULT_COLLECTIONS,
+        collections: collections || ['products', 'users', 'orders', 'category'],
         compression,
         onProgress: (progress, collection) => {
           backupState.currentOperation.progress = progress;
@@ -67,10 +60,9 @@ const createBackup = async (options) => {
         }
       });
     } else {
-      throw new ValidationError();
+      throw new ValidationError('Tipo de backup inválido');
     }
 
-    // Actualizar estado del último backup
     backupState.lastBackup = {
       timestamp: new Date(),
       type,
@@ -79,14 +71,13 @@ const createBackup = async (options) => {
       success: true
     };
 
-    console.log(`${type === 'full' ? BACKUP_MESSAGES.FULL_BACKUP_COMPLETED : BACKUP_MESSAGES.INCREMENTAL_BACKUP_COMPLETED} ${result.filename}`);
-    console.log(`${BACKUP_MESSAGES.BACKUP_SIZE} ${(result.size / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`${BACKUP_MESSAGES.BACKUP_DURATION} ${result.duration}`);
+    logAndExecute('info', `${type === 'full' ? '💾 Backup completo creado exitosamente' : 'Backup incremental finalizado:'} ${result.filename}`);
+    logAndExecute('info', `Tamaño del backup: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
+    logAndExecute('info', `Duración del backup: ${result.duration}`);
 
     return result;
 
   } catch (error) {
-    // Actualizar estado de error
     backupState.lastBackup = {
       timestamp: new Date(),
       type,
@@ -95,14 +86,15 @@ const createBackup = async (options) => {
       success: false,
       error: error.message
     };
-
-    throw new InternalServerError(undefined, {
+    if (error instanceof ValidationError || error instanceof ConflictError) {
+      throw error;
+    }
+    throw new InternalServerError('Error inesperado al crear backup', {
       operation: 'createBackup',
       backupType: type,
       originalError: error.message
     });
   } finally {
-    // Limpiar estado de progreso
     backupState.inProgress = false;
     backupState.currentOperation = null;
   }
@@ -118,17 +110,12 @@ const createBackup = async (options) => {
  */
 const listBackups = async (options = {}) => {
   const { type = null, limit = 50, sort = 'newest' } = options;
-
   try {
     const backups = await backupUtils.listBackups();
-    
-    // Filtrar por tipo si se especifica
     let filteredBackups = backups;
     if (type) {
       filteredBackups = backups.filter(backup => backup.type === type);
     }
-
-    // Ordenar según criterio
     switch (sort) {
       case 'newest':
         filteredBackups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -143,21 +130,17 @@ const listBackups = async (options = {}) => {
         filteredBackups.sort((a, b) => a.size - b.size);
         break;
       default:
-        // Por defecto newest
         filteredBackups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
-
-    // Aplicar límite
     const limitedBackups = filteredBackups.slice(0, limit);
-
+    logAndExecute('info', `Listando backups: total=${filteredBackups.length}, devueltos=${limitedBackups.length}`);
     return {
       backups: limitedBackups,
       total: filteredBackups.length,
       totalAllTypes: backups.length
     };
-
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.LIST_BACKUPS_ERROR, { originalError: error.message });
+    throw new InternalServerError('Error inesperado al listar backups', { originalError: error.message });
   }
 };
 
@@ -168,16 +151,13 @@ const listBackups = async (options = {}) => {
 const getBackupStatus = async () => {
   try {
     const backups = await backupUtils.listBackups();
-    
-    // Calcular estadísticas
     const fullBackups = backups.filter(b => b.type === 'full').length;
     const incrementalBackups = backups.filter(b => b.type === 'incremental').length;
     const totalSize = backups.reduce((sum, backup) => sum + backup.size, 0);
-    
     const timestamps = backups.map(b => new Date(b.timestamp)).sort();
     const oldestBackup = timestamps.length > 0 ? timestamps[0] : null;
     const newestBackup = timestamps.length > 0 ? timestamps[timestamps.length - 1] : null;
-
+    logAndExecute('info', `Estado del sistema de backup consultado. Total backups: ${backups.length}`);
     return {
       inProgress: backupState.inProgress,
       currentOperation: backupState.currentOperation,
@@ -191,9 +171,8 @@ const getBackupStatus = async () => {
         newestBackup: newestBackup ? newestBackup.toISOString() : null
       }
     };
-
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.BACKUP_STATUS_ERROR, { originalError: error.message });
+    throw new InternalServerError('Error inesperado al obtener estado del backup', { originalError: error.message });
   }
 };
 
@@ -204,9 +183,17 @@ const getBackupStatus = async () => {
  */
 const getBackupInfo = async (backupId) => {
   try {
-    return await backupUtils.getBackupInfo(backupId);
+    const info = await backupUtils.getBackupInfo(backupId);
+    if (!info) {
+      throw new NotFoundError('Backup no encontrado');
+    }
+    logAndExecute('info', `Información de backup consultada: ${backupId}`);
+    return info;
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.BACKUP_INFO_ERROR, { originalError: error.message });
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
+    throw new InternalServerError('Error inesperado al obtener información del backup', { originalError: error.message });
   }
 };
 
@@ -229,12 +216,10 @@ const restoreFromBackup = async (options) => {
     requestedBy = 'system' 
   } = options;
 
-  // Verificar si ya hay una operación en progreso
   if (backupState.inProgress) {
-    throw new ConflictError(BACKUP_MESSAGES.RECOVERY_IN_PROGRESS);
+    throw new ConflictError('Ya hay una operación de restauración en progreso');
   }
 
-  // Marcar operación como en progreso
   backupState.inProgress = true;
   backupState.currentOperation = {
     type: 'restore',
@@ -246,19 +231,19 @@ const restoreFromBackup = async (options) => {
   };
 
   try {
-    console.log(`${BACKUP_MESSAGES.STARTING_RECOVERY} ${backupId}`);
-
+    logAndExecute('info', `🔄 Iniciando recuperación desde backup ${backupId}`);
     // Validar backup si se solicita
     if (validateFirst && !force) {
-      console.log('Validando backup antes de restaurar...');
+      logAndExecute('info', 'Validando backup antes de restaurar...');
       const validation = await backupUtils.validateBackup(backupId);
-      if (!validation.valid) {
-        throw new ValidationError(`${BACKUP_MESSAGES.BACKUP_CORRUPTED}: ${validation.issues?.join(', ')}`);
+      if (!validation) {
+        throw new NotFoundError('Backup no encontrado para restaurar');
       }
-      console.log(BACKUP_MESSAGES.BACKUP_VALIDATION_SUCCESS);
+      if (!validation.valid) {
+        throw new ValidationError(`El backup está corrupto o es inválido: ${validation.issues?.join(', ')}`);
+      }
+      logAndExecute('info', '✅ Validación de backup exitosa');
     }
-
-    // Ejecutar restauración
     const result = await backupUtils.recoverFromBackup(backupId, {
       collections,
       onProgress: (progress, collection) => {
@@ -266,16 +251,15 @@ const restoreFromBackup = async (options) => {
         backupState.currentOperation.currentCollection = collection;
       }
     });
-
-    console.log(`${BACKUP_MESSAGES.RECOVERY_COMPLETED} ${backupId}`);
-    console.log(`${BACKUP_MESSAGES.RECOVERY_STATS}: ${result.totalDocuments} documentos restaurados`);
-
+    logAndExecute('info', `Recuperación completada exitosamente para backup: ${backupId}`);
+    logAndExecute('info', `Estadísticas de recuperación: ${result.totalDocuments} documentos restaurados`);
     return result;
-
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.RECOVERY_FAILED, { originalError: error.message });
+    if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof ConflictError) {
+      throw error;
+    }
+    throw new InternalServerError('Error inesperado en el proceso de recuperación', { originalError: error.message });
   } finally {
-    // Limpiar estado de progreso
     backupState.inProgress = false;
     backupState.currentOperation = null;
   }
@@ -288,9 +272,17 @@ const restoreFromBackup = async (options) => {
  */
 const validateBackup = async (backupId) => {
   try {
-    return await backupUtils.validateBackup(backupId);
+    const validation = await backupUtils.validateBackup(backupId);
+    if (!validation) {
+      throw new NotFoundError('Backup no encontrado para validar');
+    }
+    logAndExecute('info', `Validación de backup consultada: ${backupId}`);
+    return validation;
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.BACKUP_VALIDATION_ERROR, { originalError: error.message });
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
+    throw new InternalServerError('Error inesperado al validar backup', { originalError: error.message });
   }
 };
 
@@ -302,12 +294,16 @@ const validateBackup = async (backupId) => {
 const deleteBackup = async (backupId) => {
   try {
     const deleted = await backupUtils.deleteBackup(backupId);
-    if (deleted) {
-      console.log(`${BACKUP_MESSAGES.BACKUP_DELETED}: ${backupId}`);
+    if (!deleted) {
+      throw new NotFoundError('Backup no encontrado para eliminar');
     }
+    logAndExecute('info', `🗑️ Backup eliminado exitosamente: ${backupId}`);
     return deleted;
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.BACKUP_DELETE_FAILED, { originalError: error.message });
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
+    throw new InternalServerError('Error inesperado al eliminar backup', { originalError: error.message });
   }
 };
 
@@ -322,29 +318,24 @@ const deleteBackup = async (backupId) => {
 const cleanupOldBackups = async (options = {}) => {
   const { 
     dryRun = false, 
-    maxFullBackups = BACKUP_CONFIG.MAX_FULL_BACKUPS,
-    maxIncrementalBackups = BACKUP_CONFIG.MAX_INCREMENTAL_BACKUPS
+    maxFullBackups = 7,
+    maxIncrementalBackups = 24
   } = options;
-
   try {
-    console.log(`${BACKUP_MESSAGES.CLEANING_OLD_BACKUPS} (dryRun: ${dryRun})`);
-
+    logAndExecute('info', `🧹 Limpieza de backups antiguos (dryRun: ${dryRun})`);
     const result = await backupUtils.cleanupOldBackups({
       maxFullBackups,
       maxIncrementalBackups,
       dryRun
     });
-
     if (dryRun) {
-      console.log(`Simulación completada: ${result.deleted.length} backups serían eliminados`);
+      logAndExecute('info', `Simulación completada: ${result.deleted.length} backups serían eliminados`);
     } else {
-      console.log(`${BACKUP_MESSAGES.CLEANUP_COMPLETED}: ${result.deleted.length} backups eliminados`);
+      logAndExecute('info', `🧹 Limpieza de backups completada exitosamente: ${result.deleted.length} backups eliminados`);
     }
-
     return result;
-
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.CLEANUP_FAILED, { originalError: error.message });
+    throw new InternalServerError('Error inesperado en limpieza de backups', { originalError: error.message });
   }
 };
 
@@ -355,20 +346,16 @@ const cleanupOldBackups = async (options = {}) => {
  */
 const scheduleAutomaticBackups = async (schedule = {}) => {
   try {
-    console.log(BACKUP_MESSAGES.SCHEDULING_AUTOMATIC_BACKUP);
-    
-    // Esta función inicializaría el sistema de backups automáticos
-    // Por ahora retorna información de configuración
+    logAndExecute('info', 'Programando backup automático');
     return {
-      fullBackupInterval: schedule.fullBackupInterval || BACKUP_CONFIG.FULL_BACKUP_INTERVAL,
-      incrementalBackupInterval: schedule.incrementalBackupInterval || BACKUP_CONFIG.INCREMENTAL_BACKUP_INTERVAL,
+      fullBackupInterval: schedule.fullBackupInterval || 24 * 60 * 60 * 1000,
+      incrementalBackupInterval: schedule.incrementalBackupInterval || 60 * 60 * 1000,
       enabled: true,
-      nextFullBackup: new Date(Date.now() + (schedule.fullBackupInterval || BACKUP_CONFIG.FULL_BACKUP_INTERVAL)),
-      nextIncrementalBackup: new Date(Date.now() + (schedule.incrementalBackupInterval || BACKUP_CONFIG.INCREMENTAL_BACKUP_INTERVAL))
+      nextFullBackup: new Date(Date.now() + (schedule.fullBackupInterval || 24 * 60 * 60 * 1000)),
+      nextIncrementalBackup: new Date(Date.now() + (schedule.incrementalBackupInterval || 60 * 60 * 1000))
     };
-
   } catch (error) {
-    throw new InternalServerError(BACKUP_MESSAGES.AUTOMATIC_BACKUP_FAILED, { originalError: error.message });
+    throw new InternalServerError('Error inesperado en backup automático', { originalError: error.message });
   }
 };
 
