@@ -20,9 +20,9 @@ const queryProcessor = (options = {}) => {
     const {
         allowedFilters = [],
         allowedSortFields = [],
-        defaultSort = QUERY_CONSTANTS.DEFAULT_CONFIGS.PRODUCTS.SORT,
-        defaultLimit = QUERY_CONSTANTS.LIMITS.DEFAULT,
-        maxLimit = QUERY_CONSTANTS.LIMITS.MAX_GENERAL,
+        defaultSort = 'createdAt',
+        defaultLimit = 10,
+        maxLimit = 100,
         allowSearch = true,
         searchFields = [],
         enableCursor = true
@@ -74,18 +74,14 @@ const queryProcessor = (options = {}) => {
  */
 const processPagination = (query, defaultLimit, maxLimit, enableCursor) => {
     const pagination = {
-        type: query.cursor && enableCursor ?
-            QUERY_CONSTANTS.PAGINATION_TYPES.CURSOR :
-            QUERY_CONSTANTS.PAGINATION_TYPES.OFFSET
+        type: query.cursor && enableCursor ? 'cursor' : 'offset'
     };
 
-    if (pagination.type === QUERY_CONSTANTS.PAGINATION_TYPES.CURSOR) {
+    if (pagination.type === 'cursor') {
         // Paginación cursor-based (más eficiente para datasets grandes)
         pagination.cursor = query.cursor || null;
         pagination.limit = Math.min(parseInt(query.limit) || defaultLimit, maxLimit);
-        pagination.direction = query.direction === QUERY_CONSTANTS.PAGINATION_DIRECTIONS.PREV ?
-            QUERY_CONSTANTS.PAGINATION_DIRECTIONS.PREV :
-            QUERY_CONSTANTS.PAGINATION_DIRECTIONS.NEXT;
+        pagination.direction = query.direction === 'prev' ? 'prev' : 'next';
     } else {
         // Paginación offset-based (más familiar)
         pagination.page = Math.max(parseInt(query.page) || 1, 1);
@@ -97,15 +93,130 @@ const processPagination = (query, defaultLimit, maxLimit, enableCursor) => {
 };
 
 /**
- * Procesar filtros dinámicos
+ * ===============================
+ * FUNCIONES COMPARTIDAS (CORE)
+ * ===============================
+ */
+
+/**
+ * Mapa de operadores unificado
+ */
+const OPERATORS_MAP = {
+    // Operadores de URL → Operadores de Firestore/Memoria
+    eq: '==',
+    ne: '!=', 
+    gt: '>',
+    gte: '>=',
+    lt: '<',
+    lte: '<=',
+    in: 'in',
+    nin: 'not-in',
+    contains: 'contains',
+    startsWith: 'startsWith',
+    endsWith: 'endsWith'
+};
+
+/**
+ * Validar operador
+ */
+const isValidOperator = (operator) => {
+    return Object.keys(OPERATORS_MAP).includes(operator);
+};
+
+/**
+ * Convertir operador de URL a operador interno
+ */
+const mapOperator = (urlOperator) => {
+    return OPERATORS_MAP[urlOperator] || '==';
+};
+
+/**
+ * Parsear valores de filtros según el tipo - FUNCIÓN COMPARTIDA
+ */
+const parseFilterValue = (value, operator) => {
+    // Arrays para operadores in/nin
+    if (operator === 'in' || operator === 'nin') {
+        return value.split(',').map(v => parseValue(v.trim()));
+    }
+
+    return parseValue(value);
+};
+
+/**
+ * Parsear valor individual - FUNCIÓN COMPARTIDA
+ */
+const parseValue = (value) => {
+    // Boolean
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+
+    // Null
+    if (value === 'null') return null;
+
+    // Number
+    if (!isNaN(value) && !isNaN(parseFloat(value))) {
+        return parseFloat(value);
+    }
+
+    // Date (formato ISO)
+    if (value.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+        return new Date(value);
+    }
+
+    // String
+    return value;
+};
+
+/**
+ * Aplicar operador a dos valores - FUNCIÓN COMPARTIDA
+ */
+const applyOperator = (fieldValue, operator, filterValue) => {
+    switch (operator) {
+        case '==':
+            return fieldValue == filterValue;
+        case '!=':
+            return fieldValue != filterValue;
+        case '>':
+            return fieldValue > filterValue;
+        case '>=':
+            return fieldValue >= filterValue;
+        case '<':
+            return fieldValue < filterValue;
+        case '<=':
+            return fieldValue <= filterValue;
+        case 'in':
+            return Array.isArray(filterValue) && filterValue.includes(fieldValue);
+        case 'not-in':
+            return Array.isArray(filterValue) && !filterValue.includes(fieldValue);
+        case 'contains':
+            return typeof fieldValue === 'string' && typeof filterValue === 'string' && 
+                   fieldValue.toLowerCase().includes(filterValue.toLowerCase());
+        case 'startsWith':
+            return typeof fieldValue === 'string' && typeof filterValue === 'string' && 
+                   fieldValue.toLowerCase().startsWith(filterValue.toLowerCase());
+        case 'endsWith':
+            return typeof fieldValue === 'string' && typeof filterValue === 'string' && 
+                   fieldValue.toLowerCase().endsWith(filterValue.toLowerCase());
+        default:
+            return true;
+    }
+};
+
+/**
+ * ===============================
+ * MIDDLEWARE FUNCTIONS
+ * ===============================
+ */
+
+/**
+ * Procesar filtros dinámicos desde query params
  */
 const processFilters = (query, allowedFilters) => {
     const filters = {};
-    const operators = QUERY_CONSTANTS.OPERATORS;
 
     Object.keys(query).forEach(key => {
         // Buscar filtros con formato: campo[operador]=valor
-        const filterMatch = key.match(QUERY_CONSTANTS.PATTERNS.FILTER_BRACKET);
+        const filterMatch = key.match(/^(.+)\[(.+)\]$/);
 
         if (filterMatch) {
             const [, field, operator] = filterMatch;
@@ -114,14 +225,14 @@ const processFilters = (query, allowedFilters) => {
             if (!allowedFilters.includes(field)) return;
 
             // Verificar si el operador es válido
-            if (!operators[operator]) return;
+            if (!isValidOperator(operator)) return;
 
             const value = parseFilterValue(query[key], operator);
 
             if (!filters[field]) filters[field] = [];
 
             filters[field].push({
-                operator: operators[operator],
+                operator: mapOperator(operator),
                 value,
                 originalOperator: operator
             });
@@ -129,9 +240,9 @@ const processFilters = (query, allowedFilters) => {
             // Filtros simples (asume equality)
             if (allowedFilters.includes(key)) {
                 filters[key] = [{
-                    operator: QUERY_CONSTANTS.FIRESTORE_OPERATORS.EQ,
-                    value: parseFilterValue(query[key], QUERY_CONSTANTS.OPERATORS.EQ),
-                    originalOperator: QUERY_CONSTANTS.OPERATORS.EQ
+                    operator: '==',
+                    value: parseFilterValue(query[key], 'eq'),
+                    originalOperator: 'eq'
                 }];
             }
         }
@@ -147,19 +258,19 @@ const processSorting = (query, allowedSortFields, defaultSort) => {
     const sortParam = query.sort || defaultSort;
     const sorts = [];
 
-    if (typeof sortParam === SWAGGER_CONSTANTS.TYPE_STRING) {
-        const sortFields = sortParam.split(QUERY_CONSTANTS.SEPARATORS.SORT);
+    if (typeof sortParam === 'string') {
+        const sortFields = sortParam.split(',');
 
         sortFields.forEach(field => {
             const trimmedField = field.trim();
-            const isDesc = trimmedField.startsWith(QUERY_CONSTANTS.PREFIXES.DESC_SORT);
+            const isDesc = trimmedField.startsWith('-');
             const fieldName = isDesc ? trimmedField.substring(1) : trimmedField;
 
             // Verificar si el campo está permitido
             if (allowedSortFields.length === 0 || allowedSortFields.includes(fieldName)) {
                 sorts.push({
                     field: fieldName,
-                    direction: isDesc ? QUERY_CONSTANTS.SORT_DIRECTIONS.DESC : QUERY_CONSTANTS.SORT_DIRECTIONS.ASC
+                    direction: isDesc ? 'desc' : 'asc'
                 });
             }
         });
@@ -169,7 +280,7 @@ const processSorting = (query, allowedSortFields, defaultSort) => {
     if (sorts.length === 0) {
         sorts.push({
             field: defaultSort,
-            direction: QUERY_CONSTANTS.SORT_DIRECTIONS.DESC
+            direction: 'desc'
         });
     }
 
@@ -184,9 +295,9 @@ const processSearch = (query, allowSearch, searchFields) => {
 
     return {
         term: query.search.trim(),
-        fields: searchFields.length > 0 ? searchFields : QUERY_CONSTANTS.DEFAULT_SEARCH_FIELDS.PRODUCTS,
-        caseSensitive: query.caseSensitive === QUERY_CONSTANTS.SPECIAL_VALUES.TRUE,
-        exact: query.exact === QUERY_CONSTANTS.SPECIAL_VALUES.TRUE
+        fields: searchFields.length > 0 ? searchFields : ['title', 'description'],
+        caseSensitive: query.caseSensitive === 'true',
+        exact: query.exact === 'true'
     };
 };
 
@@ -196,9 +307,9 @@ const processSearch = (query, allowSearch, searchFields) => {
 const processFieldSelection = (query) => {
     if (!query.fields) return null;
 
-    const fields = query.fields.split(QUERY_CONSTANTS.SEPARATORS.FIELD).map(f => f.trim()).filter(f => f);
+    const fields = query.fields.split(',').map(f => f.trim()).filter(f => f);
     const exclude = query.exclude ?
-        query.exclude.split(QUERY_CONSTANTS.SEPARATORS.FIELD).map(f => f.trim()) : [];
+        query.exclude.split(',').map(f => f.trim()) : [];
 
     return {
         include: fields,
@@ -214,63 +325,26 @@ const processAggregations = (query) => {
     const aggregations = {};
 
     if (query.count) {
-        aggregations.count = query.count.split(QUERY_CONSTANTS.SEPARATORS.FIELD).map(f => f.trim());
+        aggregations.count = query.count.split(',').map(f => f.trim());
     }
 
     if (query.sum) {
-        aggregations.sum = query.sum.split(QUERY_CONSTANTS.SEPARATORS.FIELD).map(f => f.trim());
+        aggregations.sum = query.sum.split(',').map(f => f.trim());
     }
 
     if (query.avg) {
-        aggregations.avg = query.avg.split(QUERY_CONSTANTS.SEPARATORS.FIELD).map(f => f.trim());
+        aggregations.avg = query.avg.split(',').map(f => f.trim());
     }
 
     if (query.min) {
-        aggregations.min = query.min.split(QUERY_CONSTANTS.SEPARATORS.FIELD).map(f => f.trim());
+        aggregations.min = query.min.split(',').map(f => f.trim());
     }
 
     if (query.max) {
-        aggregations.max = query.max.split(QUERY_CONSTANTS.SEPARATORS.FIELD).map(f => f.trim());
+        aggregations.max = query.max.split(',').map(f => f.trim());
     }
 
     return Object.keys(aggregations).length > 0 ? aggregations : null;
-};
-
-/**
- * Parsear valores de filtros según el tipo
- */
-const parseFilterValue = (value, operator) => {
-    // Arrays para operadores in/nin
-    if (operator === QUERY_CONSTANTS.OPERATORS.IN || operator === QUERY_CONSTANTS.OPERATORS.NIN) {
-        return value.split(QUERY_CONSTANTS.SEPARATORS.FILTER).map(v => parseValue(v.trim()));
-    }
-
-    return parseValue(value);
-};
-
-/**
- * Parsear valor individual
- */
-const parseValue = (value) => {
-    // Boolean
-    if (value === QUERY_CONSTANTS.SPECIAL_VALUES.TRUE) return true;
-    if (value === QUERY_CONSTANTS.SPECIAL_VALUES.FALSE) return false;
-
-    // Null
-    if (value === QUERY_CONSTANTS.SPECIAL_VALUES.NULL) return null;
-
-    // Number
-    if (!isNaN(value) && !isNaN(parseFloat(value))) {
-        return parseFloat(value);
-    }
-
-    // Date (formato ISO)
-    if (value.match(QUERY_CONSTANTS.PATTERNS.ISO_DATE)) {
-        return new Date(value);
-    }
-
-    // String
-    return value;
 };
 
 /**
@@ -327,10 +401,10 @@ const applySortingToFirestore = (query, sorting) => {
  * Middleware específico para productos
  */
 const productsQueryProcessor = queryProcessor({
-    allowedFilters: QUERY_CONSTANTS.ALLOWED_FIELDS.PRODUCTS.FILTERS,
-    allowedSortFields: QUERY_CONSTANTS.ALLOWED_FIELDS.PRODUCTS.SORT,
-    defaultSort: QUERY_CONSTANTS.DEFAULT_CONFIGS.PRODUCTS.SORT,
-    searchFields: QUERY_CONSTANTS.DEFAULT_SEARCH_FIELDS.PRODUCTS,
+    allowedFilters: ['category', 'subcategory', 'price', 'outstanding', 'createdAt'],
+    allowedSortFields: ['price', 'createdAt', 'title', 'outstanding'],
+    defaultSort: 'createdAt',
+    searchFields: ['title', 'description'],
     defaultLimit: 20,
     maxLimit: 50
 });
@@ -339,10 +413,10 @@ const productsQueryProcessor = queryProcessor({
  * Middleware específico para categorías
  */
 const categoriesQueryProcessor = queryProcessor({
-    allowedFilters: QUERY_CONSTANTS.ALLOWED_FIELDS.CATEGORIES.FILTERS,
-    allowedSortFields: QUERY_CONSTANTS.ALLOWED_FIELDS.CATEGORIES.SORT,
-    defaultSort: QUERY_CONSTANTS.DEFAULT_CONFIGS.CATEGORIES.SORT,
-    searchFields: QUERY_CONSTANTS.DEFAULT_SEARCH_FIELDS.CATEGORIES,
+    allowedFilters: ['isParent', 'parentCategoryId', 'createdAt'],
+    allowedSortFields: ['title', 'createdAt'],
+    defaultSort: 'createdAt',
+    searchFields: ['title'],
     defaultLimit: 10,
     maxLimit: 100
 });
@@ -351,13 +425,213 @@ const categoriesQueryProcessor = queryProcessor({
  * Middleware específico para subcategorías
  */
 const subcategoriesQueryProcessor = queryProcessor({
-    allowedFilters: QUERY_CONSTANTS.ALLOWED_FIELDS.SUBCATEGORIES.FILTERS,
-    allowedSortFields: QUERY_CONSTANTS.ALLOWED_FIELDS.SUBCATEGORIES.SORT,
-    defaultSort: QUERY_CONSTANTS.DEFAULT_CONFIGS.SUBCATEGORIES.SORT,
-    searchFields: QUERY_CONSTANTS.DEFAULT_SEARCH_FIELDS.SUBCATEGORIES,
+    allowedFilters: ['parentCategoryId', 'createdAt'],
+    allowedSortFields: ['title', 'createdAt'],
+    defaultSort: 'createdAt',
+    searchFields: ['title', 'text'],
     defaultLimit: 10,
     maxLimit: 100
 });
+
+/**
+ * ===============================
+ * UTILIDADES PARA PROCESAMIENTO EN MEMORIA
+ * ===============================
+ * Estas funciones procesan arrays de datos en memoria
+ * para casos donde no se puede usar consultas de base de datos directas
+ */
+
+/**
+ * Aplicar búsqueda por término en campos específicos - OPTIMIZADA
+ * @param {Array} data - Array de datos para filtrar
+ * @param {Object} searchConfig - Configuración de búsqueda {term, fields, caseSensitive, exact}
+ * @returns {Array} - Datos filtrados
+ */
+const applySearch = (data, searchConfig) => {
+    if (!searchConfig || !searchConfig.term || !searchConfig.fields) {
+        return data;
+    }
+
+    const { term, fields, caseSensitive = false, exact = false } = searchConfig;
+    const searchTerm = caseSensitive ? term : term.toLowerCase();
+
+    return data.filter(item => {
+        return fields.some(field => {
+            const fieldValue = item[field];
+            if (typeof fieldValue === 'string') {
+                const processedValue = caseSensitive ? fieldValue : fieldValue.toLowerCase();
+                
+                if (exact) {
+                    return processedValue === searchTerm;
+                } else {
+                    return processedValue.includes(searchTerm);
+                }
+            }
+            return false;
+        });
+    });
+};
+
+/**
+ * Aplicar ordenamiento a los datos - OPTIMIZADA
+ * @param {Array} data - Array de datos para ordenar
+ * @param {Array} sortingConfig - Configuración de ordenamiento [{field, direction}]
+ * @returns {Array} - Datos ordenados
+ */
+const applySorting = (data, sortingConfig) => {
+    if (!sortingConfig || !sortingConfig.length) {
+        return data;
+    }
+
+    return [...data].sort((a, b) => {
+        // Soporte para múltiples campos de ordenamiento
+        for (const sort of sortingConfig) {
+            if (!sort || !sort.field) continue;
+            
+            const aVal = a[sort.field];
+            const bVal = b[sort.field];
+            
+            let comparison = 0;
+            
+            // Comparación inteligente por tipo
+            if (aVal === null || aVal === undefined) {
+                comparison = bVal === null || bVal === undefined ? 0 : -1;
+            } else if (bVal === null || bVal === undefined) {
+                comparison = 1;
+            } else if (typeof aVal === 'string' && typeof bVal === 'string') {
+                comparison = aVal.localeCompare(bVal);
+            } else {
+                comparison = aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+            }
+            
+            if (comparison !== 0) {
+                return sort.direction === 'desc' ? -comparison : comparison;
+            }
+        }
+        return 0;
+    });
+};
+
+/**
+ * Aplicar paginación a los datos - OPTIMIZADA
+ * @param {Array} data - Array de datos para paginar
+ * @param {Object} paginationConfig - Configuración de paginación {page, limit, offset, type}
+ * @returns {Array} - Datos paginados
+ */
+const applyPagination = (data, paginationConfig) => {
+    if (!paginationConfig || !data.length) {
+        return data;
+    }
+
+    const { page, limit, offset, type } = paginationConfig;
+
+    // Validar límites
+    if (!limit || limit <= 0) {
+        return data;
+    }
+
+    // Paginación offset-based (más común para procesamiento en memoria)
+    if (type === 'offset' || offset !== undefined) {
+        const startIndex = offset || ((page - 1) * limit);
+        const endIndex = startIndex + limit;
+        return data.slice(startIndex, endIndex);
+    }
+
+    // Paginación simple por página
+    if (page && page > 0) {
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        return data.slice(startIndex, endIndex);
+    }
+
+    // Si solo hay límite, tomar los primeros N elementos
+    return data.slice(0, limit);
+};
+
+/**
+ * Aplicar filtros básicos a los datos - OPTIMIZADA
+ * @param {Array} data - Array de datos para filtrar
+ * @param {Object} filtersConfig - Configuración de filtros {field: [{operator, value}]}
+ * @returns {Array} - Datos filtrados
+ */
+const applyFilters = (data, filtersConfig) => {
+    if (!filtersConfig || Object.keys(filtersConfig).length === 0) {
+        return data;
+    }
+
+    let filteredData = [...data];
+
+    Object.entries(filtersConfig).forEach(([field, filterArray]) => {
+        filterArray.forEach(({ operator, value }) => {
+            filteredData = filteredData.filter(item => {
+                const fieldValue = item[field];
+                // Usar función compartida para aplicar operador
+                return applyOperator(fieldValue, operator, value);
+            });
+        });
+    });
+
+    return filteredData;
+};
+
+/**
+ * Procesar consulta completa (búsqueda, filtros, ordenamiento, paginación)
+ * @param {Array} data - Array de datos para procesar
+ * @param {Object} queryProcessor - Configuración completa de la consulta
+ * @returns {Array} - Datos procesados
+ */
+const processQuery = (data, queryProcessor) => {
+    if (!queryProcessor) {
+        return data;
+    }
+
+    let processedData = [...data];
+
+    // 1. Aplicar búsqueda
+    if (queryProcessor.search) {
+        processedData = applySearch(processedData, queryProcessor.search);
+    }
+
+    // 2. Aplicar filtros
+    if (queryProcessor.filters) {
+        processedData = applyFilters(processedData, queryProcessor.filters);
+    }
+
+    // 3. Aplicar ordenamiento
+    if (queryProcessor.sorting) {
+        processedData = applySorting(processedData, queryProcessor.sorting);
+    }
+
+    // 4. Aplicar paginación
+    if (queryProcessor.pagination) {
+        processedData = applyPagination(processedData, queryProcessor.pagination);
+    }
+
+    return processedData;
+};
+
+/**
+ * Generar información de estado de procesamiento de consulta
+ * @param {Object} queryProcessor - Configuración de la consulta
+ * @returns {Object} - Estado del procesamiento
+ */
+const getQueryProcessingInfo = (queryProcessor) => {
+    if (!queryProcessor) {
+        return {
+            searchApplied: false,
+            filtersApplied: false,
+            sortingApplied: false,
+            paginationApplied: false
+        };
+    }
+
+    return {
+        searchApplied: !!(queryProcessor.search && queryProcessor.search.term),
+        filtersApplied: !!(queryProcessor.filters && Object.keys(queryProcessor.filters).length > 0),
+        sortingApplied: !!(queryProcessor.sorting && queryProcessor.sorting.length > 0),
+        paginationApplied: !!(queryProcessor.pagination)
+    };
+};
 
 module.exports = {
     queryProcessor,
@@ -365,5 +639,12 @@ module.exports = {
     categoriesQueryProcessor,
     subcategoriesQueryProcessor,
     applyFiltersToFirestore,
-    applySortingToFirestore
+    applySortingToFirestore,
+    // Utilidades para procesamiento en memoria
+    processQuery,
+    getQueryProcessingInfo,
+    applySearch,
+    applySorting,
+    applyPagination,
+    applyFilters
 };

@@ -26,12 +26,14 @@ jest.mock('winston', () => ({
 }));
 
 // Mock del logger config
-jest.mock('../src/config/logger.config.js', () => ({
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-  stream: { write: jest.fn() }
+jest.mock('../src/utils/log.utils.js', () => ({
+  Logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    stream: { write: jest.fn() }
+  }
 }));
 
 describe('Sistema de Logging y Monitoreo', () => {

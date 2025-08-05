@@ -1,7 +1,7 @@
-const { RELATIVE_PATHS, LOG_LEVELS } = require('../config/paths.config.js');
-const { VALIDATION_MESSAGES, CATEGORIES_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
+const { RELATIVE_PATHS } = require('../config/paths.config.js');
+const { SERVICE_MESSAGES } = require('../utils/messages.utils.js');
 const CategoryModel = require(RELATIVE_PATHS.FROM_SERVICES.MODELS_CATEGORY);
-const { logMessage } = require(RELATIVE_PATHS.FROM_SERVICES.UTILS_RESPONSE);
+const { logAndExecute } = require('../utils/log.utils.js');
 const { 
   ValidationError, 
   NotFoundError, 
@@ -16,10 +16,10 @@ const getAllCategory = async (queryProcessor = null) => {
   try {
     const category = await CategoryModel.getAllCategory(queryProcessor);
     
-    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORIES_GET_SUCCESS, {
-      [SERVICE_MESSAGES.TOTAL_CATEGORY_FIELD]: category.length,
-      [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
-    });
+    logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORIES_GET_SUCCESS, {
+      totalCategory: category.length,
+      service: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
+    }, 'API');
     
     return category;
   } catch (error) {
@@ -39,7 +39,7 @@ const getCategoryById = async (categoryId) => {
     const category = await CategoryModel.getCategoryById(categoryId);
     
     if (category) {
-      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_GET_SUCCESS, {
+      logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_GET_SUCCESS, {
         [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
         [SERVICE_MESSAGES.HAS_SUBCATEGORY_FIELD]: !!(category.subcategory && category.subcategory.length > 0),
         [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
@@ -64,7 +64,7 @@ const getSubcategoryByParent = async (parentCategoryId, queryProcessor = null) =
   try {
     const subcategory = await CategoryModel.getSubcategoryByParent(parentCategoryId, queryProcessor);
     
-    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
+    logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
       [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
       [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: subcategory.length,
       [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
@@ -86,7 +86,7 @@ const getAllSubcategory = async (queryProcessor = null) => {
   try {
     const subcategory = await CategoryModel.getAllSubcategory(queryProcessor);
     
-    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
+    logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
       [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: subcategory.length,
       [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
     });
@@ -110,7 +110,7 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
     const subcategory = await CategoryModel.getSubcategorySpecific(parentCategoryId, subcategoryId);
     
     if (subcategory) {
-      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
+      logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_GET_SUCCESS, {
         [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
         [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: subcategoryId,
         [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
@@ -143,7 +143,7 @@ const createCategory = async (categoryData) => {
     // Crear la categoría padre primero
     const newCategory = await CategoryModel.createCategory(parentCategoryData);
     
-    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_CREATE_SUCCESS, {
+    logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_CREATE_SUCCESS, {
       [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: newCategory.id,
       [SERVICE_MESSAGES.TITLE_FIELD]: newCategory.title,
       [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
@@ -158,14 +158,14 @@ const createCategory = async (categoryData) => {
           const newSubcategory = await CategoryModel.createSubcategory(newCategory.id, subcategoryData);
           createdSubcategories.push(newSubcategory);
           
-          logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
+          logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
             [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: newSubcategory.id,
             [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: newCategory.id,
             [SERVICE_MESSAGES.TITLE_FIELD]: newSubcategory.title,
             [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
           });
         } catch (subcategoryError) {
-          logMessage(LOG_LEVELS.ERROR, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_ERROR, {
+          logAndExecute('error', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_ERROR, {
             [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: newCategory.id,
             subcategoryData: subcategoryData.title || SERVICE_MESSAGES.NO_TITLE_DEFAULT,
             error: subcategoryError.message,
@@ -208,7 +208,7 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
     
     const newSubcategory = await CategoryModel.createSubcategory(parentCategoryId, subcategoryData);
     
-    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
+    logAndExecute('info', SERVICE_MESSAGES.SERVICE_SUBCATEGORY_CREATE_SUCCESS, {
       [SERVICE_MESSAGES.SUBCATEGORY_ID_FIELD]: newSubcategory.id,
       [SERVICE_MESSAGES.PARENT_CATEGORY_ID_FIELD]: parentCategoryId,
       [SERVICE_MESSAGES.TITLE_FIELD]: newSubcategory.title,
@@ -239,7 +239,7 @@ const updateCategory = async (categoryId, updateData) => {
     const updatedCategory = await CategoryModel.updateCategory(categoryId, updateData);
     
     if (updatedCategory) {
-      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_UPDATE_SUCCESS, {
+      logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_UPDATE_SUCCESS, {
         [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
         [SERVICE_MESSAGES.UPDATED_FIELDS_FIELD]: Object.keys(updateData),
         [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
@@ -275,7 +275,7 @@ const deleteCategory = async (categoryId, options = {}) => {
     const result = await CategoryModel.deleteCategory(categoryId, options);
     
     if (result) {
-      logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_CATEGORY_DELETE_SUCCESS, {
+      logAndExecute('info', SERVICE_MESSAGES.SERVICE_CATEGORY_DELETE_SUCCESS, {
         [SERVICE_MESSAGES.CATEGORY_ID_FIELD]: categoryId,
         [SERVICE_MESSAGES.DELETED_SUBCATEGORY_FIELD]: deleteSubcategory,
         [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY
@@ -298,7 +298,7 @@ const getCategoryHierarchy = async () => {
   try {
     const hierarchy = await CategoryModel.getCategoryHierarchy();
     
-    logMessage(LOG_LEVELS.INFO, SERVICE_MESSAGES.SERVICE_HIERARCHY_GET_SUCCESS, {
+    logAndExecute('info', SERVICE_MESSAGES.SERVICE_HIERARCHY_GET_SUCCESS, {
       [SERVICE_MESSAGES.TOTAL_PARENT_CATEGORY_FIELD]: hierarchy.length,
       [SERVICE_MESSAGES.TOTAL_SUBCATEGORY_FIELD]: hierarchy.reduce((acc, cat) => acc + (cat.subcategory?.length || 0), 0),
       [SERVICE_MESSAGES.SERVICE_FIELD]: SERVICE_MESSAGES.SERVICE_NAME_CATEGORY

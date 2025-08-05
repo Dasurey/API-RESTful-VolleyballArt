@@ -10,7 +10,7 @@ const {
   deleteDocument,
   executeFirebaseOperation 
 } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_FIREBASE);
-const { logMessage } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_RESPONSE);
+const { logDatabase } = require('../utils/log.utils.js');
 const { 
   ValidationError, 
   NotFoundError, 
@@ -105,10 +105,11 @@ const getProductsWithQuery = async (queryProcessor) => {
     // Aplicar búsqueda si existe
     if (queryProcessor && queryProcessor.search && queryProcessor.search.term) {
       const searchTerm = queryProcessor.search.term.toLowerCase();
+      
       products = products.filter(product => {
         return queryProcessor.search.fields.some(field => {
           const fieldValue = product[field];
-          if (typeof fieldValue === SYSTEM_MESSAGES.TYPE_STRING) {
+          if (typeof fieldValue === 'string') {
             return fieldValue.toLowerCase().includes(searchTerm);
           }
           return false;
@@ -176,7 +177,7 @@ const getProductsWithQuery = async (queryProcessor) => {
       }
     }
 
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCTS_FROM_FIREBASE_CACHED, {
+    logDatabase( SYSTEM_MESSAGES.PRODUCTS_FROM_FIREBASE_CACHED, {
       count: products.length,
       searchApplied: !!(queryProcessor && queryProcessor.search && queryProcessor.search.term),
       filtersApplied: !!(queryProcessor && Object.keys(queryProcessor.filters || {}).length > 0),
@@ -203,7 +204,7 @@ const getAllProducts = async (queryProcessor = null) => {
   const cachedProducts = productsCacheManager.get(cacheKey);
   
   if (cachedProducts) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCTS_FROM_CACHE, { cacheHit: true });
+    logDatabase( SYSTEM_MESSAGES.PRODUCTS_FROM_CACHE, { cacheHit: true });
     return cachedProducts;
   }
 
@@ -242,7 +243,7 @@ const getAllProducts = async (queryProcessor = null) => {
     // Guardar en cache por 30 minutos
     productsCacheManager.set(cacheKey, products, CACHE_TTL);
     
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCTS_FROM_FIREBASE_CACHED, {
+    logDatabase( SYSTEM_MESSAGES.PRODUCTS_FROM_FIREBASE_CACHED, {
       count: products.length,
       cached: true,
       ttl: CACHE_TTL
@@ -263,7 +264,7 @@ const getProductById = async (id) => {
   const cachedProduct = productsCacheManager.get(cacheKey);
   
   if (cachedProduct !== undefined && cachedProduct !== null) {
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCT_FROM_CACHE, { 
+    logDatabase( SYSTEM_MESSAGES.PRODUCT_FROM_CACHE, { 
       productId: id, 
       cacheHit: true,
       found: true 
@@ -300,7 +301,7 @@ const getProductById = async (id) => {
       // Guardar en cache por 30 minutos
       productsCacheManager.set(cacheKey, product, CACHE_TTL);
       
-      logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCT_FROM_FIREBASE_CACHED, { 
+      logDatabase( SYSTEM_MESSAGES.PRODUCT_FROM_FIREBASE_CACHED, { 
         productId: id,
         cached: true,
         ttl: CACHE_TTL
@@ -309,7 +310,7 @@ const getProductById = async (id) => {
       return product;
     } else {
       // NO cachear productos no encontrados para evitar problemas futuros
-      logMessage(SYSTEM_MESSAGES.LOG_LEVEL_WARN, SYSTEM_MESSAGES.PRODUCT_NOT_FOUND_FIREBASE, { 
+      logDatabase( SYSTEM_MESSAGES.PRODUCT_NOT_FOUND_FIREBASE, { 
         productId: id,
         found: false
       });
@@ -364,7 +365,7 @@ const createProduct = async (productData) => {
       updatedAt: now
     };
     
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCT_CREATED_SUCCESS, {
+    logDatabase( SYSTEM_MESSAGES.PRODUCT_CREATED_SUCCESS, {
       productId: newId,
       title: productData.title,
       img: {
@@ -403,7 +404,7 @@ const updateProduct = async (id, data) => {
     // Invalidar cache del producto específico y de la lista
     productsCacheManager.invalidateProduct(id);
     
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCT_UPDATED_SUCCESS, {
+    logDatabase( SYSTEM_MESSAGES.PRODUCT_UPDATED_SUCCESS, {
       productId: id,
       updatedFields: Object.keys(data),
       cacheInvalidated: true
@@ -443,7 +444,7 @@ const deleteProduct = async (id) => {
     // Invalidar cache del producto específico y de la lista
     productsCacheManager.invalidateProduct(id);
     
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.PRODUCT_DELETED_SUCCESS, {
+    logDatabase( SYSTEM_MESSAGES.PRODUCT_DELETED_SUCCESS, {
       productId: id,
       cacheInvalidated: true
     });

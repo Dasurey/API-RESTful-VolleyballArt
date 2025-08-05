@@ -1,25 +1,6 @@
-const { RELATIVE_PATHS } = require('../config/paths.config.js');
-const { SYSTEM_MESSAGES } = require('./messages.utils.js');
-const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
-const { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError, 
-  InternalServerError 
-} = require('./error.utils.js');
-const {
-    collection,
-    getDocs,
-    query,
-    where: whereClause,
-    orderBy: orderByClause,
-    limit: limitClause,
-    doc,
-    getDoc,
-    setDoc,
-    updateDoc,
-    deleteDoc
-} = require('firebase/firestore');
+const { logDatabase } = require('./log.utils.js');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('./error.utils.js');
+const { collection, getDocs, query, where: whereClause, orderBy: orderByClause, limit: limitClause, doc, getDoc, setDoc, updateDoc, deleteDoc } = require('firebase/firestore');
 
 /**
  * Utilidades específicas para modelos con Firebase
@@ -39,13 +20,13 @@ async function executeFirebaseOperation(firebaseOperation, operationType, collec
         const executionTime = Date.now() - startTime;
 
         // Log de éxito con detalles de la operación
-        logMessage(SYSTEM_MESSAGES.FIREBASE_LOG_INFO, `${operationType} ${SYSTEM_MESSAGES.FIREBASE_OPERATION_OF} ${collection} ${SYSTEM_MESSAGES.FIREBASE_OPERATION_SUCCESS}`, {
+        logDatabase(`${operationType} de ${collection} exitoso`, {
             collection,
             operationType,
-            executionTime: `${executionTime}${SYSTEM_MESSAGES.FIREBASE_EXECUTION_TIME}`,
+            executionTime: `${executionTime}ms`,
             timestamp: new Date().toISOString(),
             ...metadata
-        });
+        }, 'DATABASE');
 
         return result;
     } catch (error) {
@@ -78,7 +59,7 @@ async function createDocument(db, collectionName, data, options = {}) {
 
             // Añadir timestamp si se requiere
             const documentData = includeTimestamp
-                ? { ...data, [SYSTEM_MESSAGES.FIREBASE_TIMESTAMP_FIELD]: new Date().toISOString() }
+                ? { ...data, createdAt: new Date().toISOString() }
                 : data;
 
             const docRef = await db.collection(collectionName).add(documentData);
@@ -88,11 +69,11 @@ async function createDocument(db, collectionName, data, options = {}) {
                 ...documentData
             };
         },
-        SYSTEM_MESSAGES.FIREBASE_CREATE,
+        'create',
         collectionName,
         {
-            [SYSTEM_MESSAGES.FIREBASE_DOCUMENT_SIZE_PREFIX]: JSON.stringify(data).length,
-            [SYSTEM_MESSAGES.FIREBASE_HAS_VALIDATION_PREFIX]: !!validateData
+            documentSize: JSON.stringify(data).length,
+            hasValidation: !!validateData
         }
     );
 }
@@ -121,14 +102,14 @@ async function getDocumentById(db, collectionName, documentId, options = {}) {
 
             if (includeMetadata) {
                 result._metadata = {
-                    [SYSTEM_MESSAGES.FIREBASE_METADATA_CREATE_TIME]: docSnap.metadata.fromCache ? null : docSnap.metadata.hasPendingWrites,
-                    [SYSTEM_MESSAGES.FIREBASE_METADATA_UPDATE_TIME]: docSnap.metadata.fromCache ? null : docSnap.metadata.hasPendingWrites
+                    createTime: docSnap.metadata.fromCache ? null : docSnap.metadata.hasPendingWrites,
+                    updateTime: docSnap.metadata.fromCache ? null : docSnap.metadata.hasPendingWrites
                 };
             }
 
             return result;
         },
-        SYSTEM_MESSAGES.FIREBASE_READ,
+        'read',
         collectionName,
         { documentId }
     );
@@ -166,7 +147,7 @@ async function getAllDocuments(db, collectionName, options = {}) {
 
             // Aplicar ordenamiento
             if (orderBy) {
-                const { field, direction = SYSTEM_MESSAGES.FIREBASE_ORDER_ASC } = orderBy;
+                const { field, direction = 'asc' } = orderBy;
                 constraints.push(orderByClause(field, direction));
             }
 
@@ -188,8 +169,8 @@ async function getAllDocuments(db, collectionName, options = {}) {
 
                 if (includeMetadata) {
                     result._metadata = {
-                        [SYSTEM_MESSAGES.FIREBASE_METADATA_CREATE_TIME]: doc.createTime,
-                        [SYSTEM_MESSAGES.FIREBASE_METADATA_UPDATE_TIME]: doc.updateTime
+                        createTime: doc.createTime,
+                        updateTime: doc.updateTime
                     };
                 }
 
@@ -198,13 +179,13 @@ async function getAllDocuments(db, collectionName, options = {}) {
 
             return documents;
         },
-        SYSTEM_MESSAGES.FIREBASE_READ,
+        'read',
         collectionName,
         {
-            [SYSTEM_MESSAGES.FIREBASE_TOTAL_DOCUMENTS_PREFIX]: snapshot?.size || 0,
-            [SYSTEM_MESSAGES.FIREBASE_HAS_FILTERS_PREFIX]: !!where,
-            [SYSTEM_MESSAGES.FIREBASE_HAS_ORDERING_PREFIX]: !!orderBy,
-            [SYSTEM_MESSAGES.FIREBASE_HAS_LIMIT_PREFIX]: !!limit
+            totalDocuments: snapshot?.size || 0,
+            hasFilters: !!where,
+            hasOrdering: !!orderBy,
+            hasLimit: !!limit
         }
     );
 }
@@ -232,7 +213,7 @@ async function updateDocument(db, collectionName, documentId, data, options = {}
 
             // Añadir timestamp de actualización si se requiere
             const updateData = includeTimestamp
-                ? { ...data, [SYSTEM_MESSAGES.FIREBASE_UPDATED_TIMESTAMP_FIELD]: new Date().toISOString() }
+                ? { ...data, updatedAt: new Date().toISOString() }
                 : data;
 
             const docRef = doc(db, collectionName, documentId);
@@ -254,13 +235,13 @@ async function updateDocument(db, collectionName, documentId, data, options = {}
             const updatedDocSnap = await getDoc(docRef);
             return { id: updatedDocSnap.id, ...updatedDocSnap.data() };
         },
-        SYSTEM_MESSAGES.FIREBASE_UPDATE,
+        'update',
         collectionName,
         {
             documentId,
-            [SYSTEM_MESSAGES.FIREBASE_UPDATED_FIELDS_PREFIX]: Object.keys(data),
-            [SYSTEM_MESSAGES.FIREBASE_MERGE_PREFIX]: merge,
-            [SYSTEM_MESSAGES.FIREBASE_HAS_VALIDATION_PREFIX]: !!validateData
+            updatedFields: Object.keys(data),
+            merge,
+            hasValidation: !!validateData
         }
     );
 }
@@ -273,7 +254,7 @@ async function updateDocument(db, collectionName, documentId, data, options = {}
  * @param {Object} options - Opciones adicionales
  */
 async function deleteDocument(db, collectionName, documentId, options = {}) {
-    const { softDelete = false, deletedField = SYSTEM_MESSAGES.FIREBASE_DELETED_FIELD } = options;
+    const { softDelete = false, deletedField = 'deletedAt' } = options;
 
     return executeFirebaseOperation(
         async () => {
@@ -289,7 +270,7 @@ async function deleteDocument(db, collectionName, documentId, options = {}) {
                 // Soft delete: marcar como eliminado usando Firebase v9+ API
                 await updateDoc(docRef, {
                     [deletedField]: new Date().toISOString(),
-                    [SYSTEM_MESSAGES.FIREBASE_IS_DELETED_FIELD]: SYSTEM_MESSAGES.FIREBASE_DELETED_FLAG
+                    isDeleted: true
                 });
 
                 const updatedDocSnap = await getDoc(docRef);
@@ -297,10 +278,10 @@ async function deleteDocument(db, collectionName, documentId, options = {}) {
             } else {
                 // Hard delete: eliminar completamente usando Firebase v9+ API
                 await deleteDoc(docRef);
-                return { id: documentId, deleted: SYSTEM_MESSAGES.FIREBASE_DELETED_FLAG };
+                return { id: documentId, deleted: true };
             }
         },
-        SYSTEM_MESSAGES.FIREBASE_DELETE,
+        'delete',
         collectionName,
         {
             documentId,
@@ -332,8 +313,8 @@ async function searchDocuments(db, collectionName, queryBuilder, options = {}) {
 
                 if (includeMetadata) {
                     result._metadata = {
-                        [SYSTEM_MESSAGES.FIREBASE_METADATA_CREATE_TIME]: doc.createTime,
-                        [SYSTEM_MESSAGES.FIREBASE_METADATA_UPDATE_TIME]: doc.updateTime
+                        createTime: doc.createTime,
+                        updateTime: doc.updateTime
                     };
                 }
 
@@ -342,11 +323,11 @@ async function searchDocuments(db, collectionName, queryBuilder, options = {}) {
 
             return documents;
         },
-        SYSTEM_MESSAGES.FIREBASE_SEARCH,
+        'search',
         collectionName,
         {
-            [SYSTEM_MESSAGES.FIREBASE_TOTAL_RESULTS_PREFIX]: snapshot?.size || 0,
-            [SYSTEM_MESSAGES.FIREBASE_HAS_CUSTOM_QUERY_PREFIX]: true
+            totalResults: snapshot?.size || 0,
+            hasCustomQuery: true
         }
     );
 }

@@ -1,23 +1,18 @@
 // Importar constantes centralizadas primero
-const {
-  RELATIVE_PATHS,
-  ENV_VARIABLES,
-  CONFIG_VALUES,
-  LOG_LEVELS,
-  EXTERNAL_PACKAGES
-} = require('../config/paths.config.js');
-const { SYSTEM_MESSAGES } = require('./messages.utils.js');
-const { InternalServerError } = require('./error.utils.js');
+const { CONFIG_VALUES, API_ENDPOINTS, API_ENDPOINTS_PATHS } = require('../config/paths.config');
+const { logError } = require('./log.utils');
+// Importar swaggerSpec de forma lazy para evitar dependencias circulares
+    const { swaggerSpec } = require('../config/swagger.config');
 
 // Usar paquetes centralizados
-const { dirname, join } = require(EXTERNAL_PACKAGES.PATH);
-require(EXTERNAL_PACKAGES.DOTENV).config();
+const { dirname, join } = require('path');
+require('dotenv').config();
 
 // Equivalente CommonJS a:
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = join(dirname(__filename), "..");
 const projectDir = join(dirname(__filename), "..");
-const PORT = process.env[ENV_VARIABLES.PORT] || CONFIG_VALUES.DEFAULT_PORT;
+const PORT = process.env.PORT || CONFIG_VALUES.DEFAULT_PORT;
 
 /**
  * Función para obtener la URL base desde .env o localhost con puerto del .env
@@ -25,8 +20,8 @@ const PORT = process.env[ENV_VARIABLES.PORT] || CONFIG_VALUES.DEFAULT_PORT;
  */
 function getBaseUrl() {
   // Si BASE_DOMAIN está definida en .env, usarla
-  if (process.env[ENV_VARIABLES.BASE_DOMAIN]) {
-    return process.env[ENV_VARIABLES.BASE_DOMAIN];
+  if (process.env.BASE_DOMAIN) {
+    return process.env.BASE_DOMAIN;
   }
 
   // Si no, construir localhost con el puerto del .env
@@ -41,10 +36,6 @@ function getBaseUrl() {
  */
 function updateSwaggerUrl(req, res, next) {
   try {
-    // Importar swaggerSpec de forma lazy para evitar dependencias circulares
-    const { swaggerSpec } = require(RELATIVE_PATHS.FROM_UTILS.CONFIG_SWAGGER);
-    const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
-
     // Usar la URL base desde .env
     const baseUrl = getBaseUrl();
 
@@ -55,20 +46,41 @@ function updateSwaggerUrl(req, res, next) {
 
     next();
   } catch (error) {
-    // Usar error globalizado de error.utils.js
-    const internalError = new InternalServerError(undefined, {
+    // Log error usando sistema global - middleware no crítico, continuar
+    logError('Error al actualizar URL de Swagger', {
       operation: 'updateSwaggerUrl',
-      originalError: error.message
-    });
-    console.error(internalError);
+      originalError: error.message,
+      middleware: 'swagger_url_update'
+    }, 'SYSTEM');
     next();
   }
+}
+
+/**
+ * URLs de endpoints centralizadas
+ * @param {string} baseUrl - URL base del servidor
+ * @returns {Object} - Objeto con todas las URLs de endpoints
+ */
+function getEndpointUrls(baseUrl) {
+  return {
+    api: `${baseUrl}${API_ENDPOINTS.API_ROOT}`,
+    documentation: `${baseUrl}${API_ENDPOINTS.API_DOCS}`,
+    products: `${baseUrl}${API_ENDPOINTS.PRODUCTS_BASE}`,
+    categoryHierarchy: `${baseUrl}${API_ENDPOINTS.CATEGORY_HIERARCHY_FULL}`,
+    system: `${baseUrl}${API_ENDPOINTS_PATHS.STATUS}`,
+    cache: `${baseUrl}${API_ENDPOINTS.CACHE_STATS}`,
+    health: `${baseUrl}${API_ENDPOINTS.HEALTH}`,
+    metrics: `${baseUrl}${API_ENDPOINTS.METRICS}`,
+    debug: `${baseUrl}${API_ENDPOINTS.DEBUG}`,
+    swagger: `${baseUrl}${API_ENDPOINTS.SWAGGER_JSON}`
+  };
 }
 
 module.exports = {
   __dirname: projectDir,
   join,
   getBaseUrl,
+  getEndpointUrls,
   updateSwaggerUrl,
   PORT
 };

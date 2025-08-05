@@ -30,7 +30,8 @@ const getAllCategories = controllerWrapper(async (req, res) => {
 const getAllCategory = controllerWrapper(async (req, res) => {
   const categories = await CategoryService.getAllCategory(req.queryProcessor);
   
-  if (!categories || categories.length === 0) {
+  // Solo lanzar error si no hay queryProcessor (consulta básica) y no hay categorías
+  if (!categories || (categories.length === 0 && !req.queryProcessor)) {
     throw new NotFoundError();
   }
   
@@ -38,7 +39,7 @@ const getAllCategory = controllerWrapper(async (req, res) => {
     success: true,
     message: CATEGORIES_MESSAGES.GET_ALL_SUCCESS,
     resource: CATEGORIES_MESSAGES.RESOURCE_CATEGORIES,
-    data: categories
+    data: categories || []
   });
 });
 
@@ -88,7 +89,8 @@ const getSubcategoryByParent = controllerWrapper(async (req, res) => {
 const getAllSubcategory = controllerWrapper(async (req, res) => {
   const subcategories = await CategoryService.getAllSubcategory(req.queryProcessor);
   
-  if (!subcategories || subcategories.length === 0) {
+  // Solo lanzar error si no hay queryProcessor (consulta básica) y no hay subcategorías
+  if (!subcategories || (subcategories.length === 0 && !req.queryProcessor)) {
     throw new NotFoundError();
   }
   
@@ -96,7 +98,7 @@ const getAllSubcategory = controllerWrapper(async (req, res) => {
     success: true,
     message: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_SUCCESS,
     resource: CATEGORY_CONSTANTS.SUBCATEGORIES_PLURAL,
-    data: subcategories
+    data: subcategories || []
   });
 });
 

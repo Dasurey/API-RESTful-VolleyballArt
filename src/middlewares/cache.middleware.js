@@ -6,7 +6,7 @@
 const { productsCacheManager, authCacheManager, generalCacheManager } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_CACHE);
 const { RELATIVE_PATHS, HTTP_STATUS, CACHE, HTTP_METHODS, VERSION_MIDDLEWARE } = require('../config/paths.config.js');
 const { CACHE_MESSAGES } = require('../utils/messages.utils.js');
-const Logger = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
+const { Logger } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
 
 /**
  * Middleware de cache genérico
@@ -134,23 +134,23 @@ function generateCacheKey(req) {
   const { method, path, query, user } = req;
   
   // Para requests autenticadas, incluir user ID
-  const userId = user?.uid || CACHE.ANONYMOUS_USER;
+  const userId = user?.uid || 'anonymous';
   
   // Crear clave única basada en método, path, query params y usuario
   const queryString = Object.keys(query)
     .sort()
-    .map(key => `${key}${CACHE.EQUALS_SEPARATOR}${query[key]}`)
+    .map(key => `${key}=${query[key]}`)
     .join(CACHE.QUERY_SEPARATOR);
   
-  let cacheKey = `${method}${CACHE.KEY_SEPARATOR}${path}`;
+  let cacheKey = `${method}: ${path}`;
   
   if (queryString) {
-    cacheKey += `${CACHE.QUERY_PREFIX}${queryString}`;
+    cacheKey += `?${queryString}`;
   }
   
   // Para endpoints que dependen del usuario, incluir user ID
-  if (path.includes(VERSION_MIDDLEWARE.AUTH_ROUTE) || method !== HTTP_METHODS.GET) {
-    cacheKey += `${CACHE.USER_PREFIX}${userId}`;
+  if (path.includes(VERSION_MIDDLEWARE.AUTH_ROUTE) || method !== 'GET') {
+    cacheKey += `:user:${userId}`;
   }
   
   return cacheKey;
@@ -163,12 +163,12 @@ function generateCacheKey(req) {
  */
 function getTTLForCacheType(cacheType) {
   const ttlConfig = {
-    [CACHE.TYPE_PRODUCTS]: 30 * 60,    // 30 minutos
-    [CACHE.TYPE_AUTH]: 5 * 60,         // 5 minutos
-    [CACHE.TYPE_GENERAL]: 10 * 60      // 10 minutos
+    products: 30 * 60,    // 30 minutos
+    auth: 5 * 60,         // 5 minutos
+    general: 10 * 60      // 10 minutos
   };
-  
-  return ttlConfig[cacheType] || ttlConfig[CACHE.TYPE_GENERAL];
+
+  return ttlConfig[cacheType] || ttlConfig.general;
 }
 
 /**
@@ -176,10 +176,10 @@ function getTTLForCacheType(cacheType) {
  */
 const noCacheMiddleware = (req, res, next) => {
   res.set({
-    [CACHE.CACHE_CONTROL]: CACHE.NO_STORE_VALUE,
-    [CACHE.PRAGMA]: CACHE.NO_CACHE_VALUE,
-    [CACHE.EXPIRES]: CACHE.EXPIRES_VALUE,
-    [CACHE.SURROGATE_CONTROL]: CACHE.NO_STORE_SURROGATE
+    'Cache-Control': CACHE.NO_STORE_VALUE,
+    'Pragma': CACHE.NO_CACHE_VALUE,
+    'Expires': CACHE.EXPIRES_VALUE,
+    'Surrogate-Control': CACHE.NO_STORE_SURROGATE
   });
   next();
 };

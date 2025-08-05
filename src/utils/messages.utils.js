@@ -639,25 +639,25 @@ const SERVICE_MESSAGES = {
   SERVICE_FIELD: "service",
   
   // Mensajes de error para clases de error personalizadas
-  VALIDATION_ERROR_DEFAULT: "Datos de entrada inválidos",
-  AUTHENTICATION_ERROR_DEFAULT: "Credenciales de autenticación inválidas",
-  AUTHORIZATION_ERROR_DEFAULT: "No tienes permisos para acceder a este recurso",
-  NOT_FOUND_ERROR_DEFAULT: "Recurso no encontrado",
-  CONFLICT_ERROR_DEFAULT: "Conflicto en la operación solicitada",
-  RATE_LIMIT_ERROR_DEFAULT: "Demasiadas solicitudes. Intenta más tarde",
-  INTERNAL_SERVER_ERROR_DEFAULT: "Error interno del servidor",
-  DATABASE_ERROR_DEFAULT: "Error en la base de datos",
-  EXTERNAL_SERVICE_ERROR_DEFAULT: "Error en servicio externo",
-  CONFIGURATION_ERROR_DEFAULT: "Error de configuración del sistema",
+  VALIDATION_ERROR_DEFAULT: "📝 Datos de entrada inválidos",
+  AUTHENTICATION_ERROR_DEFAULT: "🔐 Credenciales de autenticación inválidas",
+  AUTHORIZATION_ERROR_DEFAULT: "🚫 No tienes permisos para acceder a este recurso",
+  NOT_FOUND_ERROR_DEFAULT: "🔍 Recurso no encontrado",
+  CONFLICT_ERROR_DEFAULT: "⚔️ Conflicto en la operación solicitada",
+  RATE_LIMIT_ERROR_DEFAULT: "⏰ Demasiadas solicitudes. Intenta más tarde",
+  INTERNAL_SERVER_ERROR_DEFAULT: "🚨 Error interno del servidor",
+  DATABASE_ERROR_DEFAULT: "💾 Error en la base de datos",
+  EXTERNAL_SERVICE_ERROR_DEFAULT: "🌐 Error en servicio externo",
+  CONFIGURATION_ERROR_DEFAULT: "⚙️ Error de configuración del sistema",
   
   // Mensajes específicos de JWT
-  INVALID_TOKEN: "Token inválido",
-  EXPIRED_TOKEN: "Token expirado",
-  TOKEN_ERROR: "Error en el token de autenticación",
+  INVALID_TOKEN: "🚫 Token inválido",
+  EXPIRED_TOKEN: "⏰ Token expirado",
+  TOKEN_ERROR: "🔐 Error en el token de autenticación",
   
   // Mensajes específicos de base de datos
-  DUPLICATE_FIELD_ERROR: "Campo duplicado",
-  INVALID_FIELD_FORMAT: "Formato de campo inválido"
+  DUPLICATE_FIELD_ERROR: "🔄 Campo duplicado",
+  INVALID_FIELD_FORMAT: "📋 Formato de campo inválido"
 };
 
 // Constantes para clases de error y códigos de estado
@@ -1115,21 +1115,6 @@ const OPTIMIZATION_CONSTANTS = {
 
 // Constantes de Query Processing
 const QUERY_CONSTANTS = {
-  // Operadores de filtro - mapeo de nombres amigables a operadores de Firestore
-  OPERATORS: {
-    EQ: 'eq',           // igual
-    NE: 'ne',           // no igual  
-    GT: 'gt',           // mayor que
-    GTE: 'gte',         // mayor o igual
-    LT: 'lt',           // menor que
-    LTE: 'lte',         // menor o igual
-    IN: 'in',           // en array
-    NIN: 'nin',         // no en array
-    CONTAINS: 'contains',
-    STARTS_WITH: 'startsWith',
-    ENDS_WITH: 'endsWith'
-  },
-  
   // Operadores de Firestore reales
   FIRESTORE_OPERATORS: {
     EQ: '==',
@@ -1230,6 +1215,15 @@ const QUERY_CONSTANTS = {
     }
   },
   
+  // Límites de paginación
+  LIMITS: {
+    DEFAULT: 10,
+    MAX_GENERAL: 100,
+    MAX_PRODUCTS: 50,
+    MAX_CATEGORIES: 100,
+    MAX_SUBCATEGORIES: 100
+  },
+
   // Configuraciones por defecto para cada entidad
   DEFAULT_CONFIGS: {
     PRODUCTS: {

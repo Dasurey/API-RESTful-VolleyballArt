@@ -9,15 +9,14 @@
  * - Reportes de estado detallados
  */
 
-const { RELATIVE_PATHS, HTTP_STATUS, EXTERNAL_PACKAGES, HEALTH_PATHS, CACHE } = require('../config/paths.config.js');
-const { HEALTH_CONSTANTS, METRICS_CONSTANTS } = require('./messages.utils.js');
-const { getPerformanceMetrics } = require(HEALTH_PATHS.PERFORMANCE_MIDDLEWARE);
-const { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError, 
-  InternalServerError 
-} = require('./error.utils.js');
+const { getPerformanceMetrics } = require('../middlewares/performance.middleware');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('./error.utils.js');
+
+// Importar funciones de Firestore v9+
+const { collection, getDocs, limit, query } = require('firebase/firestore');
+const { db } = require('../config/db.config');
+
+const { getCacheStats } = require('../config/cache.config');
 
 /**
  * Estado global de health checks
@@ -28,9 +27,9 @@ const healthState = {
     alerts: [],
     history: [],
     dependencies: {
-        database: { status: METRICS_CONSTANTS.SERVICE_UNKNOWN, lastCheck: null, responseTime: 0 },
-        cache: { status: METRICS_CONSTANTS.SERVICE_UNKNOWN, lastCheck: null, responseTime: 0 },
-        external_apis: { status: METRICS_CONSTANTS.SERVICE_UNKNOWN, lastCheck: null, responseTime: 0 }
+        database: { status: 'unknown', lastCheck: null, responseTime: 0 },
+        cache: { status: 'unknown', lastCheck: null, responseTime: 0 },
+        external_apis: { status: 'unknown', lastCheck: null, responseTime: 0 }
     }
 };
 
@@ -40,28 +39,24 @@ const healthState = {
 async function checkDatabaseHealth() {
     const startTime = Date.now();
     try {
-        // Importar funciones de Firestore v9+
-        const { collection, getDocs, limit, query } = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
-        const { db } = require(HEALTH_PATHS.DATABASE_CONFIG);
-
         // Verificar si el objeto db es válido
         if (!db) {
             throw new InternalServerError();
         }
 
         // Hacer una consulta ligera usando el nuevo SDK v9+
-        const productsCollection = collection(db, CACHE.TYPE_PRODUCTS);
+        const productsCollection = collection(db, 'products');
         const querySnapshot = await getDocs(query(productsCollection, limit(1)));
 
         const responseTime = Date.now() - startTime;
 
         healthState.dependencies.database = {
-            status: HEALTH_CONSTANTS.STATUS_HEALTHY,
+            status: 'healthy',
             lastCheck: new Date().toISOString(),
             responseTime: responseTime,
             details: {
-                latency: `${responseTime}${METRICS_CONSTANTS.UNIT_MS}`,
-                provider: METRICS_CONSTANTS.FIREBASE_FIRESTORE_PROVIDER,
+                latency: `${responseTime}ms`,
+                provider: 'Firebase Firestore',
                 documentsChecked: querySnapshot.size
             }
         };
@@ -71,14 +66,14 @@ async function checkDatabaseHealth() {
         const responseTime = Date.now() - startTime;
 
         healthState.dependencies.database = {
-            status: HEALTH_CONSTANTS.STATUS_UNHEALTHY,
+            status: 'unhealthy',
             lastCheck: new Date().toISOString(),
             responseTime: responseTime,
             error: error.message,
             details: {
-                latency: `${responseTime}${METRICS_CONSTANTS.UNIT_MS}`,
-                provider: METRICS_CONSTANTS.FIREBASE_FIRESTORE_PROVIDER,
-                errorType: error.code || METRICS_CONSTANTS.SERVICE_UNKNOWN,
+                latency: `${responseTime}ms`,
+                provider: 'Firebase Firestore',
+                errorType: error.code || 'unknown',
                 errorName: error.name
             }
         };
@@ -93,23 +88,22 @@ async function checkDatabaseHealth() {
 async function checkCacheHealth() {
     const startTime = Date.now();
     try {
-        const { getCacheStats } = require(HEALTH_PATHS.CACHE_CONFIG);
         const cacheStats = getCacheStats();
         const responseTime = Date.now() - startTime;
 
         // Calcular hit rate como número
-        const numericHitRate = cacheStats.hits + cacheStats.misses > 0 
+        const numericHitRate = cacheStats.hits + cacheStats.misses > 0
             ? cacheStats.hits / (cacheStats.hits + cacheStats.misses)
             : 0;
 
         const isHealthy = numericHitRate >= 0.0; // Cache funcional si responde
 
         healthState.dependencies.cache = {
-            status: isHealthy ? HEALTH_CONSTANTS.STATUS_HEALTHY : HEALTH_CONSTANTS.STATUS_DEGRADED,
+            status: isHealthy ? 'healthy' : 'degraded',
             lastCheck: new Date().toISOString(),
             responseTime: responseTime,
             details: {
-                hitRate: `${(numericHitRate * 100).toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
+                hitRate: `${(numericHitRate * 100).toFixed(2)}%`,
                 totalKeys: (cacheStats.caches?.app?.keys || 0) + (cacheStats.caches?.products?.keys || 0) + (cacheStats.caches?.auth?.keys || 0),
                 hits: cacheStats.hits || 0,
                 misses: cacheStats.misses || 0
@@ -121,7 +115,7 @@ async function checkCacheHealth() {
         const responseTime = Date.now() - startTime;
 
         healthState.dependencies.cache = {
-            status: HEALTH_CONSTANTS.STATUS_UNHEALTHY,
+            status: 'unhealthy',
             lastCheck: new Date().toISOString(),
             responseTime: responseTime,
             error: error.message
@@ -141,11 +135,11 @@ async function checkExternalAPIsHealth() {
         const responseTime = Date.now() - startTime;
 
         healthState.dependencies.external_apis = {
-            status: HEALTH_CONSTANTS.STATUS_HEALTHY,
+            status: 'healthy',
             lastCheck: new Date().toISOString(),
             responseTime: responseTime,
             details: {
-                httpServer: METRICS_CONSTANTS.HTTP_SERVER_OPERATIONAL,
+                httpServer: 'operational',
                 apis: []
             }
         };
@@ -155,7 +149,7 @@ async function checkExternalAPIsHealth() {
         const responseTime = Date.now() - startTime;
 
         healthState.dependencies.external_apis = {
-            status: HEALTH_CONSTANTS.STATUS_UNHEALTHY,
+            status: 'unhealthy',
             lastCheck: new Date().toISOString(),
             responseTime: responseTime,
             error: error.message
@@ -184,36 +178,34 @@ async function runFullHealthCheck() {
 
         // Determinar estado general del sistema
         const allHealthy = [dbHealth, cacheHealth, apiHealth].every(
-            result => result.status === METRICS_CONSTANTS.PROMISE_STATUS_FULFILLED && result.value === true
+            result => result.status === 'fulfilled' && result.value === true
         );
 
-        const overallStatus = allHealthy ?
-            HEALTH_CONSTANTS.STATUS_HEALTHY :
-            HEALTH_CONSTANTS.STATUS_DEGRADED;
+        const overallStatus = allHealthy ? 'healthy' : 'degraded';
 
         const totalCheckTime = Date.now() - checkStartTime;
 
         const healthReport = {
             status: overallStatus,
             timestamp: new Date().toISOString(),
-            checkDuration: `${totalCheckTime}${METRICS_CONSTANTS.UNIT_MS}`,
-            version: process.env.npm_package_version || METRICS_CONSTANTS.DEFAULT_VERSION,
-            environment: process.env.NODE_ENV || METRICS_CONSTANTS.DEFAULT_ENVIRONMENT,
+            checkDuration: `${totalCheckTime}ms`,
+            version: process.env.npm_package_version || '1.0.0',
+            environment: process.env.NODE_ENV || 'development',
             uptime: {
                 seconds: Math.floor(process.uptime()),
                 formatted: formatUptime(process.uptime())
             },
             system: {
                 memory: performanceMetrics.memory,
-                cpu: performanceMetrics.cpu || { usage: METRICS_CONSTANTS.CPU_USAGE_NOT_AVAILABLE },
+                cpu: performanceMetrics.cpu || { usage: 'N/A' },
                 nodeVersion: process.version,
                 platform: process.platform
             },
             dependencies: healthState.dependencies,
             performance: {
-                averageResponseTime: `${performanceMetrics.responseTime.avg.toFixed(2)}${METRICS_CONSTANTS.UNIT_MS}`,
+                averageResponseTime: `${performanceMetrics.responseTime.avg.toFixed(2)}ms`,
                 requestsPerMinute: calculateRequestsPerMinute(performanceMetrics),
-                errorRate: `${calculateErrorRate(performanceMetrics).toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
+                errorRate: `${calculateErrorRate(performanceMetrics).toFixed(2)}%`,
                 throughput: calculateThroughput(performanceMetrics)
             },
             alerts: generateHealthAlerts(performanceMetrics)
@@ -237,10 +229,10 @@ async function runFullHealthCheck() {
 
     } catch (error) {
         return {
-            status: HEALTH_CONSTANTS.STATUS_UNHEALTHY,
+            status: 'unhealthy',
             timestamp: new Date().toISOString(),
             error: error.message,
-            checkDuration: `${Date.now() - checkStartTime}${METRICS_CONSTANTS.UNIT_MS}`
+            checkDuration: `${Date.now() - checkStartTime}ms`
         };
     }
 }
@@ -279,7 +271,7 @@ function calculateErrorRate(metrics) {
 function calculateThroughput(metrics) {
     const uptimeSeconds = Math.max(process.uptime(), 1);
     const requestsPerSecond = metrics.requests.total / uptimeSeconds;
-    return `${requestsPerSecond.toFixed(2)} ${METRICS_CONSTANTS.UNIT_REQ_PER_SEC}`;
+    return `${requestsPerSecond.toFixed(2)} req/s`;
 }
 
 /**
@@ -291,11 +283,11 @@ function generateHealthAlerts(metrics) {
     // Alerta de memoria alta
     if (metrics.memory.percentage > 85) {
         alerts.push({
-            level: HEALTH_CONSTANTS.ALERT_WARNING,
-            type: HEALTH_CONSTANTS.ALERT_TYPE_MEMORY,
-            message: `${METRICS_CONSTANTS.ALERT_HIGH_MEMORY_USAGE} ${metrics.memory.percentage.toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
-            threshold: METRICS_CONSTANTS.THRESHOLD_MEMORY_85_PERCENT,
-            current: `${metrics.memory.percentage.toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
+            level: 'warning',
+            type: 'memory',
+            message: `High memory usage: ${metrics.memory.percentage.toFixed(2)}%`,
+            threshold: '85%',
+            current: `${metrics.memory.percentage.toFixed(2)}%`,
             timestamp: new Date().toISOString()
         });
     }
@@ -303,11 +295,11 @@ function generateHealthAlerts(metrics) {
     // Alerta de tiempo de respuesta alto
     if (metrics.responseTime.avg > 1000) {
         alerts.push({
-            level: HEALTH_CONSTANTS.ALERT_WARNING,
-            type: HEALTH_CONSTANTS.ALERT_TYPE_PERFORMANCE,
-            message: `${METRICS_CONSTANTS.ALERT_HIGH_RESPONSE_TIME} ${metrics.responseTime.avg.toFixed(2)}${METRICS_CONSTANTS.UNIT_MS}`,
-            threshold: METRICS_CONSTANTS.THRESHOLD_RESPONSE_TIME_1000MS,
-            current: `${metrics.responseTime.avg.toFixed(2)}${METRICS_CONSTANTS.UNIT_MS}`,
+            level: 'warning',
+            type: 'performance',
+            message: `High response time: ${metrics.responseTime.avg.toFixed(2)}ms`,
+            threshold: '1000ms',
+            current: `${metrics.responseTime.avg.toFixed(2)}ms`,
             timestamp: new Date().toISOString()
         });
     }
@@ -316,11 +308,11 @@ function generateHealthAlerts(metrics) {
     const errorRate = calculateErrorRate(metrics);
     if (errorRate > 5) {
         alerts.push({
-            level: HEALTH_CONSTANTS.ALERT_CRITICAL,
-            type: HEALTH_CONSTANTS.ALERT_TYPE_ERRORS,
-            message: `${METRICS_CONSTANTS.ALERT_HIGH_ERROR_RATE} ${errorRate.toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
-            threshold: METRICS_CONSTANTS.THRESHOLD_ERROR_RATE_5_PERCENT,
-            current: `${errorRate.toFixed(2)}${METRICS_CONSTANTS.UNIT_PERCENT}`,
+            level: 'critical',
+            type: 'errors',
+            message: `High error rate: ${errorRate.toFixed(2)}%`,
+            threshold: '5%',
+            current: `${errorRate.toFixed(2)}%`,
             timestamp: new Date().toISOString()
         });
     }
@@ -328,10 +320,10 @@ function generateHealthAlerts(metrics) {
     // Alerta de requests en progreso
     if (metrics.requests.inProgress > 50) {
         alerts.push({
-            level: HEALTH_CONSTANTS.ALERT_CRITICAL,
-            type: HEALTH_CONSTANTS.ALERT_TYPE_LOAD,
-            message: `${METRICS_CONSTANTS.ALERT_TOO_MANY_REQUESTS} ${metrics.requests.inProgress}`,
-            threshold: METRICS_CONSTANTS.THRESHOLD_CONCURRENT_REQUESTS_50,
+            level: 'critical',
+            type: 'load',
+            message: `Too many requests in progress: ${metrics.requests.inProgress}`,
+            threshold: '50',
             current: metrics.requests.inProgress.toString(),
             timestamp: new Date().toISOString()
         });
@@ -351,7 +343,7 @@ function quickHealthCheck() {
         performanceMetrics.requests.inProgress < 100;
 
     return {
-        status: isHealthy ? HEALTH_CONSTANTS.STATUS_HEALTHY : HEALTH_CONSTANTS.STATUS_UNHEALTHY,
+        status: isHealthy ? 'healthy' : 'unhealthy',
         timestamp: new Date().toISOString()
     };
 }
@@ -364,9 +356,9 @@ function getHealthHistory() {
         checks: healthState.history.slice(-50), // Últimos 50 checks
         summary: {
             totalChecks: healthState.history.length,
-            uptime: healthState.history.filter(h => h.status === HEALTH_CONSTANTS.STATUS_HEALTHY).length,
-            degraded: healthState.history.filter(h => h.status === HEALTH_CONSTANTS.STATUS_DEGRADED).length,
-            unhealthy: healthState.history.filter(h => h.status === HEALTH_CONSTANTS.STATUS_UNHEALTHY).length
+            uptime: healthState.history.filter(h => h.status === 'healthy').length,
+            degraded: healthState.history.filter(h => h.status === 'degraded').length,
+            unhealthy: healthState.history.filter(h => h.status === 'unhealthy').length
         }
     };
 }
@@ -431,73 +423,56 @@ function formatMetricsForPrometheus(metrics) {
 
     // Helper para agregar métrica
     const addMetric = (name, type, help, value, labels = {}) => {
-        lines.push(`${METRICS_CONSTANTS.PROMETHEUS_HELP_PREFIX} ${name} ${help}`);
-        lines.push(`${METRICS_CONSTANTS.PROMETHEUS_TYPE_PREFIX} ${name} ${type}`);
+        lines.push(`# HELP ${name} ${help}`);
+        lines.push(`# TYPE ${name} ${type}`);
 
-        const labelStr = Object.keys(labels).length > 0
-            ? `{${Object.entries(labels).map(([k, v]) => `${k}="${v}"`).join(METRICS_CONSTANTS.PROMETHEUS_LABEL_SEPARATOR)}}`
-            : METRICS_CONSTANTS.PROMETHEUS_EMPTY_LABELS;
+        const labelStr = Object.keys(labels).length > 0 ? `{${Object.entries(labels).map(([k, v]) => `${k}="${v}"`).join(',')}}` : '';
 
         lines.push(`${name}${labelStr} ${value} ${timestamp}`);
-        lines.push(METRICS_CONSTANTS.PROMETHEUS_EMPTY_LABELS);
+        lines.push('');
     };
 
     // Métricas del sistema
     if (metrics.system) {
-        addMetric(METRICS_CONSTANTS.METRIC_API_MEMORY_USAGE_BYTES, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_MEMORY_USAGE, metrics.system.memory?.used || 0);
+        addMetric('api_memory_usage_bytes', 'gauge', 'Memory usage in bytes', metrics.system.memory?.used || 0);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_MEMORY_HEAP_BYTES, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_HEAP_MEMORY, metrics.system.memory?.heapUsed || 0);
+        addMetric('api_memory_heap_bytes', 'gauge', 'Heap memory usage in bytes', metrics.system.memory?.heapUsed || 0);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_UPTIME_SECONDS, METRICS_CONSTANTS.PROMETHEUS_TYPE_COUNTER,
-            METRICS_CONSTANTS.METRIC_DESC_UPTIME, Math.floor(process.uptime()));
+        addMetric('api_uptime_seconds', 'counter', 'Application uptime in seconds', Math.floor(process.uptime()));
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_CPU_USAGE_PERCENT, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_CPU_USAGE, metrics.system.cpu?.usage || 0);
+        addMetric('api_cpu_usage_percent', 'gauge', 'CPU usage percentage', metrics.system.cpu?.usage || 0);
     }
 
     // Métricas de la API
     if (metrics.api) {
-        addMetric(METRICS_CONSTANTS.METRIC_API_REQUESTS_TOTAL, METRICS_CONSTANTS.PROMETHEUS_TYPE_COUNTER,
-            METRICS_CONSTANTS.METRIC_DESC_REQUESTS_TOTAL, metrics.api.requests?.total || 0);
+        addMetric('api_requests_total', 'counter', 'Total API requests', metrics.api.requests?.total || 0);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_REQUESTS_ERRORS_TOTAL, METRICS_CONSTANTS.PROMETHEUS_TYPE_COUNTER,
-            METRICS_CONSTANTS.METRIC_DESC_REQUESTS_ERRORS, metrics.api.errors?.total || 0);
+        addMetric('api_requests_errors_total', 'counter', 'Total API request errors', metrics.api.errors?.total || 0);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_RESPONSE_TIME_SECONDS, METRICS_CONSTANTS.PROMETHEUS_TYPE_HISTOGRAM,
-            METRICS_CONSTANTS.METRIC_DESC_RESPONSE_TIME, (metrics.api.responseTime?.average || 0) / 1000);
+        addMetric('api_response_time_seconds', 'histogram', 'API response time in seconds', (metrics.api.responseTime?.average || 0) / 1000);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_RESPONSE_TIME_P95_SECONDS, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_RESPONSE_TIME_P95, (metrics.api.responseTime?.p95 || 0) / 1000);
+        addMetric('api_response_time_p95_seconds', 'gauge', 'API response time p95 in seconds', (metrics.api.responseTime?.p95 || 0) / 1000);
     }
 
     // Métricas de la base de datos
     if (metrics.database) {
-        addMetric(METRICS_CONSTANTS.METRIC_API_DATABASE_CONNECTIONS_ACTIVE, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_DB_CONNECTIONS, metrics.database.activeConnections || 0);
+        addMetric('api_database_connections_active', 'gauge', 'Active database connections', metrics.database.activeConnections || 0);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_DATABASE_QUERY_TIME_SECONDS, METRICS_CONSTANTS.PROMETHEUS_TYPE_HISTOGRAM,
-            METRICS_CONSTANTS.METRIC_DESC_DB_QUERY_TIME, (metrics.database.averageQueryTime || 0) / 1000);
+        addMetric('api_database_query_time_seconds', 'histogram', 'Database query time in seconds', (metrics.database.averageQueryTime || 0) / 1000);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_DATABASE_STATUS, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_DB_STATUS,
-            metrics.database.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? 1 : 0);
+        addMetric('api_database_status', 'gauge', 'Database status', metrics.database.status === 'healthy' ? 1 : 0);
     }
 
     // Métricas del cache
     if (metrics.cache) {
-        addMetric(METRICS_CONSTANTS.METRIC_API_CACHE_HIT_RATIO, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_CACHE_HIT_RATIO, metrics.cache.hitRatio || 0);
+        addMetric('api_cache_hit_ratio', 'gauge', 'Cache hit ratio (0-1)', metrics.cache.hitRatio || 0);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_CACHE_SIZE_BYTES, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_CACHE_SIZE, metrics.cache.size || 0);
+        addMetric('api_cache_size_bytes', 'gauge', 'Cache size in bytes', metrics.cache.size || 0);
 
-        addMetric(METRICS_CONSTANTS.METRIC_API_CACHE_KEYS_TOTAL, METRICS_CONSTANTS.PROMETHEUS_TYPE_GAUGE,
-            METRICS_CONSTANTS.METRIC_DESC_CACHE_KEYS, metrics.cache.keys || 0);
+        addMetric('api_cache_keys_total', 'gauge', 'Total cache keys', metrics.cache.keys || 0);
     }
 
-    return lines.join(METRICS_CONSTANTS.PROMETHEUS_NEWLINE);
+    return lines.join('\n');
 }
 
 module.exports = {

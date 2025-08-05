@@ -1,30 +1,26 @@
 const {
-  EXTERNAL_PACKAGES,
   PATHS,
   API_ENDPOINTS,
   ENV_CONFIG,
   HTTP_HEADERS,
   HTTP_METHODS,
   NODE_EVENTS,
-  LOG_LEVELS,
   COMMON_VALUES,
   HTTP_STATUS,
   API_ENDPOINTS_PATHS,
-  ERROR_HANDLING,
-  DATABASE_ERROR_CODES
-} = require('./config/paths.config.js');
+  ERROR_HANDLING
+} = require('./config/paths.config');
 
-const express = require(EXTERNAL_PACKAGES.EXPRESS);
-require(EXTERNAL_PACKAGES.DOTENV).config();
-const cors = require(EXTERNAL_PACKAGES.CORS);
+const express = require('express');
+require('dotenv').config();
+const cors = require('cors');
 
 // � Configuración de entorno para Vercel
 if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = process.env.NODE_ENV ? ENV_CONFIG.NODE_ENV_PRODUCTION : ENV_CONFIG.NODE_ENV_DEVELOPMENT;
+  process.env.NODE_ENV = process.env.NODE_ENV ? 'production' : 'development';
 }
 
 // �📊 Sistema de logging
-const Logger = require(PATHS.CONFIG.LOGGER);
 const { httpLogger, devLogger, requestLogger } = require(PATHS.MIDDLEWARES.LOGGER);
 const { requestIdMiddleware } = require(PATHS.UTILS.ASYNC_UTILS);
 
@@ -49,18 +45,12 @@ const {
 // 📚 Sistema de documentación
 const { swaggerSpec, swaggerUi, swaggerUiOptions } = require(PATHS.CONFIG.SWAGGER);
 
-const productsRoutes = require(PATHS.ROUTES.PRODUCTS);
+const productsRoutes = require('./routes/products.routes');
 const authRoutes = require(PATHS.ROUTES.AUTH);
-const categoryRoutes = require(PATHS.ROUTES.CATEGORY);
+const categoryRoutes = require('./routes/category.routes');
 
-const { authentication } = require(PATHS.MIDDLEWARES.AUTHENTICATION);
-const { 
-  GENERAL_MESSAGES, 
-  SYSTEM_MESSAGES,
-  HEALTH_CONSTANTS,
-  METRICS_CONSTANTS,
-  SERVICE_MESSAGES
-} = require('./utils/messages.utils.js');
+const { authentication } = require('./middlewares/authentication.middleware');
+const { GENERAL_MESSAGES,  SYSTEM_MESSAGES, HEALTH_CONSTANTS, METRICS_CONSTANTS } = require('./utils/messages.utils');
 const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require(PATHS.MIDDLEWARES.VERSION);
 const { getVersionInfo } = require(PATHS.CONFIG.API_VERSIONS);
 
@@ -71,13 +61,19 @@ const {
   getHealthHistory,
   calculatePerformanceMetrics,
   formatMetricsForPrometheus
-} = require(PATHS.UTILS.HEALTH_UTILS);
+} = require('./utils/health.utils');
 
 // 🔧 Utilidades para URLs y paths (incluyendo middleware dinámico para Swagger)
-const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl } = require(PATHS.UTILS.URL_UTILS);
+const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl, getEndpointUrls } = require(PATHS.UTILS.URL_UTILS);
 
 // 🔧 Utilidades centralizadas para respuestas y logging
-const { logMessage, successResponse, getEndpointUrls, logServerInfo } = require(PATHS.UTILS.RESPONSE_UTILS);
+// Nota: getEndpointUrls movido a url.utils.js
+
+// 🔧 Clases de logs globalizadas
+const { logInfo, logSystem } = require('./utils/log.utils.js');
+
+// 🔧 Clases de respuesta exitosa globalizadas
+const { SuccessResponse, DataResponse } = require('./utils/success.utils.js');
 
 // 🔧 Clases de error personalizadas
 const { 
@@ -87,7 +83,7 @@ const {
   AppError, 
   formatDatabaseError, 
   formatJWTError 
-} = require(PATHS.UTILS.ERROR_UTILS);
+} = require('./utils/error.utils.js');
 
 // 🌐 Configuración de variables de entorno
 // Ya configurado con require('dotenv').config() arriba
@@ -98,18 +94,20 @@ const app = express();
 // � Manejador de errores no capturados (especialmente importante en Vercel)
 process.on(NODE_EVENTS.UNCAUGHT_EXCEPTION, (error) => {
   const internalError = new InternalServerError(error.message);
-  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNCAUGHT_EXCEPTION, internalError);
+  const { logError } = require('./utils/log.utils.js');
+  logError('🚨 Uncaught Exception: ', internalError.details);
   process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
 });
 
 process.on(NODE_EVENTS.UNHANDLED_REJECTION, (reason, promise) => {
   const internalError = new InternalServerError(typeof reason === 'string' ? reason : reason?.message || 'Unhandled Promise Rejection');
-  logMessage(LOG_LEVELS.ERROR, SYSTEM_MESSAGES.UNHANDLED_REJECTION, internalError);
+  const { logError } = require('./utils/log.utils.js');
+  logError(SYSTEM_MESSAGES.UNHANDLED_REJECTION, internalError.details);
   process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
 });
 
 // �📊 Iniciar logging del sistema
-logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.SERVER_STARTING, {
+logSystem(SYSTEM_MESSAGES.SERVER_STARTING, {
   nodeVersion: process.version,
   environment: process.env.NODE_ENV,
   timestamp: new Date().toISOString()
@@ -177,9 +175,9 @@ app.get(API_ENDPOINTS.SWAGGER_JSON, (req, res) => {
 
 // 🧪 Endpoint de test simple para Vercel
 app.get(API_ENDPOINTS.TEST, (req, res) => {
-  successResponse(res, GENERAL_MESSAGES.SERVER_HEALTH, {
+  return new SuccessResponse(GENERAL_MESSAGES.SERVER_HEALTH, {
     environment: process.env.NODE_ENV || ENV_CONFIG.NODE_ENV_UNKNOWN
-  });
+  }).send(res);
 });
 
 // Registrar rutas de forma dinámica para todas las versiones soportadas
@@ -247,10 +245,10 @@ app.get(API_ENDPOINTS.API_ROOT, (req, res) => {
   const baseUrl = getBaseUrl();
   const urls = getEndpointUrls(baseUrl);
 
-  successResponse(res, GENERAL_MESSAGES.API_INFO, {
+  return new DataResponse(GENERAL_MESSAGES.API_INFO, {
     ...versionInfo,
     ...urls
-  });
+  }).send(res);
 });
 
 // ==============================================================
@@ -618,7 +616,7 @@ app.get(API_ENDPOINTS_PATHS.DEBUG_INFO, authentication, (req, res) => {
  */
 app.get(API_ENDPOINTS.METRICS, authentication, (req, res) => {
   const metrics = getPerformanceMetrics();
-  successResponse(res, GENERAL_MESSAGES.SYSTEM_METRICS, metrics);
+  return new DataResponse(GENERAL_MESSAGES.SYSTEM_METRICS, metrics).send(res);
 });
 
 /**
@@ -650,7 +648,7 @@ app.get(API_ENDPOINTS.METRICS, authentication, (req, res) => {
  */
 app.get(API_ENDPOINTS.CACHE_STATS, authentication, (req, res) => {
   const cacheStats = getCacheStats();
-  successResponse(res, GENERAL_MESSAGES.CACHE_STATS, cacheStats);
+  return new DataResponse(GENERAL_MESSAGES.CACHE_STATS, cacheStats).send(res);
 });
 
 /**
@@ -682,17 +680,18 @@ app.get(API_ENDPOINTS.CACHE_STATS, authentication, (req, res) => {
  */
 app.post(API_ENDPOINTS.CACHE_CLEAR, authentication, (req, res) => {
   resetCacheStats();
-  logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.CACHE_CLEARED_BY_USER, {
+  const { logInfo } = require('./utils/log.utils.js');
+  logInfo(SYSTEM_MESSAGES.CACHE_CLEARED_BY_USER, {
     userId: req.user?.uid,
     timestamp: new Date().toISOString()
   });
-  successResponse(res, SYSTEM_MESSAGES.CACHE_CLEARED_SUCCESS);
+  return new SuccessResponse(SYSTEM_MESSAGES.CACHE_CLEARED_SUCCESS).send(res);
 });
 
 // Redirigir la ruta raíz a la documentación de la API
 app.get(API_ENDPOINTS.ROOT, (req, res, next) => {
   try {
-    logMessage(LOG_LEVELS.INFO, SYSTEM_MESSAGES.ROOT_REDIRECT);
+    logInfo(SYSTEM_MESSAGES.ROOT_REDIRECT);
     res.redirect(API_ENDPOINTS.API_ROOT);
   } catch (error) {
     next(new InternalServerError());
@@ -702,14 +701,14 @@ app.get(API_ENDPOINTS.ROOT, (req, res, next) => {
 // 🔍 Endpoint de debug para Vercel
 app.get(API_ENDPOINTS.DEBUG, (req, res, next) => {
   try {
-    successResponse(res, SYSTEM_MESSAGES.DEBUG_INFO, {
+    return new DataResponse(SYSTEM_MESSAGES.DEBUG_INFO, {
       nodeVersion: process.version,
       environment: process.env.NODE_ENV,
       isVercel: !!process.env.VERCEL,
       vercelUrl: process.env.VERCEL_URL,
       baseUrl: getBaseUrl(),
       headers: req.headers
-    });
+    }).send(res);
   } catch (error) {
     next(new InternalServerError());
   }
@@ -725,32 +724,68 @@ app.use((error, req, res, next) => {
   // Convertir errores nativos a AppError si es necesario
   let appError = error;
   if (!(error instanceof AppError)) {
-    if (error.code === DATABASE_ERROR_CODES.MONGODB_DUPLICATE_KEY || 
+    if (error.code === 11000 || // MongoDB duplicate key error
         error.name === 'ValidationError' || 
         error.name === 'CastError') {
       appError = formatDatabaseError(error);
     } else if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       appError = formatJWTError(error);
     } else {
-      appError = new InternalServerError(error.message || SERVICE_MESSAGES.INTERNAL_SERVER_ERROR_DEFAULT);
+      appError = new InternalServerError(error.message);
     }
   }
 
-  // Respuesta usando la estructura del AppError
-  res.status(appError.statusCode).json({
-    message: appError.message,
-    payload: {
-      statusCode: appError.statusCode,
-      timestamp: appError.timestamp,
-      path: req.originalUrl,
-      method: req.method,
-      ...(appError.details && { details: appError.details })
-    }
-  });
+  // Respuesta usando completamente el método toJSON() del AppError
+  const errorResponse = appError.toJSON();
+  
+  // Agregar información del request a la respuesta
+  errorResponse.path = req.originalUrl;
+  errorResponse.method = req.method;
+  
+  res.status(appError.statusCode).json(errorResponse);
 });
 
 // 🎧 Iniciar servidor
 app.listen(PORT, () => {
   const baseUrl = getBaseUrl();
-  logServerInfo(baseUrl, PORT);
+  const urls = getEndpointUrls(baseUrl);
+
+  // Log de inicio del servidor usando el sistema globalizado
+  logSystem('✅ Servidor iniciado exitosamente', {
+    port: PORT,
+    url: baseUrl,
+    environment: process.env.NODE_ENV,
+    pid: process.pid,
+    timestamp: new Date().toISOString()
+  });
+
+  // URLs principales (usar console.log directo para inicio del servidor)
+  if (process.env.ENABLE_CONSOLE_LOGS === 'true' || process.env.NODE_ENV === 'development') {
+    console.log(`🌐 Server running on ${baseUrl}`);
+    console.log(`📚 API Root: ${urls.api}`);
+    console.log(`📄 API Documentation: ${urls.documentation}`);
+    console.log(`🛍️ Products: ${urls.products}`);
+    console.log(`📊 Category Hierarchy: ${urls.categoryHierarchy}`);
+    console.log(`⚙️ System: ${urls.system}`);
+    console.log(`🗄️ Cache Stats: ${urls.cache}`);
+    console.log(`🩺 Health Check: ${urls.health}`);
+    console.log(`📈 Performance Metrics: ${urls.metrics}`);
+    console.log(`🐞 Debug: ${urls.debug}`);
+    console.log(`📜 OpenAPI Spec: ${urls.swagger}`);
+
+    // Información adicional según el entorno
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`\n🔧 Development Mode:`);
+      console.log(`   • Auto-reload: Active`);
+      console.log(`   • Debug logging: Enabled`);
+      console.log(`   • Cache TTL: Short for testing`);
+      console.log(`   • CORS: Permissive`);
+    } else {
+      console.log(`\n🚀 Production Mode:`);
+      console.log(`   • Optimizations: Active`);
+      console.log(`   • Compression: Enabled`);
+      console.log(`   • Cache: Long TTL`);
+      console.log(`   • Security: Enhanced`);
+    }
+  }
 });

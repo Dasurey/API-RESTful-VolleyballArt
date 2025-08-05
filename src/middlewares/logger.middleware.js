@@ -1,7 +1,7 @@
 const { EXTERNAL_PACKAGES, RELATIVE_PATHS, ENV_CONFIG, HTTP_STATUS, LOGGING } = require('../config/paths.config.js');
 const { LOGGING_MESSAGES } = require('../utils/messages.utils.js');
 const morgan = require(EXTERNAL_PACKAGES.MORGAN);
-const Logger = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
+const { Logger } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
 
 // Formato personalizado para Morgan que incluye más información útil
 const customFormat = LOGGING.MORGAN_FORMAT_CUSTOM;

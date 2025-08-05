@@ -2,7 +2,7 @@ const { EXTERNAL_PACKAGES, RELATIVE_PATHS, HTTP_STATUS, AUTHENTICATION, HTTP_HEA
 const { AUTH_MIDDLEWARE_MESSAGES } = require('../utils/messages.utils.js');
 const { verifyToken } = require('../config/jwt.config.js');
 const { AuthenticationError } = require('../utils/error.utils.js');
-const Logger = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
+const { Logger } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
 
 const authentication = (req, res, next) => {
   try {

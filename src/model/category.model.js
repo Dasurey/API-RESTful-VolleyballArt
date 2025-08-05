@@ -1,28 +1,14 @@
-const { RELATIVE_PATHS, EXTERNAL_PACKAGES, VERSION_MIDDLEWARE } = require('../config/paths.config.js');
-const { SYSTEM_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
-const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
-const { 
-  getDocumentById, 
-  executeFirebaseOperation
-} = require(RELATIVE_PATHS.FROM_MODEL.UTILS_FIREBASE);
-const { logMessage } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_RESPONSE);
-const { processQuery, getQueryProcessingInfo } = require(RELATIVE_PATHS.FROM_MODEL.UTILS_QUERY);
-const { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError, 
-  InternalServerError 
-} = require('../utils/error.utils.js');
+const { db } = require('../config/db.config');
 const {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  deleteDoc
-} = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
+  getDocumentById,
+  executeFirebaseOperation
+} = require('../utils/firebase.utils');
+const { logDatabase } = require('../utils/log.utils');
+const { processQuery, getQueryProcessingInfo } = require('../middlewares/query.middleware');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../utils/error.utils');
+const { collection, doc, getDoc, getDocs, setDoc, deleteDoc } = require('firebase/firestore');
 
-const COLLECTION_NAME = SYSTEM_MESSAGES.COLLECTION_CATEGORY;
+const COLLECTION_NAME = 'category';
 
 /**
  * Estructurar categoría padre con orden específico de campos
@@ -34,7 +20,7 @@ const structureParentCategory = (categoryData) => {
     id: categoryData.id,
     title: categoryData.title,
     subcategory: categoryData.subcategory || [],
-    [SERVICE_MESSAGES.IS_PARENT_FIELD]: true,
+    isParent: true,
     createdAt: categoryData.createdAt,
     updatedAt: categoryData.updatedAt
   };
@@ -53,7 +39,7 @@ const structureSubcategory = (subcategoryData) => {
       src: subcategoryData.img?.src,
       alt: subcategoryData.img?.alt
     } || [],
-    text: subcategoryData.text || VERSION_MIDDLEWARE.EMPTY_LINE,
+    text: subcategoryData.text || '',
     parentCategoryId: subcategoryData.parentCategoryId,
     createdAt: subcategoryData.createdAt,
     updatedAt: subcategoryData.updatedAt
@@ -69,29 +55,29 @@ const generateNextCategoryId = async () => {
     async () => {
       const categoryCollection = collection(db, COLLECTION_NAME);
       const snapshot = await getDocs(categoryCollection);
-      
+
       if (snapshot.empty) {
-        return SYSTEM_MESSAGES.CATEGORY_ID_INITIAL;
+        return 'CAT-0001-0000';
       }
-      
+
       // Obtener todas las categoria padre (terminan en -0000)
       let maxNumber = 0;
       snapshot.forEach((doc) => {
         const id = doc.id;
-        if (id.startsWith(SYSTEM_MESSAGES.CATEGORY_ID_PREFIX) && id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX)) {
-          const number = parseInt(id.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[1]);
+        if (id.startsWith('CAT-') && id.endsWith('-0000')) {
+          const number = parseInt(id.split('-')[1]);
           if (number > maxNumber) {
             maxNumber = number;
           }
         }
       });
-      
+
       const nextNumber = maxNumber + 1;
-      return `${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${nextNumber.toString().padStart(4, SYSTEM_MESSAGES.PADDING_ZERO)}${SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX}`;
+      return `CAT-${nextNumber.toString().padStart(4, '0')}-0000`;
     },
-    SYSTEM_MESSAGES.OPERATION_GENERATE_CATEGORY_ID_KEY,
+    'generateCategoryId',
     COLLECTION_NAME,
-    { operation: SYSTEM_MESSAGES.OPERATION_GENERATE_CATEGORY_ID }
+    { operation: 'generateParentCategoryId' }
   );
 };
 
@@ -104,31 +90,31 @@ const generateNextSubcategoryId = async (parentCategoryId) => {
   return executeFirebaseOperation(
     async () => {
       // Extraer el número de la categoría padre
-      const parentNumber = parentCategoryId.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[1];
-      
+      const parentNumber = parentCategoryId.split('-')[1];
+
       const categoryCollection = collection(db, COLLECTION_NAME);
       const snapshot = await getDocs(categoryCollection);
-      
+
       // Buscar todas las subcategoria de esta categoría padre
       let maxSubNumber = 0;
       snapshot.forEach((doc) => {
         const id = doc.id;
-        if (id.startsWith(`${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${parentNumber}${SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR}`) && !id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX)) {
-          const subNumber = parseInt(id.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[2]);
+        if (id.startsWith(`CAT-${parentNumber}-`) && !id.endsWith('-0000')) {
+          const subNumber = parseInt(id.split('-')[2]);
           if (subNumber > maxSubNumber) {
             maxSubNumber = subNumber;
           }
         }
       });
-      
+
       const nextSubNumber = maxSubNumber + 1;
-      return `${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${parentNumber}${SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR}${nextSubNumber.toString().padStart(4, SYSTEM_MESSAGES.PADDING_ZERO)}`;
+      return `CAT-${parentNumber}-${nextSubNumber.toString().padStart(4, '0')}`;
     },
-    SYSTEM_MESSAGES.OPERATION_GENERATE_SUBCATEGORY_ID_KEY,
+    'generateSubcategoryId',
     COLLECTION_NAME,
-    { 
-      operation: SYSTEM_MESSAGES.OPERATION_GENERATE_SUBCATEGORY_ID_KEY,
-      parentCategoryId 
+    {
+      operation: 'generateSubcategoryId',
+      parentCategoryId
     }
   );
 };
@@ -139,38 +125,38 @@ const generateNextSubcategoryId = async (parentCategoryId) => {
 const getAllCategory = async (queryProcessor = null) => {
   try {
     const categoryCollection = collection(db, COLLECTION_NAME);
-    
+
     // Por ahora, hacer consulta simple y aplicar filtros en memoria
     const snapshot = await getDocs(categoryCollection);
-    
+
     let allCategory = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      allCategory.push({ 
-        id: doc.id, 
+      allCategory.push({
+        id: doc.id,
         title: data.title,
         ...data
       });
     });
-    
+
     // Filtrar solo categoria padre (terminan en -0000)
-    let parentCategory = allCategory.filter(cat => cat.id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX));
-    
+    let parentCategory = allCategory.filter(cat => cat.id.endsWith('-0000'));
+
     // Aplicar procesamiento de consulta usando utilidades
     const processedCategories = processQuery(parentCategory, queryProcessor);
-    
+
     // Estructurar categorías con orden específico
     const structuredCategories = processedCategories.map(category => structureParentCategory(category));
 
     // Obtener información de procesamiento
     const processingInfo = getQueryProcessingInfo(queryProcessor);
 
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.CATEGORIES_PARENT_OBTAINED, {
+    logDatabase('📋 Categorías padre obtenidas', {
       totalCategory: structuredCategories.length,
       searchApplied: processingInfo.searchApplied,
       filtersApplied: processingInfo.filtersApplied
     });
-    
+
     return structuredCategories;
   } catch (error) {
     throw new InternalServerError(
@@ -189,50 +175,50 @@ const getCategoryById = async (categoryId) => {
     // Obtener la categoría principal directamente con Firebase v9+
     const docRef = doc(db, COLLECTION_NAME, categoryId);
     const docSnap = await getDoc(docRef);
-    
+
     if (!docSnap.exists()) {
       return null;
     }
-    
+
     const data = docSnap.data();
-    const category = { 
-      id: docSnap.id, 
+    const category = {
+      id: docSnap.id,
       title: data.title,
       ...data
     };
-    
+
     // Si es una categoría padre, obtener sus subcategoria
-    if (categoryId.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX)) {
-      const parentNumber = categoryId.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[1];
-      
+    if (categoryId.endsWith('-0000')) {
+      const parentNumber = categoryId.split('-')[1];
+
       // Obtener todas las categorías para filtrar subcategorías
       const categoryCollection = collection(db, COLLECTION_NAME);
       const snapshot = await getDocs(categoryCollection);
-      
+
       const allCategory = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        allCategory.push({ 
-          id: doc.id, 
+        allCategory.push({
+          id: doc.id,
           title: data.title,
           ...data
         });
       });
-      
+
       // Filtrar subcategoria de esta categoría padre
-      const subcategory = allCategory.filter(cat => 
-        cat.id.startsWith(`${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${parentNumber}${SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR}`) && !cat.id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX)
+      const subcategory = allCategory.filter(cat =>
+        cat.id.startsWith(`CAT-${parentNumber}-`) && !cat.id.endsWith('-0000')
       );
-      
+
       // Estructurar subcategorías con orden específico
       category.subcategory = subcategory.map(subcat => structureSubcategory(subcat));
-      
-      logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.CATEGORY_WITH_SUBCATEGORIES, {
+
+      logDatabase('📂 Categoría obtenida con subcategorías', {
         categoryId,
         subcategoryCount: subcategory.length
       });
     }
-    
+
     // Estructurar la categoría principal
     return structureParentCategory(category);
   } catch (error) {
@@ -250,43 +236,43 @@ const getCategoryById = async (categoryId) => {
  */
 const getSubcategoryByParent = async (parentCategoryId, queryProcessor = null) => {
   try {
-    const parentNumber = parentCategoryId.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[1];
-    
+    const parentNumber = parentCategoryId.split('-')[1];
+
     // Obtener todas las categorías directamente con Firebase v9+
     const categoryCollection = collection(db, COLLECTION_NAME);
     const snapshot = await getDocs(categoryCollection);
-    
+
     let allCategory = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      allCategory.push({ 
-        id: doc.id, 
+      allCategory.push({
+        id: doc.id,
         title: data.title,
         ...data
       });
     });
-    
+
     // Filtrar subcategorías de esta categoría padre
-    let subcategory = allCategory.filter(cat => 
-      cat.id.startsWith(`${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${parentNumber}${SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR}`) && !cat.id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX)
+    let subcategory = allCategory.filter(cat =>
+      cat.id.startsWith(`CAT-${parentNumber}-`) && !cat.id.endsWith('-0000')
     );
 
     // Aplicar procesamiento de consulta usando utilidades
     const processedSubcategories = processQuery(subcategory, queryProcessor);
-    
+
     // Estructurar subcategorías con orden específico
     const structuredSubcategories = processedSubcategories.map(subcat => structureSubcategory(subcat));
-    
+
     // Obtener información de procesamiento
     const processingInfo = getQueryProcessingInfo(queryProcessor);
-    
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.SUBCATEGORIES_OBTAINED, {
+
+    logDatabase('📂 Subcategorías obtenidas', {
       parentCategoryId,
       subcategoryCount: structuredSubcategories.length,
       searchApplied: processingInfo.searchApplied,
       filtersApplied: processingInfo.filtersApplied
     });
-    
+
     return structuredSubcategories;
   } catch (error) {
     throw new InternalServerError(
@@ -304,37 +290,37 @@ const getAllSubcategory = async (queryProcessor = null) => {
     // Obtener todas las categorías directamente con Firebase v9+
     const categoryCollection = collection(db, COLLECTION_NAME);
     const snapshot = await getDocs(categoryCollection);
-    
+
     let allCategory = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      allCategory.push({ 
-        id: doc.id, 
+      allCategory.push({
+        id: doc.id,
         title: data.title,
         ...data
       });
     });
-    
+
     // Filtrar solo subcategorías (no terminan en -0000)
-    let subcategory = allCategory.filter(cat => 
-      cat.id.startsWith(SYSTEM_MESSAGES.CATEGORY_ID_PREFIX) && !cat.id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX)
+    let subcategory = allCategory.filter(cat =>
+      cat.id.startsWith('CAT-') && !cat.id.endsWith('-0000')
     );
-    
+
     // Aplicar procesamiento de consulta usando utilidades
     const processedSubcategories = processQuery(subcategory, queryProcessor);
-    
+
     // Estructurar subcategorías con orden específico
     const structuredSubcategories = processedSubcategories.map(subcat => structureSubcategory(subcat));
-    
+
     // Obtener información de procesamiento
     const processingInfo = getQueryProcessingInfo(queryProcessor);
-    
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.SUBCATEGORIES_OBTAINED, {
+
+    logDatabase('📂 Subcategorías obtenidas', {
       subcategoryCount: structuredSubcategories.length,
       searchApplied: processingInfo.searchApplied,
       filtersApplied: processingInfo.filtersApplied
     });
-    
+
     return structuredSubcategories;
   } catch (error) {
     throw new InternalServerError(
@@ -352,35 +338,35 @@ const getAllSubcategory = async (queryProcessor = null) => {
 const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
   try {
     // Verificar que subcategoryId corresponde al parentCategoryId
-    const parentNumber = parentCategoryId.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[1];
-    if (!subcategoryId.startsWith(`${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${parentNumber}${SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR}`)) {
+    const parentNumber = parentCategoryId.split('-')[1];
+    if (!subcategoryId.startsWith(`CAT-${parentNumber}-`)) {
       return null;
     }
-    
+
     // Obtener documento directamente por ID
     const categoryRef = doc(db, COLLECTION_NAME, subcategoryId);
     const docSnap = await getDoc(categoryRef);
-    
+
     if (!docSnap.exists()) {
-      logMessage(SYSTEM_MESSAGES.LOG_LEVEL_WARN, SYSTEM_MESSAGES.CATEGORY_NOT_FOUND, {
+      logDatabase('🚨 Subcategoría no encontrada', {
         parentCategoryId,
         subcategoryId
       });
       return null;
     }
-    
+
     const data = docSnap.data();
-    const subcategory = { 
-      id: docSnap.id, 
+    const subcategory = {
+      id: docSnap.id,
       title: data.title,
       ...data
     };
-    
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.SUBCATEGORIES_OBTAINED, {
+
+    logDatabase('📂 Subcategorías obtenidas', {
       parentCategoryId,
       subcategoryId
     });
-    
+
     // Estructurar subcategoría con orden específico
     return structureSubcategory(subcategory);
   } catch (error) {
@@ -398,7 +384,7 @@ const getSubcategorySpecific = async (parentCategoryId, subcategoryId) => {
 const createCategory = async (categoryData) => {
   const newId = await generateNextCategoryId();
   const now = new Date().toISOString();
-  
+
   const categoryCollection = collection(db, COLLECTION_NAME);
   const categoryWithId = {
     title: categoryData.title,
@@ -406,22 +392,22 @@ const createCategory = async (categoryData) => {
     createdAt: now,
     updatedAt: now
   };
-  
+
   await setDoc(doc(categoryCollection, newId), categoryWithId);
-  
-  logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.CATEGORY_PARENT_CREATED, {
+
+  logDatabase('✅ Categoría padre creada exitosamente', {
     categoryId: newId,
     title: categoryData.title
   });
-  
-  const createdCategory = { 
-    id: newId, 
+
+  const createdCategory = {
+    id: newId,
     title: categoryData.title,
     ...categoryData,
     createdAt: now,
     updatedAt: now
   };
-  
+
   // Estructurar categoría con orden específico
   return structureParentCategory(createdCategory);
 };
@@ -437,10 +423,10 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
   if (!parentCategory) {
     throw new NotFoundError();
   }
-  
+
   const newId = await generateNextSubcategoryId(parentCategoryId);
   const now = new Date().toISOString();
-  
+
   const categoryCollection = collection(db, COLLECTION_NAME);
   const subcategoryWithId = {
     title: subcategoryData.title,
@@ -449,24 +435,24 @@ const createSubcategory = async (parentCategoryId, subcategoryData) => {
     createdAt: now,
     updatedAt: now
   };
-  
+
   await setDoc(doc(categoryCollection, newId), subcategoryWithId);
-  
-  logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.SUBCATEGORY_CREATED, {
+
+  logDatabase('✅ Subcategoría creada exitosamente', {
     subcategoryId: newId,
     parentCategoryId,
     title: subcategoryData.title
   });
-  
-  const createdSubcategory = { 
-    id: newId, 
+
+  const createdSubcategory = {
+    id: newId,
     title: subcategoryData.title,
     ...subcategoryData,
     parentCategoryId,
     createdAt: now,
     updatedAt: now
   };
-  
+
   // Estructurar subcategoría con orden específico
   return structureSubcategory(createdSubcategory);
 };
@@ -481,36 +467,36 @@ const updateCategory = async (categoryId, updateData) => {
     // Usar Firebase v9+ API directamente
     const categoryRef = doc(db, COLLECTION_NAME, categoryId);
     const categorySnap = await getDoc(categoryRef);
-    
+
     if (!categorySnap.exists()) {
       throw new NotFoundError();
     }
-    
+
     // Agregar updatedAt automáticamente
     const dataToUpdate = {
       ...updateData,
       updatedAt: new Date().toISOString()
     };
-    
+
     // Actualizar el documento
     await setDoc(categoryRef, dataToUpdate, { merge: true });
-    
+
     // Obtener el documento actualizado
     const updatedSnap = await getDoc(categoryRef);
     const updatedData = updatedSnap.data();
-    const updatedCategory = { 
-      id: updatedSnap.id, 
+    const updatedCategory = {
+      id: updatedSnap.id,
       title: updatedData.title,
       ...updatedData
     };
-    
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.CATEGORY_UPDATED, {
+
+    logDatabase('✅ Categoría actualizada exitosamente', {
       categoryId,
       updatedFields: Object.keys(updateData)
     });
-    
+
     // Determinar si es categoría padre o subcategoría y estructurar en consecuencia
-    if (categoryId.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX)) {
+    if (categoryId.endsWith('-0000')) {
       return structureParentCategory(updatedCategory);
     } else {
       return structureSubcategory(updatedCategory);
@@ -531,39 +517,39 @@ const updateCategory = async (categoryId, updateData) => {
 const deleteCategory = async (categoryId, options = {}) => {
   try {
     const { deleteSubcategory = false } = options;
-    
+
     // Verificar que la categoría existe
     const categoryRef = doc(db, COLLECTION_NAME, categoryId);
     const categorySnap = await getDoc(categoryRef);
-    
+
     if (!categorySnap.exists()) {
       throw new NotFoundError();
     }
-    
+
     // Si es una categoría padre y se especifica eliminar subcategorías
-    if (categoryId.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX) && deleteSubcategory) {
+    if (categoryId.endsWith('-0000') && deleteSubcategory) {
       const subcategory = await getSubcategoryByParent(categoryId);
-      
+
       // Eliminar todas las subcategorías primero usando Firebase v9+
       for (const subcat of subcategory) {
         const subcatRef = doc(db, COLLECTION_NAME, subcat.id);
         await deleteDoc(subcatRef);
       }
-      
-      logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.SUBCATEGORIES_DELETED, {
+
+      logDatabase('🗑️ Subcategorías eliminadas exitosamente', {
         parentCategoryId: categoryId,
         deletedCount: subcategory.length
       });
     }
-    
+
     // Eliminar la categoría principal usando Firebase v9+
     await deleteDoc(categoryRef);
-    
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.CATEGORY_DELETED, {
+
+    logDatabase('🗑️ Categoría eliminada exitosamente', {
       categoryId,
       deletedSubcategory: deleteSubcategory
     });
-    
+
     return true;
   } catch (error) {
     throw new InternalServerError(
@@ -580,53 +566,53 @@ const getCategoryHierarchy = async () => {
   try {
     const categoryCollection = collection(db, COLLECTION_NAME);
     const snapshot = await getDocs(categoryCollection);
-    
+
     const allCategory = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      allCategory.push({ 
-        id: doc.id, 
+      allCategory.push({
+        id: doc.id,
         title: data.title,
         ...data
       });
     });
-    
+
     // Separar categoria padre de subcategoria
-    const parentCategory = allCategory.filter(cat => cat.id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX));
+    const parentCategory = allCategory.filter(cat => cat.id.endsWith('-0000'));
     const subcategoryMap = new Map();
-    
+
     // Agrupar subcategoria por categoría padre
     allCategory
-      .filter(cat => !cat.id.endsWith(SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX))
+      .filter(cat => !cat.id.endsWith('-0000'))
       .forEach(subcat => {
-        const parentNumber = subcat.id.split(SYSTEM_MESSAGES.CATEGORY_ID_SEPARATOR)[1];
-        const parentId = `${SYSTEM_MESSAGES.CATEGORY_ID_PREFIX}${parentNumber}${SYSTEM_MESSAGES.CATEGORY_ID_SUFFIX}`;
-        
+        const parentNumber = subcat.id.split('-')[1];
+        const parentId = `CAT-${parentNumber}-0000`;
+
         if (!subcategoryMap.has(parentId)) {
           subcategoryMap.set(parentId, []);
         }
         subcategoryMap.get(parentId).push(subcat);
       });
-    
+
     // Combinar categoria padre con sus subcategoria manteniendo el orden correcto
     const hierarchy = parentCategory.map(parent => {
       const subcategories = subcategoryMap.get(parent.id) || [];
-      
+
       // Estructurar subcategorías
       const structuredSubcategories = subcategories.map(subcat => structureSubcategory(subcat));
-      
+
       // Estructurar categoría padre
       return structureParentCategory({
         ...parent,
         subcategory: structuredSubcategories
       });
     });
-    
-    logMessage(SYSTEM_MESSAGES.LOG_LEVEL_INFO, SYSTEM_MESSAGES.CATEGORY_HIERARCHY_OBTAINED, {
+
+    logDatabase('🌳 Jerarquía de categoría obtenida exitosamente', {
       totalParentCategory: parentCategory.length,
       totalSubcategory: allCategory.length - parentCategory.length
     });
-    
+
     return hierarchy;
   } catch (error) {
     throw new InternalServerError(

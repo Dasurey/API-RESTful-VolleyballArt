@@ -51,7 +51,7 @@ const PATHS = {
     CONFIG: {
         DATABASE: './config/db.config.js',
         JWT: './config/jwt.config.js',
-        LOGGER: './config/logger.config.js',
+        LOGGER: './utils/log.utils.js',
         SECURITY: './config/security.config.js',
         OPTIMIZATION: './config/optimization.config.js',
         CACHE: './config/cache.config.js',
@@ -232,19 +232,16 @@ const NODE_EVENTS = {
     UNHANDLED_REJECTION: 'unhandledRejection'
 };
 
-// Niveles de logging
-const LOG_LEVELS = {
-    ERROR: 'error',
-    INFO: 'info',
-    WARN: 'warn',
-    DEBUG: 'debug'
-};
-
 // Valores booleanos y números comunes
 const COMMON_VALUES = {
     PROCESS_EXIT_CODE: 1,
     DEFAULT_STATUS_CODE: 200,
     SERVER_ERROR_CODE: 500
+};
+
+const LOG_FILES = {
+    ERROR_LOG_FILE: 'logs/error.log',
+    COMBINED_LOG_FILE: 'logs/combined.log'
 };
 
 // Variables de entorno
@@ -292,8 +289,7 @@ const RELATIVE_PATHS = {
         CONFIG_JWT: '../config/jwt.config.js',
         CONFIG_CACHE: '../config/cache.config.js',
         UTILS_FIREBASE: '../utils/firebase.utils.js',
-        UTILS_RESPONSE: '../utils/response.utils.js',
-        UTILS_QUERY: '../utils/query.utils.js'
+        UTILS_RESPONSE: '../utils/response.utils.js'
     },
 
     // Desde controllers/ hacia otros directorios  
@@ -311,7 +307,7 @@ const RELATIVE_PATHS = {
         UTILS_URL: '../utils/url.utils.js'
     },
     FROM_MIDDLEWARES: {
-        CONFIG_LOGGER: '../config/logger.config.js',
+        CONFIG_LOGGER: '../utils/log.utils.js',
         CONFIG_API_VERSIONS: '../config/apiVersions.config.js',
         CONFIG_CACHE: '../config/cache.config.js',
         UTILS_MESSAGES: '../utils/messages.utils.js'
@@ -319,7 +315,7 @@ const RELATIVE_PATHS = {
 
     // Desde utils/ hacia otros directorios
     FROM_UTILS: {
-        CONFIG_LOGGER: '../config/logger.config.js',
+        CONFIG_LOGGER: './log.utils.js',
         CONFIG_SWAGGER: '../config/swagger.config.js',
         RESPONSE_UTILS: './response.utils.js',
         FIREBASE_UTILS: './firebase.utils.js',
@@ -352,14 +348,6 @@ const RELATIVE_PATHS = {
         CONFIG_OPTIMIZATION: '../config/optimization.config.js'
     },
     ERROR_UTILS: './error.utils.js'
-};
-
-// Formatos y separadores
-const FORMAT_PATTERNS = {
-    LOG_TIMESTAMP: '[${timestamp}] ${level.toUpperCase()}: ${message}',
-    COLON_SEPARATOR: ':',
-    NEWLINE: '\n',
-    BULLET_INDENT: '   • '
 };
 
 // Constantes específicas para version middleware
@@ -497,7 +485,6 @@ const CACHE = {
     NO_STORE_SURROGATE: 'no-store',
 
     // Separadores para cache keys
-    KEY_SEPARATOR: ':',
     QUERY_SEPARATOR: '&',
     QUERY_PREFIX: '?',
     USER_PREFIX: ':user:',
@@ -558,11 +545,9 @@ module.exports = {
     HTTP_METHODS,
     HTTP_STATUS,
     NODE_EVENTS,
-    LOG_LEVELS,
     COMMON_VALUES,
     ENV_VARIABLES,
     CONFIG_VALUES,
-    FORMAT_PATTERNS,
     VALIDATION_TYPES,
     VERSION_MIDDLEWARE,
     SANITIZATION,
@@ -574,5 +559,6 @@ module.exports = {
     CACHE_CONFIG,
     PAGINATION_CONFIG,
     API_ENDPOINTS_PATHS,
-    HEALTH_PATHS
+    HEALTH_PATHS,
+    LOG_FILES
 };

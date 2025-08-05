@@ -16,16 +16,10 @@ const path = require('path');
 const { createGzip, createGunzip } = require('zlib');
 const { pipeline } = require('stream/promises');
 const { createReadStream, createWriteStream } = require('fs');
-const { RELATIVE_PATHS, BACKUP_CONFIG } = require('../config/paths.config.js');
-const { BACKUP_MESSAGES, SYSTEM_MESSAGES } = require('./messages.utils.js');
 const { collection, getDocs } = require('firebase/firestore');
 const { db } = require('../config/db.config.js');
-const { 
-  ConflictError, 
-  NotFoundError, 
-  ValidationError, 
-  InternalServerError 
-} = require('./error.utils.js');
+const { ConflictError, NotFoundError, ValidationError, InternalServerError } = require('./error.utils.js');
+const { logError, logWarn, logSystem } = require('./log.utils.js');
 
 /**
  * Estado del sistema de backup
@@ -52,7 +46,7 @@ async function createFullBackup(options = {}) {
     const backupId = `full_${Date.now()}`;
     const timestamp = new Date().toISOString();
     
-    console.log(`🗄️ ${BACKUP_MESSAGES.STARTING_FULL_BACKUP} ${backupId}`);
+    console.log(`🗄️ Iniciando backup completo: ${backupId}`);
     
     if (backupState.backupInProgress) {
         throw new ConflictError();
@@ -73,10 +67,10 @@ async function createFullBackup(options = {}) {
         };
         
         // Backup de todas las colecciones principales
-        const collections = ['products', 'categories', 'users', 'orders'];
+        const collections = ['products', 'category', 'users', 'orders'];
         
         for (const collectionName of collections) {
-            console.log(`📦 ${BACKUP_MESSAGES.BACKING_UP_COLLECTION} ${collectionName}`);
+            console.log(`📦 Realizando backup de colección: ${collectionName}`);
             
             try {
                 const collectionRef = collection(db, collectionName);
@@ -94,7 +88,7 @@ async function createFullBackup(options = {}) {
                     }))
                 };
                 
-                console.log(`✅ ${BACKUP_MESSAGES.COLLECTION_BACKED_UP} ${collectionName}: ${snapshot.size} documentos`);
+                console.log(`✅ Colección respaldada exitosamente ${collectionName}: ${snapshot.size} documentos`);
             } catch (error) {
                 // Crear warning estructurado pero continuar con otras colecciones
                 const backupWarning = new InternalServerError(undefined, {
@@ -103,7 +97,7 @@ async function createFullBackup(options = {}) {
                     backupId,
                     originalError: error.message
                 });
-                console.warn(`${BACKUP_MESSAGES.COLLECTION_BACKUP_FAILED} ${collectionName}:`, backupWarning);
+                console.warn(`⚠️ Error al respaldar colección ${collectionName}:`, backupWarning);
                 backupData.collections[collectionName] = {
                     error: error.message,
                     count: 0,
@@ -137,9 +131,9 @@ async function createFullBackup(options = {}) {
             await cleanupOldBackups();
         }
         
-        console.log(`✅ ${BACKUP_MESSAGES.FULL_BACKUP_COMPLETED} ${backupId}`);
-        console.log(`📊 ${BACKUP_MESSAGES.BACKUP_SIZE}: ${formatBytes(backupRecord.size)}`);
-        console.log(`⏱️ ${BACKUP_MESSAGES.BACKUP_DURATION}: ${backupRecord.duration}ms`);
+        console.log(`💾 Backup completo creado exitosamente: ${backupId}`);
+        console.log(`📊 Tamaño del backup: ${formatBytes(backupRecord.size)}`);
+        console.log(`⏱️ Duración del backup: ${backupRecord.duration}ms`);
         
         return backupRecord;
         
@@ -160,15 +154,15 @@ async function createFullBackup(options = {}) {
 async function createIncrementalBackup(options = {}) {
     const backupId = `incremental_${Date.now()}`;
     const timestamp = new Date().toISOString();
-    
-    console.log(`📈 ${BACKUP_MESSAGES.STARTING_INCREMENTAL_BACKUP} ${backupId}`);
-    
+
+    console.log(`📈 Iniciando backup incremental: ${backupId}`);
+
     if (backupState.backupInProgress) {
         throw new ConflictError();
     }
     
     if (!backupState.lastBackup) {
-        console.log(`ℹ️ ${BACKUP_MESSAGES.NO_PREVIOUS_BACKUP_FULL}`);
+        console.log(`ℹ️ No hay backup previo, realizando backup completo`);
         return await createFullBackup(options);
     }
     
@@ -191,7 +185,7 @@ async function createIncrementalBackup(options = {}) {
         };
         
         // Backup incremental de colecciones (simulado - en producción usarías timestamps)
-        const collections = ['products', 'categories', 'users', 'orders'];
+        const collections = ['products', 'category', 'users', 'orders'];
         
         for (const collectionName of collections) {
             try {
@@ -216,7 +210,7 @@ async function createIncrementalBackup(options = {}) {
                     }))
                 };
                 
-                console.log(`📈 ${BACKUP_MESSAGES.INCREMENTAL_COLLECTION_BACKED_UP} ${collectionName}: ${recentDocuments.length} documentos`);
+                console.log(`📈 Backup incremental de colección ${collectionName}: ${recentDocuments.length} documentos`);
             } catch (error) {
                 // Crear warning estructurado pero continuar con otras colecciones
                 const incrementalBackupWarning = new InternalServerError(undefined, {
@@ -225,7 +219,7 @@ async function createIncrementalBackup(options = {}) {
                     backupId,
                     originalError: error.message
                 });
-                console.warn(`${BACKUP_MESSAGES.COLLECTION_BACKUP_FAILED} ${collectionName}:`, incrementalBackupWarning);
+                console.warn(`⚠️ Error al respaldar colección ${collectionName}:`, incrementalBackupWarning);
                 backupData.collections[collectionName] = {
                     error: error.message,
                     count: 0,
@@ -255,7 +249,7 @@ async function createIncrementalBackup(options = {}) {
         backupState.stats.totalBackups++;
         backupState.stats.successfulBackups++;
         
-        console.log(`✅ ${BACKUP_MESSAGES.INCREMENTAL_BACKUP_COMPLETED} ${backupId}`);
+        console.log(`✅ Backup incremental finalizado: ${backupId}`);
         
         return backupRecord;
         
@@ -316,7 +310,7 @@ async function saveBackupToFile(backupData, backupId, compress = true) {
 async function recoverFromBackup(backupId, options = {}) {
     const timestamp = new Date().toISOString();
     
-    console.log(`🔄 ${BACKUP_MESSAGES.STARTING_RECOVERY} ${backupId}`);
+    console.log(`🔄 Iniciando recuperación para backup: ${backupId}`);
     
     try {
         // Buscar backup
@@ -333,7 +327,7 @@ async function recoverFromBackup(backupId, options = {}) {
             throw new ValidationError();
         }
         
-        console.log(`📊 ${BACKUP_MESSAGES.BACKUP_VALIDATION_SUCCESS}`);
+        console.log(`📊 Validación de backup exitosa`);
         
         // Proceso de recovery
         const recoveryStats = {
@@ -344,21 +338,21 @@ async function recoverFromBackup(backupId, options = {}) {
         
         for (const [collectionName, collectionData] of Object.entries(backupData.collections)) {
             if (collectionData.error) {
-                // Crear warning estructurado para colección con error previo
-                const skipWarning = new ValidationError(undefined, {
+                // Log warning usando sistema global para colección con error previo
+                logWarn(`⚠️ Omitiendo colección con errores: ${collectionName}`, {
                     operation: 'skipCollectionWithError',
                     collection: collectionName,
                     backupId,
-                    previousError: collectionData.error
-                });
-                console.warn(`${BACKUP_MESSAGES.SKIPPING_COLLECTION_ERROR} ${collectionName}:`, skipWarning);
+                    previousError: collectionData.error,
+                    context: 'backup_recovery'
+                }, 'SYSTEM');
                 continue;
             }
             
             try {
                 if (!options.dryRun) {
                     // En un sistema real, aquí restaurarías los documentos a Firebase
-                    console.log(`🔄 ${BACKUP_MESSAGES.RESTORING_COLLECTION} ${collectionName} (${collectionData.count} documentos)`);
+                    console.log(`🔄 Restaurando colección: ${collectionName} (${collectionData.count} documentos)`);
                     
                     // Simulación del proceso de restauración
                     await new Promise(resolve => setTimeout(resolve, 100 * collectionData.count));
@@ -371,17 +365,17 @@ async function recoverFromBackup(backupId, options = {}) {
                 
                 recoveryStats.totalDocuments += collectionData.count;
                 
-                console.log(`✅ ${BACKUP_MESSAGES.COLLECTION_RESTORED} ${collectionName}: ${collectionData.count} documentos`);
+                console.log(`✅ Colección restaurada exitosamente: ${collectionName} ${collectionData.count} documentos`);
                 
             } catch (error) {
-                // Crear error estructurado pero solo log - continuar con otras colecciones
-                const restoreError = new InternalServerError(undefined, {
+                // Log error usando sistema global - continuar con otras colecciones
+                logError(`❌ Error al restaurar colección ${collectionName}`, {
                     operation: 'restoreCollection',
                     collection: collectionName,
                     originalError: error.message,
-                    backupId
-                });
-                console.error(`${BACKUP_MESSAGES.COLLECTION_RESTORE_FAILED} ${collectionName}:`, restoreError.details);
+                    backupId,
+                    context: 'backup_recovery'
+                }, 'ERROR');
                 recoveryStats.collections[collectionName] = {
                     restored: 0,
                     status: 'failed',
@@ -407,12 +401,12 @@ async function recoverFromBackup(backupId, options = {}) {
         
         if (recoveryRecord.status === 'completed') {
             backupState.stats.successfulRecoveries++;
-            console.log(`✅ ${BACKUP_MESSAGES.RECOVERY_COMPLETED} ${backupId}`);
+            console.log(`✅ Recuperación completada para backup: ${backupId}`);
         } else {
-            console.log(`⚠️ ${BACKUP_MESSAGES.RECOVERY_PARTIAL} ${backupId}`);
+            console.log(`⚠️ Recuperación parcial completada para backup: ${backupId}`);
         }
         
-        console.log(`📊 ${BACKUP_MESSAGES.RECOVERY_STATS}: ${recoveryStats.totalDocuments} documentos restaurados`);
+        console.log(`📊 Estadísticas de recuperación: ${recoveryStats.totalDocuments} documentos restaurados`);
         
         return recoveryRecord;
         
@@ -492,7 +486,7 @@ async function cleanupOldBackups() {
     const maxBackups = 10; // Mantener máximo 10 backups
     const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 días en millisegundos
     
-    console.log(`🧹 ${BACKUP_MESSAGES.CLEANING_OLD_BACKUPS}`);
+    console.log(`🧹 Limpiando backups antiguos`);
     
     try {
         const now = Date.now();
@@ -511,7 +505,7 @@ async function cleanupOldBackups() {
         for (const backup of backupsToDelete) {
             try {
                 await fs.unlink(backup.path);
-                console.log(`🗑️ ${BACKUP_MESSAGES.BACKUP_DELETED}: ${backup.id}`);
+                console.log(`🗑️ Backup eliminado exitosamente: ${backup.id}`);
                 
                 // Remover del historial
                 const index = backupState.backupHistory.indexOf(backup);
@@ -519,27 +513,27 @@ async function cleanupOldBackups() {
                     backupState.backupHistory.splice(index, 1);
                 }
             } catch (error) {
-                // Crear warning estructurado para fallo al eliminar backup individual
-                const deleteWarning = new InternalServerError(undefined, {
+                // Log warning usando sistema global para fallo al eliminar backup individual
+                logWarn(`❌ Error al eliminar backup ${backup.id}`, {
                     operation: 'deleteIndividualBackup',
                     backupId: backup.id,
                     backupPath: backup.path,
-                    originalError: error.message
-                });
-                console.warn(`${BACKUP_MESSAGES.BACKUP_DELETE_FAILED} ${backup.id}:`, deleteWarning);
+                    originalError: error.message,
+                    context: 'backup_cleanup'
+                }, 'SYSTEM');
             }
         }
         
-        console.log(`✅ ${BACKUP_MESSAGES.CLEANUP_COMPLETED}: ${backupsToDelete.length} backups eliminados`);
+        console.log(`BACKUP_MESSAGES: ${backupsToDelete.length} backups eliminados`);
         
     } catch (error) {
-        // Crear error estructurado pero solo log - operación de limpieza no crítica
-        const cleanupError = new InternalServerError(undefined, {
+        // Log error usando sistema global - operación de limpieza no crítica
+        logError(`❌ Error al limpiar backups antiguos`, {
             operation: 'cleanupOldBackups',
             originalError: error.message,
-            backupStats: backupState.stats
-        });
-        console.error(BACKUP_MESSAGES.CLEANUP_FAILED, cleanupError);
+            backupStats: backupState.stats,
+            context: 'backup_cleanup'
+        }, 'SYSTEM');
     }
 }
 
@@ -573,21 +567,21 @@ function getBackupStats() {
  * Programar backup automático
  */
 function scheduleAutomaticBackup(intervalHours = 24) {
-    console.log(`⏰ ${BACKUP_MESSAGES.SCHEDULING_AUTOMATIC_BACKUP} cada ${intervalHours} horas`);
+    console.log(`⏰ Programando backup automático cada ${intervalHours} horas`);
     
     setInterval(async () => {
         try {
-            console.log(`🤖 ${BACKUP_MESSAGES.STARTING_AUTOMATIC_BACKUP}`);
+            console.log(`🤖 Iniciando backup automático programado`);
             await createIncrementalBackup({ autoCleanup: true });
         } catch (error) {
-            // Crear error estructurado pero solo log - backups automáticos no deben interrumpir aplicación
-            const automaticBackupError = new InternalServerError(undefined, {
+            // Log error usando sistema global - backups automáticos no deben interrumpir aplicación
+            logError('❌ Error en backup automático', {
                 operation: 'scheduleAutomaticBackup',
                 intervalHours,
                 originalError: error.message,
-                timestamp: new Date().toISOString()
-            });
-            console.error(BACKUP_MESSAGES.AUTOMATIC_BACKUP_FAILED, automaticBackupError);
+                timestamp: new Date().toISOString(),
+                context: 'automatic_backup'
+            }, 'SYSTEM');
         }
     }, intervalHours * 60 * 60 * 1000);
 }

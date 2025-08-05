@@ -1,9 +1,17 @@
-const { RELATIVE_PATHS, HTTP_STATUS } = require('../config/paths.config.js');
-const { ASYNC_UTILS_CONSTANTS } = require('./messages.utils.js');
-const { InternalServerError } = require(RELATIVE_PATHS.ERROR_UTILS);
+/**
+ * 🔄 Utilidades para Manejo de Código Asíncrono
+ * 
+ * Este archivo proporciona wrappers para capturar errores async/await
+ * y agregar contexto útil sin modificar los errores originales.
+ * 
+ * Responsabilidades:
+ * - Capturar errores en funciones asíncronas
+ * - Agregar contexto (controlador, servicio, requestId)
+ * - Pasar errores al middleware global de manejo de errores
+ */
 
 /**
- * Wrapper para funciones async que automáticamente captura errores
+ * Wrapper básico para funciones async que automáticamente captura errores
  * y los pasa al middleware de manejo de errores
  */
 const asyncHandler = (fn) => {
@@ -13,53 +21,43 @@ const asyncHandler = (fn) => {
 };
 
 /**
- * Wrapper más específico para controladores con logging mejorado
+ * Wrapper para controladores con contexto adicional
  */
-const controllerWrapper = (fn, controllerName = ASYNC_UTILS_CONSTANTS.UNKNOWN_DEFAULT) => {
-  return asyncHandler(async (req, res, next) => {
-    try {
-      await fn(req, res, next);
-    } catch (error) {
-      // Agregar contexto del controlador al error
-      if (error.isOperational !== true) {
-        error.controllerContext = controllerName;
-        error.requestId = req.id || `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-      }
-      throw new InternalServerError(undefined, {
-        operation: 'controllerWrapper',
-        controllerName,
-        requestId: req.id,
-        originalError: error.message
-      });
-    }
-  });
+const controllerWrapper = (fn, controllerName = 'Unknown') => {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch((error) => {
+      // Agregar contexto del controlador sin modificar el error original
+      error.controllerContext = controllerName;
+      error.requestId = req.id || generateRequestId();
+      
+      // Pasar el error al middleware global de manejo de errores
+      next(error);
+    });
+  };
 };
 
 /**
  * Wrapper para servicios de base de datos
+ * Solo agrega contexto y re-lanza el error para que error.utils.js lo maneje
  */
-const dbServiceWrapper = (fn, serviceName = ASYNC_UTILS_CONSTANTS.UNKNOWN_DEFAULT) => {
+const dbServiceWrapper = (fn, serviceName = 'Unknown') => {
   return async (...args) => {
     try {
       return await fn(...args);
     } catch (error) {
-      // Agregar contexto del servicio al error
-      if (!error.isOperational) {
-        error.serviceContext = serviceName;
-        error.serviceArgs = args.length > 0 ? JSON.stringify(args) : null;
-      }
-      throw new InternalServerError(undefined, {
-        operation: 'dbServiceWrapper',
-        serviceName,
-        serviceArgs: args.length > 0 ? JSON.stringify(args) : null,
-        originalError: error.message
-      });
+      // Agregar contexto del servicio sin modificar el error original
+      error.serviceContext = serviceName;
+      error.serviceArgs = args.length > 0 ? JSON.stringify(args).slice(0, 200) : null;
+      
+      // Re-lanzar el error original para que error.utils.js lo maneje globalmente
+      throw error;
     }
   };
 };
 
 /**
- * Función para validar y lanzar errores de validación
+ * Función de utilidad para validar condiciones y lanzar errores
+ * (sin crear nuevos errores, solo para conveniencia)
  */
 const validateAndThrow = (condition, ErrorClass, message, details = null) => {
   if (condition) {
@@ -68,66 +66,34 @@ const validateAndThrow = (condition, ErrorClass, message, details = null) => {
 };
 
 /**
- * Función para crear respuestas de error consistentes
+ * Generar ID único para requests
  */
-const createErrorResponse = (error, req) => {
-  const isProduction = process.env.NODE_ENV === ASYNC_UTILS_CONSTANTS.PRODUCTION_ENV;
-  
-  return {
-    message: error.message,
-    payload: {
-      statusCode: error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR,
-      errorCode: error.code || ASYNC_UTILS_CONSTANTS.UNKNOWN_ERROR_CODE,
-      timestamp: error.timestamp || new Date().toISOString(),
-      path: req.originalUrl,
-      method: req.method,
-      requestId: req.id,
-      ...(error.details && { details: error.details }),
-      ...(!isProduction && {
-        development: {
-          stack: error.stack,
-          isOperational: error.isOperational
-        }
-      })
-    }
-  };
+const generateRequestId = () => {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 };
 
 /**
  * Middleware para agregar IDs únicos a las requests
  */
 const requestIdMiddleware = (req, res, next) => {
-  req.id = `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-  res.setHeader(ASYNC_UTILS_CONSTANTS.X_REQUEST_ID_HEADER, req.id);
+  req.id = generateRequestId();
+  res.setHeader('X-Request-ID', req.id);
   next();
 };
 
 /**
- * Función para logear errores de manera consistente
+ * Wrapper simple para promesas que necesitan contexto adicional
+ * Solo agrega contexto y re-lanza el error
  */
-const logError = (error, req, logger) => {
-  const logData = {
-    message: error.message,
-    errorCode: error.code || ASYNC_UTILS_CONSTANTS.UNKNOWN_ERROR_CODE,
-    statusCode: error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR,
-    requestId: req.id,
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip,
-    userAgent: req.get(ASYNC_UTILS_CONSTANTS.USER_AGENT_HEADER),
-    userId: req.user?.id || ASYNC_UTILS_CONSTANTS.ANONYMOUS_USER,
-    timestamp: error.timestamp || new Date().toISOString(),
-    isOperational: error.isOperational || false,
-    ...(error.details && { details: error.details }),
-    ...(error.stack && { stack: error.stack })
-  };
-
-  if (error.statusCode >= HTTP_STATUS.INTERNAL_SERVER_ERROR) {
-    logger.error(ASYNC_UTILS_CONSTANTS.SERVER_ERROR_MESSAGE, logData);
-  } else if (error.statusCode >= HTTP_STATUS.BAD_REQUEST) {
-    logger.warn(ASYNC_UTILS_CONSTANTS.CLIENT_ERROR_MESSAGE, logData);
-  } else {
-    logger.info(ASYNC_UTILS_CONSTANTS.ERROR_INFO_MESSAGE, logData);
+const withContext = async (fn, context = {}) => {
+  try {
+    return await fn();
+  } catch (error) {
+    // Agregar contexto proporcionado al error
+    Object.assign(error, context);
+    
+    // Re-lanzar el error para que error.utils.js lo maneje globalmente
+    throw error;
   }
 };
 
@@ -136,7 +102,7 @@ module.exports = {
   controllerWrapper,
   dbServiceWrapper,
   validateAndThrow,
-  createErrorResponse,
   requestIdMiddleware,
-  logError
+  generateRequestId,
+  withContext
 };

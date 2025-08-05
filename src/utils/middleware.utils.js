@@ -1,124 +1,24 @@
-const { RELATIVE_PATHS, LOG_LEVELS, HTTP_HEADERS, HTTP_STATUS, CONFIG_VALUES } = require('../config/paths.config.js');
-const { LOG_MESSAGES, SYSTEM_MESSAGES, SERVICE_MESSAGES } = require('./messages.utils.js');
-const { logMessage } = require(RELATIVE_PATHS.FROM_UTILS.RESPONSE_UTILS);
-const { ValidationError, AuthenticationError, InternalServerError } = require('./error.utils.js');
-
+const { logAndExecute } = require('./log.utils');
 /**
  * Utilidades específicas para middlewares
- */
-
-/**
- * Wrapper para logging de requests con metadata estándar
- * @param {Object} req - Request object
- * @param {string} message - Mensaje del log
- * @param {string} level - Nivel del log (info, warn, error)
- * @param {Object} additionalData - Datos adicionales
- */
-function logRequest(req, message, level = LOG_LEVELS.INFO, additionalData = {}) {
-    const requestData = {
-        method: req.method,
-        url: req.originalUrl || req.url,
-        ip: req.ip || req.connection?.remoteAddress,
-        userAgent: req.get(HTTP_HEADERS.USER_AGENT),
-        contentType: req.get(HTTP_HEADERS.CONTENT_TYPE),
-        contentLength: req.get(HTTP_HEADERS.CONTENT_LENGTH),
-        ...additionalData
-    };
-
-    logMessage(level, message, requestData);
-}
-
-/**
- * Wrapper para logging de responses con metadata estándar
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @param {string} message - Mensaje del log
- * @param {string} level - Nivel del log
- * @param {Object} additionalData - Datos adicionales
- */
-function logResponse(req, res, message, level = LOG_LEVELS.INFO, additionalData = {}) {
-    const responseData = {
-        method: req.method,
-        url: req.originalUrl || req.url,
-        statusCode: res.statusCode,
-        ip: req.ip || req.connection?.remoteAddress,
-        responseTime: res.locals?.responseTime || null,
-        ...additionalData
-    };
-
-    logMessage(level, message, responseData);
-}
-
-/**
- * Crear un middleware de logging genérico
- * @param {string} middlewareName - Nombre del middleware
- * @param {Object} options - Opciones del middleware
- */
-function createLoggingMiddleware(middlewareName, options = {}) {
-    const {
-        logRequests = true,
-        logResponses = true,
-        includeBody = false,
-        includeHeaders = false
-    } = options;
-
-    return (req, res, next) => {
-        const startTime = Date.now();
-
-        if (logRequests) {
-            const requestData = {
-                middleware: middlewareName
-            };
-
-            if (includeBody) {
-                requestData.body = req.body;
-            }
-
-            if (includeHeaders) {
-                requestData.headers = req.headers;
-            }
-
-            logRequest(req, `${SYSTEM_MESSAGES.MIDDLEWARE_REQUEST_INCOMING} [${middlewareName.toUpperCase()}]`, LOG_LEVELS.INFO, requestData);
-        }
-
-        // Interceptar el final de la respuesta
-        if (logResponses) {
-            const originalEnd = res.end;
-            res.end = function (...args) {
-                const endTime = Date.now();
-                const responseTime = endTime - startTime;
-
-                logResponse(req, res, `${SYSTEM_MESSAGES.MIDDLEWARE_RESPONSE_SENT} [${middlewareName.toUpperCase()}]`, LOG_LEVELS.INFO, {
-                    middleware: middlewareName,
-                    responseTime: `${responseTime}${CONFIG_VALUES.TIME_UNIT_MS}`
-                });
-
-                // Llamar al método original
-                originalEnd.apply(this, args);
-            };
-        }
-
-        next();
-    };
-}
+*/
 
 /**
  * Wrapper para operaciones async en middlewares
  * @param {Function} asyncFn - Función async del middleware
  * @param {string} middlewareName - Nombre del middleware para logging
  */
-function asyncMiddleware(asyncFn, middlewareName = CONFIG_VALUES.UNKNOWN) {
+function asyncMiddleware(asyncFn, middlewareName = 'unknown') {
     return (req, res, next) => {
         Promise.resolve(asyncFn(req, res, next))
             .catch(error => {
-                logMessage(LOG_LEVELS.ERROR, `${SYSTEM_MESSAGES.MIDDLEWARE_ASYNC_ERROR} [${middlewareName.toUpperCase()}]`, {
+                logAndExecute('error', `🚨 Async middleware error [${middlewareName.toUpperCase()}]`, {
                     middleware: middlewareName,
                     error: error.message,
                     stack: error.stack,
                     url: req.originalUrl || req.url,
                     method: req.method
-                });
-
+                }, 'ERROR');
                 next(error);
             });
     };
@@ -131,9 +31,9 @@ function asyncMiddleware(asyncFn, middlewareName = CONFIG_VALUES.UNKNOWN) {
  */
 function createCacheMiddleware(cacheManager, options = {}) {
     const {
-        ttl = HTTP_STATUS.MULTIPLE_CHOICES,
+        ttl = 300,
         keyGenerator = null,
-        middlewareName = CONFIG_VALUES.CACHE_DEFAULT_NAME
+        middlewareName = 'cache'
     } = options;
 
     return (req, res, next) => {
@@ -141,12 +41,12 @@ function createCacheMiddleware(cacheManager, options = {}) {
         const cachedData = cacheManager.get(cacheKey);
 
         if (cachedData) {
-            logMessage(LOG_LEVELS.DEBUG, `${SYSTEM_MESSAGES.CACHE_HIT} [${middlewareName.toUpperCase()}]`, {
+            logAndExecute('debug', `🎯 Cache HIT [${middlewareName.toUpperCase()}]`, {
                 cacheKey,
                 middleware: middlewareName,
                 url: req.originalUrl,
                 method: req.method
-            });
+            }, 'CACHE');
 
             return res.json(cachedData);
         }
@@ -155,16 +55,16 @@ function createCacheMiddleware(cacheManager, options = {}) {
         const originalJson = res.json;
         res.json = function (data) {
             // Solo cachear respuestas exitosas
-            if (res.statusCode >= HTTP_STATUS.OK && res.statusCode < HTTP_STATUS.MULTIPLE_CHOICES) {
+            if (res.statusCode >= 200 && res.statusCode < 300) {
                 cacheManager.set(cacheKey, data, ttl);
 
-                logMessage(LOG_LEVELS.DEBUG, `${SYSTEM_MESSAGES.CACHE_MISS} [${middlewareName.toUpperCase()}]`, {
+                logAndExecute('debug', `📦 Cache MISS - Data cached [${middlewareName.toUpperCase()}]`, {
                     cacheKey,
                     middleware: middlewareName,
                     url: req.originalUrl,
                     method: req.method,
                     ttl
-                });
+                }, 'CACHE');
             }
 
             // Llamar al método original
@@ -176,9 +76,6 @@ function createCacheMiddleware(cacheManager, options = {}) {
 }
 
 module.exports = {
-    logRequest,
-    logResponse,
-    createLoggingMiddleware,
     asyncMiddleware,
     createCacheMiddleware
 };
