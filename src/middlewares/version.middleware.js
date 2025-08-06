@@ -1,14 +1,12 @@
-const { VERSION_MIDDLEWARE, HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.config.js');
-const { VERSION_MESSAGES } = require('../utils/messages.utils.js');
-const { ValidationError, NotFoundError } = require('../utils/error.utils.js');
-const { API_CONFIG, getVersionInfo } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_API_VERSIONS);
+const { ValidationError, NotFoundError } = require('../utils/error.utils');
+const { API_CONFIG, getVersionInfo } = require('../config/apiVersions.config');
 
 /**
  * Extrae la versión de la URL
  * Ejemplo: /api/v1/products -> 'v1'
  */
 const extractVersionFromUrl = (path) => {
-  const versionMatch = path.match(VERSION_MIDDLEWARE.VERSION_REGEX);
+  const versionMatch = path.match(/^\/api\/(v\d+)\//);
   return versionMatch ? versionMatch[1] : null;
 };
 
@@ -30,11 +28,11 @@ const isDeprecatedVersion = (version) => {
  * Configura los headers de respuesta con información de versión
  */
 const setVersionHeaders = (res, version) => {
-  res.setHeader(VERSION_MIDDLEWARE.HEADER_API_VERSION, version);
-  res.setHeader(VERSION_MIDDLEWARE.HEADER_API_SUPPORTED_VERSIONS, API_CONFIG.supportedVersions.join(VERSION_MIDDLEWARE.VERSION_SEPARATOR));
+  res.setHeader('API-Version', version);
+  res.setHeader('API-Supported-Versions', API_CONFIG.supportedVersions.join(', '));
   
   if (isDeprecatedVersion(version)) {
-    res.setHeader(VERSION_MIDDLEWARE.HEADER_API_DEPRECATION_WARNING, `${VERSION_MESSAGES.VERSION_DEPRECATED_PREFIX} ${version} ${VERSION_MESSAGES.VERSION_DEPRECATED_SUFFIX}`);
+    res.setHeader('API-Deprecation-Warning', `Version ${version} is deprecated`);
   }
 };
 
@@ -82,22 +80,22 @@ const versionMiddleware = (req, res, next) => {
  */
 const registerVersionedRoutes = (app, basePath, routes, additionalMiddlewares = []) => {
   // Caso especial: auth solo debe estar sin versión
-  if (basePath === VERSION_MIDDLEWARE.AUTH_ROUTE) {
-    console.log(`${VERSION_MESSAGES.REGISTER_ROUTE_AUTH} ${basePath}`);
+  if (basePath === '/auth') {
+    console.log(`✅ Registrando ruta (auth): ${basePath}`);
     app.use(basePath, ...additionalMiddlewares, routes);
     return;
   }
   
   // Para todas las demás rutas, registrar con versiones
   API_CONFIG.supportedVersions.forEach(version => {
-    const versionPath = `${VERSION_MIDDLEWARE.API_PREFIX}/${version}${basePath}`;
-    console.log(`${VERSION_MESSAGES.REGISTER_ROUTE_VERSIONED} ${versionPath}`);
+    const versionPath = `/api/${version}${basePath}`;
+    console.log(`✅ Registrando ruta: ${versionPath}`);
     app.use(versionPath, ...additionalMiddlewares, routes);
   });
   
   // Registrar sin versión con prefijo /api
-  const compatibilityPath = `${VERSION_MIDDLEWARE.API_PREFIX}${basePath}`;
-  console.log(`${VERSION_MESSAGES.REGISTER_ROUTE_NO_VERSION} ${compatibilityPath}`);
+  const compatibilityPath = `/api/${basePath}`;
+  console.log(`✅ Registrando ruta (sin versión): ${compatibilityPath}`);
   app.use(compatibilityPath, ...additionalMiddlewares, routes);
 };
 
@@ -105,10 +103,10 @@ const registerVersionedRoutes = (app, basePath, routes, additionalMiddlewares = 
  * Registra endpoints de información para cada versión
  */
 const registerVersionInfoEndpoints = (app) => {
-  console.log(VERSION_MESSAGES.REGISTER_VERSION_ENDPOINTS);
+  console.log('\n📋 Registrando endpoints de información de versiones:');
   
   API_CONFIG.supportedVersions.forEach(version => {
-    const versionInfoPath = `${VERSION_MIDDLEWARE.API_PREFIX}/${version}${VERSION_MIDDLEWARE.DOCS_ENDPOINT}`;
+    const versionInfoPath = `/api/${version}/docs`;
     
     app.get(versionInfoPath, (req, res, next) => {
       const versionInfo = API_CONFIG.versions[version];
@@ -118,24 +116,24 @@ const registerVersionInfoEndpoints = (app) => {
       }
       
       res.json({
-        message: `${VERSION_MESSAGES.API_DOCUMENTATION_PREFIX} ${version}`,
+        message: `Documentación de la API para la versión ${version}`,
         payload: {
-            api: VERSION_MIDDLEWARE.API_NAME,
+            api: 'VolleyballArt API',
             ...versionInfo,
             serverTime: new Date().toISOString(),
             requestInfo: {
               method: req.method,
               url: req.originalUrl,
-              userAgent: req.get(VERSION_MIDDLEWARE.HEADER_USER_AGENT) || VERSION_MIDDLEWARE.USER_AGENT_UNKNOWN
+              userAgent: req.get('User-Agent') || 'Unknown'
             }
         }
       });
     });
     
-    console.log(` ${VERSION_MESSAGES.REGISTER_DOCS_FOR} ${versionInfoPath} ${VERSION_MESSAGES.REGISTER_DOCS_SUFFIX} ${version}`);
+    console.log(` ✅ ${versionInfoPath} - Documentación de ${version}`);
   });
   
-  console.log(VERSION_MIDDLEWARE.EMPTY_LINE);
+  console.log('');
 };
 
 

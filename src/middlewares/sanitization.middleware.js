@@ -1,20 +1,18 @@
-const { HTTP_STATUS, RELATIVE_PATHS, EXTERNAL_PACKAGES, SANITIZATION } = require('../config/paths.config.js');
-const { SANITIZATION_MESSAGES } = require('../utils/messages.utils.js');
-const { ValidationError } = require('../utils/error.utils.js');
-const { logError } = require('../utils/log.utils.js');
-const { body, validationResult } = require(EXTERNAL_PACKAGES.EXPRESS_VALIDATOR);
+const { ValidationError } = require('../utils/error.utils');
+const { logError } = require('../utils/log.utils');
+const { body, validationResult } = require('express-validator');
 
 // Middleware personalizado para sanitizar datos de entrada evitando problemas con req.query
 const sanitizeInput = (req, res, next) => {
   try {
     // Función para eliminar caracteres peligrosos de MongoDB
     const sanitize = (obj) => {
-      if (obj && typeof obj === SANITIZATION.TYPE_OBJECT) {
+      if (obj && typeof obj === 'object') {
         for (let key in obj) {
-          if (typeof obj[key] === SANITIZATION.TYPE_STRING) {
+          if (typeof obj[key] === 'string') {
             // Remover caracteres peligrosos para MongoDB
-            obj[key] = obj[key].replace(SANITIZATION.MONGO_DANGEROUS_CHARS, SANITIZATION.EMPTY_STRING);
-          } else if (typeof obj[key] === SANITIZATION.TYPE_OBJECT && obj[key] !== null) {
+            obj[key] = obj[key].replace(/[${}]/g, 'string');
+          } else if (typeof obj[key] === 'object' && obj[key] !== null) {
             sanitize(obj[key]);
           }
         }
@@ -35,13 +33,13 @@ const sanitizeInput = (req, res, next) => {
     if (req.query && Object.keys(req.query).length > 0) {
       const sanitizedQuery = sanitize({ ...req.query });
       // No modificar req.query directamente, usar una propiedad personalizada
-      req[SANITIZATION.PROP_SANITIZED_QUERY] = sanitizedQuery;
+      req.sanitizedQuery = sanitizedQuery;
     }
 
     next();
   } catch (error) {
     // Log error usando sistema global - middleware no crítico, continuar
-    logError(SANITIZATION_MESSAGES.SANITIZATION_ERROR, {
+    logError('🚨 Error en sanitización:', {
       operation: 'sanitizeInput',
       originalError: error.message,
       requestPath: req.path,
@@ -55,22 +53,22 @@ const sanitizeInput = (req, res, next) => {
 const sanitizeHtml = (req, res, next) => {
   // Función para limpiar HTML manteniendo etiquetas permitidas
   const cleanHtml = (str) => {
-    if (typeof str !== SANITIZATION.TYPE_STRING) return str;
+    if (typeof str !== 'string') return str;
     
     // Primero remover scripts y etiquetas peligrosas
-    let cleaned = str.replace(SANITIZATION.HTML_SCRIPT_TAGS, SANITIZATION.EMPTY_STRING);
+    let cleaned = str.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, 'string');
     
     // Remover solo etiquetas no permitidas, manteniendo las seguras
     cleaned = cleaned.replace(/<(\/?)([\w\s="'-]*)>/g, (match, slash, tagContent) => {
       const tagName = tagContent.split(' ')[0].toLowerCase();
       
       // Si la etiqueta está en la lista de permitidas, mantenerla
-      if (SANITIZATION.ALLOWED_HTML_TAGS.includes(tagName)) {
+      if ((/<[^>]*>/g).includes(tagName)) {
         return match;
       }
       
       // Si no está permitida, removerla
-      return SANITIZATION.EMPTY_STRING;
+      return 'string';
     });
     
     return cleaned.trim();
@@ -78,11 +76,11 @@ const sanitizeHtml = (req, res, next) => {
 
   // Limpiar req.body recursivamente
   const cleanObject = (obj) => {
-    if (obj && typeof obj === SANITIZATION.TYPE_OBJECT) {
+    if (obj && typeof obj === 'object') {
       for (let key in obj) {
-        if (typeof obj[key] === SANITIZATION.TYPE_STRING) {
+        if (typeof obj[key] === 'string') {
           obj[key] = cleanHtml(obj[key]);
-        } else if (typeof obj[key] === SANITIZATION.TYPE_OBJECT) {
+        } else if (typeof obj[key] === 'object') {
           cleanObject(obj[key]);
         }
       }
@@ -97,13 +95,13 @@ const sanitizeHtml = (req, res, next) => {
 };
 
 // Validadores específicos para campos sensibles
-const sanitizeEmail = body(SANITIZATION.FIELD_EMAIL)
+const sanitizeEmail = body('email')
   .isEmail()
   .normalizeEmail()
   .escape();
 
-const sanitizePassword = body(SANITIZATION.FIELD_PASSWORD)
-  .isLength({ min: SANITIZATION.MIN_PASSWORD_LENGTH })
+const sanitizePassword = body('password')
+  .isLength({ min: 6 })
   .escape();
 
 // Middleware para verificar errores de validación

@@ -1,7 +1,5 @@
-const { RELATIVE_PATHS } = require('../config/paths.config.js');
-const { AUTH_MESSAGES } = require('../utils/messages.utils.js');
-const authService = require(RELATIVE_PATHS.FROM_CONTROLLERS.SERVICES_AUTH);
-const { controllerWrapper } = require('../utils/async.utils.js');
+const authService = require('../services/auth.service');
+const { controllerWrapper } = require('../utils/async.utils');
 
 const loginUser = controllerWrapper(async (req, res) => {
   const { email, password } = req.body;

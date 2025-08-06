@@ -93,7 +93,7 @@ const cacheMiddleware = (duration = 600) => {
     const originalJson = res.json;
     res.json = function(data) {
       // Solo cachear respuestas exitosas
-      if (res.statusCode === HTTP_STATUS.OK) {
+      if (res.statusCode === 200) {
         appCache.set(key, data, duration);
         cacheStats.sets++;
         res.set(CACHE.HEADER_CACHE, CACHE.STATUS_MISS);

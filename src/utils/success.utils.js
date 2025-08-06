@@ -1,4 +1,3 @@
-const { CONTROLLER_MESSAGES } = require('./messages.utils');
 const { SystemError } = require('./error.utils');
 const { logAndExecute } = require('./log.utils');
 
@@ -56,7 +55,7 @@ class SuccessResponse extends AppSuccess {
  * Respuesta de recurso creado (201)
  */
 class CreatedResponse extends AppSuccess {
-    constructor(message = CONTROLLER_MESSAGES.RESOURCE_CREATED_SUCCESS, payload = null, meta = null) {
+    constructor(message = 'Creado exitosamente', payload = null, meta = null) {
         super(message, 201, payload, meta);
     }
 }
@@ -65,7 +64,7 @@ class CreatedResponse extends AppSuccess {
  * Respuesta de recurso actualizado (200)
  */
 class UpdatedResponse extends AppSuccess {
-    constructor(message = CONTROLLER_MESSAGES.RESOURCE_UPDATED_SUCCESS, payload = null, meta = null) {
+    constructor(message = 'Actualizado exitosamente', payload = null, meta = null) {
         super(message, 200, payload, meta);
     }
 }

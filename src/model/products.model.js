@@ -1,15 +1,7 @@
-
 const { db } = require('../config/db.config');
 const { InternalServerError } = require('../utils/error.utils');
-const {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc
-} = require('firebase/firestore');
+
+const { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } = require('firebase/firestore');
 
 const COLLECTION_NAME = 'products';
 

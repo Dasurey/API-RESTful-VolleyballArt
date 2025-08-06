@@ -1,29 +1,27 @@
-const { EXTERNAL_PACKAGES, RELATIVE_PATHS, HTTP_STATUS, AUTHENTICATION, HTTP_HEADERS } = require('../config/paths.config.js');
-const { AUTH_MIDDLEWARE_MESSAGES } = require('../utils/messages.utils.js');
-const { verifyToken } = require('../config/jwt.config.js');
-const { AuthenticationError } = require('../utils/error.utils.js');
-const { Logger } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
+const { verifyToken } = require('../config/jwt.config');
+const { AuthenticationError } = require('../utils/error.utils');
+const { Logger } = require('../utils/log.utils');
 
 const authentication = (req, res, next) => {
   try {
-    const authHeader = req.headers[AUTHENTICATION.AUTHORIZATION_HEADER];
+    const authHeader = req.headers['authorization'];
     
     if (!authHeader) {
-      Logger.warn(AUTH_MIDDLEWARE_MESSAGES.ACCESS_WITHOUT_TOKEN, {
+      Logger.warn('🔐 Intento de acceso sin token de autorización', {
         ip: req.ip,
         url: req.originalUrl,
         method: req.method,
-        userAgent: req.get(HTTP_HEADERS.USER_AGENT),
+        userAgent: req.get('User-Agent'),
         timestamp: new Date().toISOString()
       });
       
       throw new AuthenticationError();
     }
 
-    const token = authHeader.split(AUTHENTICATION.TOKEN_SEPARATOR)[AUTHENTICATION.TOKEN_INDEX];
+    const token = authHeader.split(' ')[1];
 
     if (!token) {
-      Logger.warn(AUTH_MIDDLEWARE_MESSAGES.INVALID_TOKEN_FORMAT, {
+      Logger.warn('🔐 Token de autorización con formato inválido', {
         authHeader: authHeader,
         ip: req.ip,
         url: req.originalUrl,
@@ -35,7 +33,7 @@ const authentication = (req, res, next) => {
 
     const decoded = verifyToken(token);
     
-    Logger.info(AUTH_MIDDLEWARE_MESSAGES.AUTHENTICATION_SUCCESS, {
+    Logger.info('✅ Autenticación exitosa', {
       userId: decoded.id,
       email: decoded.email,
       url: req.originalUrl,
@@ -50,12 +48,12 @@ const authentication = (req, res, next) => {
     if (error instanceof AuthenticationError) {
       next(error);
     } else {
-      Logger.warn(AUTH_MIDDLEWARE_MESSAGES.INVALID_OR_EXPIRED_TOKEN, {
+      Logger.warn('🔐 Token JWT inválido o expirado', {
         error: error.message,
         tokenType: error.name,
         ip: req.ip,
         url: req.originalUrl,
-        userAgent: req.get(HTTP_HEADERS.USER_AGENT),
+        userAgent: req.get('User-Agent'),
         timestamp: new Date().toISOString()
       });
       

@@ -1,15 +1,46 @@
-const {
-  PATHS,
-  API_ENDPOINTS,
-  ENV_CONFIG,
-  HTTP_HEADERS,
-  HTTP_METHODS,
-  NODE_EVENTS,
-  COMMON_VALUES,
-  HTTP_STATUS,
-  API_ENDPOINTS_PATHS,
-  ERROR_HANDLING
-} = require('./config/paths.config');
+// �📊 Sistema de logging
+const { httpLogger, devLogger, requestLogger } = require('./middlewares/logger.middleware');
+const { requestIdMiddleware } = require('./utils/async.utils');
+
+// 🛡️ Sistema de seguridad
+const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require('./config/security.config');
+const { sanitizeInput, sanitizeHtml } = require('./middlewares/sanitization.middleware');
+
+// ⚡ Sistema de cache y optimización
+const { compressionMiddleware, optimizeResponse, minifyJson, performanceHeaders } = require('./config/optimization.config');
+const { getCacheStats, resetCacheStats } = require('./config/cache.config');
+const { performanceMonitor, getPerformanceMetrics, healthCheckWithMetrics } = require('./middlewares/performance.middleware');
+
+// 📚 Sistema de documentación
+const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./config/swagger.config');
+
+const productsRoutes = require('./routes/products.routes');
+const authRoutes = require('./routes/auth.routes');
+const categoryRoutes = require('./routes/category.routes');
+
+const { authentication } = require('./middlewares/authentication.middleware');
+const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware');
+const { getVersionInfo } = require('./config/apiVersions.config');
+
+// 🏥 Importar utilidades de health checks avanzados
+const { runFullHealthCheck, quickHealthCheck, getHealthHistory,calculatePerformanceMetrics,formatMetricsForPrometheus } = require('./utils/health.utils');
+
+// 🔧 Utilidades para URLs y paths (incluyendo middleware dinámico para Swagger)
+const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl, getEndpointUrls } = require('./utils/url.utils');
+
+// 🔧 Utilidades centralizadas para respuestas y logging
+// Nota: getEndpointUrls movido a url.utils
+
+// 🔧 Clases de logs globalizadas
+const { logInfo, logSystem, logError } = require('./utils/log.utils');
+
+// 🔧 Clases de respuesta exitosa globalizadas
+const { SuccessResponse, DataResponse } = require('./utils/success.utils');
+
+// 🔧 Clases de error personalizadas
+const { InternalServerError, ValidationError, NotFoundError, AppError, formatDatabaseError, formatJWTError } = require('./utils/error.utils');
+
+const { ENV_CONFIG } = require('./config/paths.config');
 
 const express = require('express');
 require('dotenv').config();
@@ -20,71 +51,6 @@ if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = process.env.NODE_ENV ? 'production' : 'development';
 }
 
-// �📊 Sistema de logging
-const { httpLogger, devLogger, requestLogger } = require(PATHS.MIDDLEWARES.LOGGER);
-const { requestIdMiddleware } = require(PATHS.UTILS.ASYNC_UTILS);
-
-// 🛡️ Sistema de seguridad
-const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require(PATHS.CONFIG.SECURITY);
-const { sanitizeInput, sanitizeHtml } = require(PATHS.MIDDLEWARES.SANITIZATION);
-
-// ⚡ Sistema de cache y optimización
-const {
-  compressionMiddleware,
-  optimizeResponse,
-  minifyJson,
-  performanceHeaders
-} = require(PATHS.CONFIG.OPTIMIZATION);
-const { getCacheStats, resetCacheStats } = require(PATHS.CONFIG.CACHE);
-const {
-  performanceMonitor,
-  getPerformanceMetrics,
-  healthCheckWithMetrics
-} = require(PATHS.MIDDLEWARES.PERFORMANCE);
-
-// 📚 Sistema de documentación
-const { swaggerSpec, swaggerUi, swaggerUiOptions } = require(PATHS.CONFIG.SWAGGER);
-
-const productsRoutes = require('./routes/products.routes');
-const authRoutes = require(PATHS.ROUTES.AUTH);
-const categoryRoutes = require('./routes/category.routes');
-
-const { authentication } = require('./middlewares/authentication.middleware');
-const { GENERAL_MESSAGES,  SYSTEM_MESSAGES, HEALTH_CONSTANTS, METRICS_CONSTANTS } = require('./utils/messages.utils');
-const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware');
-const { getVersionInfo } = require('./config/apiVersions.config');
-
-// 🏥 Importar utilidades de health checks avanzados
-const { 
-  runFullHealthCheck, 
-  quickHealthCheck, 
-  getHealthHistory,
-  calculatePerformanceMetrics,
-  formatMetricsForPrometheus
-} = require('./utils/health.utils');
-
-// 🔧 Utilidades para URLs y paths (incluyendo middleware dinámico para Swagger)
-const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl, getEndpointUrls } = require(PATHS.UTILS.URL_UTILS);
-
-// 🔧 Utilidades centralizadas para respuestas y logging
-// Nota: getEndpointUrls movido a url.utils.js
-
-// 🔧 Clases de logs globalizadas
-const { logInfo, logSystem } = require('./utils/log.utils.js');
-
-// 🔧 Clases de respuesta exitosa globalizadas
-const { SuccessResponse, DataResponse } = require('./utils/success.utils.js');
-
-// 🔧 Clases de error personalizadas
-const { 
-  InternalServerError, 
-  ValidationError, 
-  NotFoundError, 
-  AppError, 
-  formatDatabaseError, 
-  formatJWTError 
-} = require('./utils/error.utils.js');
-
 // 🌐 Configuración de variables de entorno
 // Ya configurado con require('dotenv').config() arriba
 const PORT = process.env.PORT || ENV_CONFIG.PORT_DEFAULT;
@@ -92,32 +58,30 @@ const PORT = process.env.PORT || ENV_CONFIG.PORT_DEFAULT;
 const app = express();
 
 // � Manejador de errores no capturados (especialmente importante en Vercel)
-process.on(NODE_EVENTS.UNCAUGHT_EXCEPTION, (error) => {
+process.on('uncaughtException', (error) => {
   const internalError = new InternalServerError(error.message);
-  const { logError } = require('./utils/log.utils.js');
   logError('🚨 Uncaught Exception: ', internalError.details);
-  process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
+  process.exit(1);
 });
 
-process.on(NODE_EVENTS.UNHANDLED_REJECTION, (reason, promise) => {
+process.on('unhandledRejection', (reason, promise) => {
   const internalError = new InternalServerError(typeof reason === 'string' ? reason : reason?.message || 'Unhandled Promise Rejection');
-  const { logError } = require('./utils/log.utils.js');
-  logError(SYSTEM_MESSAGES.UNHANDLED_REJECTION, internalError.details);
-  process.exit(COMMON_VALUES.PROCESS_EXIT_CODE);
+  logError('🚨 Unhandled Rejection:', internalError.details);
+  process.exit(1);
 });
 
 // �📊 Iniciar logging del sistema
-logSystem(SYSTEM_MESSAGES.SERVER_STARTING, {
+logSystem('🚀 Iniciando servidor VolleyballArt API...', {
   nodeVersion: process.version,
   environment: process.env.NODE_ENV,
   timestamp: new Date().toISOString()
 });
 
 const corsOptions = {
-  origin: SYSTEM_MESSAGES.CORS_ORIGIN,
-  methods: [HTTP_METHODS.GET, HTTP_METHODS.POST, HTTP_METHODS.PUT, HTTP_METHODS.DELETE],
-  allowedHeaders: [HTTP_HEADERS.CONTENT_TYPE, HTTP_HEADERS.AUTHORIZATION],
-  credentials: SYSTEM_MESSAGES.CORS_CREDENTIALS,
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 };
 
 // 🛡️ Middlewares de seguridad y parsing
@@ -131,11 +95,11 @@ app.use(performanceMonitor); // Monitoreo de rendimiento
 app.use(optimizeResponse); // Optimización de respuestas
 app.use(minifyJson); // Minificación de JSON en producción
 
-app.use(express.json({ limit: ENV_CONFIG.JSON_LIMIT }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // 📁 Archivos estáticos usando utilidades CommonJS
-app.use(express.static(join(projectDir, API_ENDPOINTS.PUBLIC_DIR)));
+app.use(express.static(join(projectDir, 'public')));
 
 // 🧹 Middlewares de sanitización
 app.use(sanitizeInput); // Prevenir NoSQL injection
@@ -145,13 +109,13 @@ app.use(sanitizeHtml); // Limpiar HTML/XSS
 app.use(requestIdMiddleware);
 
 // 📊 Logging HTTP - aplicar antes de las rutas
-app.use(process.env.NODE_ENV === ENV_CONFIG.NODE_ENV_DEVELOPMENT ? devLogger : httpLogger);
+app.use(process.env.NODE_ENV === 'development' ? devLogger : httpLogger);
 app.use(requestLogger);
 
 // ⚠️ Middleware para capturar errores de JSON malformado
 app.use((error, req, res, next) => {
-  if (error instanceof SyntaxError && error.status === HTTP_STATUS.BAD_REQUEST && ERROR_HANDLING.BODY_PROPERTY in error) {
-    return next(new ValidationError(GENERAL_MESSAGES.JSON_MALFORMED.replace("📝 ", "")));
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return next(new ValidationError('📝 JSON malformado. Verifica la sintaxis de los datos enviados.'));
   }
   next(error);
 });
@@ -162,28 +126,28 @@ app.use(cors(corsOptions));
 app.use(versionMiddleware);
 
 // 🌐 Middleware para actualizar URL de Swagger dinámicamente usando req.headers.host
-app.use(API_ENDPOINTS.API_DOCS, updateSwaggerUrl);
+app.use('/api/docs', updateSwaggerUrl);
 
 // 📚 Configurar documentación Swagger
-app.use(API_ENDPOINTS.API_DOCS, swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // 📄 Endpoint para descargar especificación OpenAPI en JSON
-app.get(API_ENDPOINTS.SWAGGER_JSON, (req, res) => {
-  res.setHeader(HTTP_HEADERS.CONTENT_TYPE, HTTP_HEADERS.CONTENT_TYPE_JSON);
+app.get('/api/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
 
 // 🧪 Endpoint de test simple para Vercel
-app.get(API_ENDPOINTS.TEST, (req, res) => {
-  return new SuccessResponse(GENERAL_MESSAGES.SERVER_HEALTH, {
-    environment: process.env.NODE_ENV || ENV_CONFIG.NODE_ENV_UNKNOWN
+app.get('/test', (req, res) => {
+  return new SuccessResponse('✅ Servidor funcionando correctamente', {
+    environment: process.env.NODE_ENV || 'unknown'
   }).send(res);
 });
 
 // Registrar rutas de forma dinámica para todas las versiones soportadas
-registerVersionedRoutes(app, API_ENDPOINTS.AUTH_BASE, authRoutes, [authLimiter]); // Aplicar rate limiting específico para auth
-registerVersionedRoutes(app, API_ENDPOINTS.PRODUCTS_BASE, productsRoutes); // Sin rate limiting general, se aplica específicamente en /create
-registerVersionedRoutes(app, API_ENDPOINTS.CATEGORY_BASE, categoryRoutes); // Rutas de categoria y subcategoria
+registerVersionedRoutes(app, '/auth', authRoutes, [authLimiter]); // Aplicar rate limiting específico para auth
+registerVersionedRoutes(app, '/products', productsRoutes); // Sin rate limiting general, se aplica específicamente en /create
+registerVersionedRoutes(app, '/category', categoryRoutes); // Rutas de categoria y subcategoria
 
 // Registrar endpoints de información para cada versión (/api/v1, /api/v2, etc.)
 registerVersionInfoEndpoints(app);
@@ -240,12 +204,12 @@ registerVersionInfoEndpoints(app);
  *                       example: https://api.example.com/api/health
  */
 
-app.get(API_ENDPOINTS.API_ROOT, (req, res) => {
+app.get('/api', (req, res) => {
   const versionInfo = getVersionInfo();
   const baseUrl = getBaseUrl();
   const urls = getEndpointUrls(baseUrl);
 
-  return new DataResponse(GENERAL_MESSAGES.API_INFO, {
+  return new DataResponse('Endpoint de información de la API RESTful VolleyballArt', {
     ...versionInfo,
     ...urls
   }).send(res);
@@ -282,9 +246,9 @@ app.get(API_ENDPOINTS.API_ROOT, (req, res) => {
  *       503:
  *         description: Servidor con problemas de rendimiento
  */
-app.get(API_ENDPOINTS.HEALTH, (req, res) => {
+app.get('/api/health', (req, res) => {
   const healthReport = quickHealthCheck();
-  const statusCode = healthReport.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
+  const statusCode = healthReport.status === 'healthy' ? 200 : 503;
   res.status(statusCode).json(healthReport);
 });
 
@@ -328,11 +292,10 @@ app.get(API_ENDPOINTS.HEALTH, (req, res) => {
  *                 alerts:
  *                   type: array
  */
-app.get(API_ENDPOINTS_PATHS.HEALTH_FULL, async (req, res, next) => {
+app.get('/api/health/full', async (req, res, next) => {
   try {
     const healthReport = await runFullHealthCheck();
-    const statusCode = healthReport.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? HTTP_STATUS.OK : 
-                       healthReport.status === HEALTH_CONSTANTS.STATUS_DEGRADED ? HTTP_STATUS.OK : HTTP_STATUS.SERVICE_UNAVAILABLE;
+    const statusCode = healthReport.status === 'healthy' ? 200 : healthReport.status === 'degraded' ? 200 : 503;
     res.status(statusCode).json(healthReport);
   } catch (error) {
     next(new InternalServerError());
@@ -375,7 +338,7 @@ app.get(API_ENDPOINTS_PATHS.HEALTH_FULL, async (req, res, next) => {
  *       401:
  *         description: Token de acceso requerido
  */
-app.get(API_ENDPOINTS_PATHS.HEALTH_HISTORY, authentication, (req, res) => {
+app.get('/api/health/history', authentication, (req, res) => {
   const history = getHealthHistory();
   res.json(history);
 });
@@ -428,7 +391,7 @@ app.get(API_ENDPOINTS_PATHS.HEALTH_HISTORY, authentication, (req, res) => {
  *                 cache:
  *                   type: object
  */
-app.get(API_ENDPOINTS_PATHS.METRICS, authentication, async (req, res, next) => {
+app.get('/api/metrics', authentication, async (req, res, next) => {
   try {
     const metrics = await calculatePerformanceMetrics();
     res.json({
@@ -465,11 +428,11 @@ app.get(API_ENDPOINTS_PATHS.METRICS, authentication, async (req, res, next) => {
  *                 # TYPE api_requests_total counter
  *                 api_requests_total 1234
  */
-app.get(API_ENDPOINTS_PATHS.METRICS_PROMETHEUS, authentication, async (req, res, next) => {
+app.get('/api/metrics/prometheus', authentication, async (req, res, next) => {
   try {
     const metrics = await calculatePerformanceMetrics();
     const prometheusFormat = formatMetricsForPrometheus(metrics);
-    res.set(METRICS_CONSTANTS.CONTENT_TYPE_HEADER, METRICS_CONSTANTS.CONTENT_TYPE_TEXT_PLAIN);
+    res.set('Content-Type', 'text/plain');
     res.send(prometheusFormat);
   } catch (error) {
     next(new InternalServerError());
@@ -509,16 +472,15 @@ app.get(API_ENDPOINTS_PATHS.METRICS_PROMETHEUS, authentication, async (req, res,
  *                   type: string
  *                   format: date-time
  */
-app.get(API_ENDPOINTS_PATHS.STATUS, async (req, res, next) => {
+app.get('/api/status', async (req, res, next) => {
   try {
     const healthReport = await runFullHealthCheck();
     const systemStatus = {
-      status: healthReport.status === HEALTH_CONSTANTS.STATUS_HEALTHY ? METRICS_CONSTANTS.STATUS_OPERATIONAL :
-              healthReport.status === HEALTH_CONSTANTS.STATUS_DEGRADED ? HEALTH_CONSTANTS.STATUS_DEGRADED : METRICS_CONSTANTS.STATUS_DOWN,
+      status: healthReport.status === 'healthy' ? 'operational' : healthReport.status === 'degraded' ? 'degraded' : 'down',
       services: {
-        api: healthReport.dependencies?.api?.status || METRICS_CONSTANTS.SERVICE_UNKNOWN,
-        database: healthReport.dependencies?.database?.status || METRICS_CONSTANTS.SERVICE_UNKNOWN,
-        cache: healthReport.dependencies?.cache?.status || METRICS_CONSTANTS.SERVICE_UNKNOWN
+        api: healthReport.dependencies?.api?.status || 'unknown',
+        database: healthReport.dependencies?.database?.status || 'unknown',
+        cache: healthReport.dependencies?.cache?.status || 'unknown'
       },
       lastUpdated: healthReport.timestamp
     };
@@ -561,10 +523,10 @@ app.get(API_ENDPOINTS_PATHS.STATUS, async (req, res, next) => {
  *                 config:
  *                   type: object
  */
-app.get(API_ENDPOINTS_PATHS.DEBUG_INFO, authentication, (req, res) => {
+app.get('/api/debug/info', authentication, (req, res) => {
   const debugInfo = {
-    environment: process.env.NODE_ENV || METRICS_CONSTANTS.DEFAULT_ENVIRONMENT,
-    version: process.env.npm_package_version || METRICS_CONSTANTS.DEFAULT_VERSION,
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.npm_package_version || '1.0.0',
     nodeVersion: process.version,
     platform: process.platform,
     architecture: process.arch,
@@ -614,9 +576,9 @@ app.get(API_ENDPOINTS_PATHS.DEBUG_INFO, authentication, (req, res) => {
  *       403:
  *         description: Token inválido o expirado
  */
-app.get(API_ENDPOINTS.METRICS, authentication, (req, res) => {
+app.get('/api/metrics', authentication, (req, res) => {
   const metrics = getPerformanceMetrics();
-  return new DataResponse(GENERAL_MESSAGES.SYSTEM_METRICS, metrics).send(res);
+  return new DataResponse('Métricas del sistema', metrics).send(res);
 });
 
 /**
@@ -646,9 +608,9 @@ app.get(API_ENDPOINTS.METRICS, authentication, (req, res) => {
  *       403:
  *         description: Token inválido o expirado
  */
-app.get(API_ENDPOINTS.CACHE_STATS, authentication, (req, res) => {
+app.get('/api/cache/stats', authentication, (req, res) => {
   const cacheStats = getCacheStats();
-  return new DataResponse(GENERAL_MESSAGES.CACHE_STATS, cacheStats).send(res);
+  return new DataResponse('Estadísticas de cache', cacheStats).send(res);
 });
 
 /**
@@ -678,30 +640,30 @@ app.get(API_ENDPOINTS.CACHE_STATS, authentication, (req, res) => {
  *       403:
  *         description: Token inválido o expirado
  */
-app.post(API_ENDPOINTS.CACHE_CLEAR, authentication, (req, res) => {
+app.post('/api/cache/clear', authentication, (req, res) => {
   resetCacheStats();
   const { logInfo } = require('./utils/log.utils.js');
-  logInfo(SYSTEM_MESSAGES.CACHE_CLEARED_BY_USER, {
+  logInfo('🗑️ Cache limpiado por usuario', {
     userId: req.user?.uid,
     timestamp: new Date().toISOString()
   });
-  return new SuccessResponse(SYSTEM_MESSAGES.CACHE_CLEARED_SUCCESS).send(res);
+  return new SuccessResponse('Cache limpiado exitosamente').send(res);
 });
 
 // Redirigir la ruta raíz a la documentación de la API
-app.get(API_ENDPOINTS.ROOT, (req, res, next) => {
+app.get('/', (req, res, next) => {
   try {
-    logInfo(SYSTEM_MESSAGES.ROOT_REDIRECT);
-    res.redirect(API_ENDPOINTS.API_ROOT);
+    logInfo('🏠 Acceso a ruta raíz, redirigiendo a /api');
+    res.redirect('/api');
   } catch (error) {
     next(new InternalServerError());
   }
 });
 
 // 🔍 Endpoint de debug para Vercel
-app.get(API_ENDPOINTS.DEBUG, (req, res, next) => {
+app.get('/debug/info', (req, res, next) => {
   try {
-    return new DataResponse(SYSTEM_MESSAGES.DEBUG_INFO, {
+    return new DataResponse('Debug info for Vercel', {
       nodeVersion: process.version,
       environment: process.env.NODE_ENV,
       isVercel: !!process.env.VERCEL,

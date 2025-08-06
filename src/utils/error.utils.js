@@ -171,7 +171,7 @@ const formatDatabaseError = (error) => {
       message: err.message,
       value: err.value
     }));
-    return new ValidationError('📝 Datos de entrada inválidos', { validationErrors: errors }, 'MONGOOSE_VALIDATION');
+    return new ValidationError(undefined, { validationErrors: errors }, 'MONGOOSE_VALIDATION');
   }
 
   if (error.name === 'CastError') {

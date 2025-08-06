@@ -1,16 +1,11 @@
-const { EXTERNAL_PACKAGES, RELATIVE_PATHS, HTTP_STATUS } = require('../config/paths.config.js');
-const { AUTH_MESSAGES, FIREBASE_CONSTANTS } = require('../utils/messages.utils.js');
-const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = require(EXTERNAL_PACKAGES.FIREBASE_AUTH);
-const { db } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_DATABASE);
-const { doc, setDoc, getDoc } = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
-const { generateToken } = require(RELATIVE_PATHS.FROM_MODEL.CONFIG_JWT);
-const { 
-  AuthenticationError, 
-  ValidationError, 
-  ConflictError, 
-  InternalServerError 
-} = require('../utils/error.utils.js');
+const { EXTERNAL_PACKAGES, RELATIVE_PATHS, HTTP_STATUS } = require('../config/paths.config');
+const { AUTH_MESSAGES, FIREBASE_CONSTANTS } = require('../utils/messages.utils');
+const { db } = require('../config/db.config');
+const { generateToken } = require('../config/jwt.config');
+const { AuthenticationError, ValidationError, ConflictError, InternalServerError } = require('../utils/error.utils');
 
+const { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } = require('firebase/auth');
+const { doc, setDoc, getDoc } = require('firebase/firestore');
 const auth = getAuth();
 
 const loginUser = async (req, res, email, password) => {
@@ -24,7 +19,7 @@ const loginUser = async (req, res, email, password) => {
       email: user.email
     });
     
-    return res.status(HTTP_STATUS.OK).json({
+    return res.status(200).json({
       message: AUTH_MESSAGES.LOGIN_SUCCESS,
       payload: {
         token: jwtToken,

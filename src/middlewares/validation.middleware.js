@@ -1,6 +1,4 @@
-const { HTTP_STATUS, RELATIVE_PATHS } = require('../config/paths.config.js');
-const { SERVICE_MESSAGES } = require('../utils/messages.utils.js');
-const { ValidationError } = require('../utils/error.utils.js');
+const { ValidationError } = require('../utils/error.utils');
 
 // Middleware para validar datos con Joi
 const validate = (schema) => {
@@ -15,7 +13,7 @@ const validate = (schema) => {
         value: detail.context?.value
       }));
       
-      throw new ValidationError(SERVICE_MESSAGES.VALIDATION_ERROR_DEFAULT, { 
+      throw new ValidationError(undefined, { 
         validationErrors: errorDetails 
       });
     }

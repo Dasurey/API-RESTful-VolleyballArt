@@ -3,10 +3,8 @@
  * Middleware para aplicar cache a rutas específicas
  */
 
-const { productsCacheManager, authCacheManager, generalCacheManager } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_CACHE);
-const { RELATIVE_PATHS, HTTP_STATUS, CACHE, HTTP_METHODS, VERSION_MIDDLEWARE } = require('../config/paths.config.js');
-const { CACHE_MESSAGES } = require('../utils/messages.utils.js');
-const { Logger } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
+const { productsCacheManager, authCacheManager, generalCacheManager } = require('../config/cache.config');
+const { Logger } = require('../utils/log.utils');
 
 /**
  * Middleware de cache genérico
@@ -14,17 +12,17 @@ const { Logger } = require(RELATIVE_PATHS.FROM_MIDDLEWARES.CONFIG_LOGGER);
  * @param {number} customTTL - TTL personalizado en segundos (opcional)
  * @returns {Function} Middleware function
  */
-const cacheMiddleware = (cacheType = CACHE.TYPE_GENERAL, customTTL = null) => {
+const cacheMiddleware = (cacheType = 'general', customTTL = null) => {
   return (req, res, next) => {
     const cacheKey = generateCacheKey(req);
     let cacheManager;
 
     // Seleccionar el manager de cache apropiado
     switch (cacheType) {
-      case CACHE.TYPE_PRODUCTS:
+      case 'products':
         cacheManager = productsCacheManager;
         break;
-      case CACHE.TYPE_AUTH:
+      case 'auth':
         cacheManager = authCacheManager;
         break;
       default:
@@ -36,15 +34,15 @@ const cacheMiddleware = (cacheType = CACHE.TYPE_GENERAL, customTTL = null) => {
     
     if (cachedData) {
       // Cache hit
-      Logger.debug(`${CACHE_MESSAGES.CACHE_HIT} ${cacheKey}`, {
+      Logger.debug(`🎯 Cache HIT para ${cacheKey}`, {
         cacheType,
         key: cacheKey,
         method: req.method,
         url: req.url
       });
 
-      res.set(CACHE.HEADER_CACHE, CACHE.STATUS_HIT);
-      res.set(CACHE.HEADER_CACHE_KEY, cacheKey);
+      res.set('X-Cache', 'HIT');
+      res.set('X-Cache-Key', cacheKey);
       return res.json(cachedData);
     }
 
@@ -52,11 +50,11 @@ const cacheMiddleware = (cacheType = CACHE.TYPE_GENERAL, customTTL = null) => {
     const originalJson = res.json;
     res.json = function(data) {
       // Solo cachear respuestas exitosas
-      if (res.statusCode >= HTTP_STATUS.OK && res.statusCode < HTTP_STATUS.MULTIPLE_CHOICES) {
+      if (res.statusCode >= 200 && res.statusCode < 300) {
         const ttl = customTTL || getTTLForCacheType(cacheType);
         cacheManager.set(cacheKey, data, ttl);
         
-        Logger.debug(CACHE_MESSAGES.CACHE_MISS, {
+        Logger.debug('📦 Cache MISS - Guardando en cache', {
           cacheType,
           key: cacheKey,
           ttl,
@@ -64,9 +62,9 @@ const cacheMiddleware = (cacheType = CACHE.TYPE_GENERAL, customTTL = null) => {
           url: req.url
         });
 
-        res.set(CACHE.HEADER_CACHE, CACHE.STATUS_MISS);
-        res.set(CACHE.HEADER_CACHE_KEY, cacheKey);
-        res.set(CACHE.HEADER_CACHE_TTL, ttl.toString());
+        res.set('X-Cache', 'MISS');
+        res.set('X-Cache-Key', cacheKey);
+        res.set('X-Cache-TTL', ttl.toString());
       }
 
       // Llamar al método json original
@@ -80,22 +78,22 @@ const cacheMiddleware = (cacheType = CACHE.TYPE_GENERAL, customTTL = null) => {
 /**
  * Middleware específico para productos
  */
-const productsCacheMiddleware = cacheMiddleware(CACHE.TYPE_PRODUCTS);
+const productsCacheMiddleware = cacheMiddleware('products');
 
 /**
  * Middleware específico para autenticación
  */
-const authCacheMiddleware = cacheMiddleware(CACHE.TYPE_AUTH);
+const authCacheMiddleware = cacheMiddleware('auth');
 
 /**
  * Middleware para invalidar cache de productos
  */
 const invalidateProductsCache = (req, res, next) => {
   // Ejecutar después de la respuesta
-  res.on(CACHE.FINISH_EVENT, () => {
-    if (res.statusCode >= HTTP_STATUS.OK && res.statusCode < HTTP_STATUS.MULTIPLE_CHOICES) {
+  res.on('finish', () => {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
       const invalidatedKeys = productsCacheManager.flushAll();
-      Logger.info(CACHE_MESSAGES.CACHE_INVALIDATED_PRODUCTS, {
+      Logger.info('🗑️ Cache de productos invalidado', {
         method: req.method,
         url: req.url,
         invalidatedKeys: productsCacheManager.keys().length,
@@ -111,10 +109,10 @@ const invalidateProductsCache = (req, res, next) => {
  * Middleware para invalidar cache de autenticación
  */
 const invalidateAuthCache = (req, res, next) => {
-  res.on(CACHE.FINISH_EVENT, () => {
-    if (res.statusCode >= HTTP_STATUS.OK && res.statusCode < HTTP_STATUS.MULTIPLE_CHOICES) {
+  res.on('finish', () => {
+    if (res.statusCode >= 200 && res.statusCode < 300) {
       authCacheManager.flushAll();
-      Logger.info(CACHE_MESSAGES.CACHE_INVALIDATED_AUTH, {
+      Logger.info('🗑️ Cache de auth invalidado', {
         method: req.method,
         url: req.url,
         userId: req.user?.uid
@@ -140,7 +138,7 @@ function generateCacheKey(req) {
   const queryString = Object.keys(query)
     .sort()
     .map(key => `${key}=${query[key]}`)
-    .join(CACHE.QUERY_SEPARATOR);
+    .join('&');
   
   let cacheKey = `${method}: ${path}`;
   
@@ -149,7 +147,7 @@ function generateCacheKey(req) {
   }
   
   // Para endpoints que dependen del usuario, incluir user ID
-  if (path.includes(VERSION_MIDDLEWARE.AUTH_ROUTE) || method !== 'GET') {
+  if (path.includes('/auth') || method !== 'GET') {
     cacheKey += `:user:${userId}`;
   }
   
@@ -176,10 +174,10 @@ function getTTLForCacheType(cacheType) {
  */
 const noCacheMiddleware = (req, res, next) => {
   res.set({
-    'Cache-Control': CACHE.NO_STORE_VALUE,
-    'Pragma': CACHE.NO_CACHE_VALUE,
-    'Expires': CACHE.EXPIRES_VALUE,
-    'Surrogate-Control': CACHE.NO_STORE_SURROGATE
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Surrogate-Control': 'no-store'
   });
   next();
 };
@@ -188,7 +186,7 @@ const noCacheMiddleware = (req, res, next) => {
  * Middleware de cache condicional
  * Solo cachea si se cumple la condición
  */
-const conditionalCacheMiddleware = (condition, cacheType = CACHE.TYPE_GENERAL) => {
+const conditionalCacheMiddleware = (condition, cacheType = 'general') => {
   return (req, res, next) => {
     if (condition(req)) {
       return cacheMiddleware(cacheType)(req, res, next);

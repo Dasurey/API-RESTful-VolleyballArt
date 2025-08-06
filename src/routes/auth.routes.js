@@ -1,9 +1,8 @@
-const { EXTERNAL_PACKAGES, RELATIVE_PATHS, API_ENDPOINTS } = require('../config/paths.config.js');
-const express = require(EXTERNAL_PACKAGES.EXPRESS);
-const { loginUser /*, registerUser*/ } = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_AUTH);
-const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
-const { loginSchema /*, registerSchema*/ } = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_AUTH);
+const { loginUser /*, registerUser*/ } = require('../controllers/auth.controller');
+const { validate } = require('../middlewares/validation.middleware');
+const { loginSchema /*, registerSchema*/ } = require('../schemas/auth.schema');
 
+const express = require('express');
 const router = express.Router();
 
 /**
@@ -51,7 +50,7 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post(API_ENDPOINTS.AUTH_LOGIN, validate(loginSchema), loginUser);
+router.post('/login', validate(loginSchema), loginUser);
 
 /**
  * REGISTRO TEMPORALMENTE DESHABILITADO
@@ -90,7 +89,7 @@ router.post(API_ENDPOINTS.AUTH_LOGIN, validate(loginSchema), loginUser);
 //             schema:
 //               $ref: '#/components/schemas/Error'
 
-router.post(API_ENDPOINTS.AUTH_REGISTER, validate(registerSchema), registerUser);
+router.post('/register', validate(registerSchema), registerUser);
 */
 
 module.exports = router;;

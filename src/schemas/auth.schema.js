@@ -1,6 +1,4 @@
-const { EXTERNAL_PACKAGES } = require('../config/paths.config.js');
-const { JOI_ERROR_KEYS, VALIDATION_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils.js');
-const Joi = require(EXTERNAL_PACKAGES.JOI);
+const Joi = require('joi');
 
 // Esquema para login
 const loginSchema = Joi.object({
@@ -8,18 +6,18 @@ const loginSchema = Joi.object({
     .email()
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMAIL]: VALIDATION_MESSAGES.EMAIL_INVALID,
-      'string.empty': VALIDATION_MESSAGES.EMAIL_REQUIRED,
-      'any.required': VALIDATION_MESSAGES.EMAIL_REQUIRED
+      'string.email': 'Debe ser un email válido',
+      'string.empty': 'El email es obligatorio',
+      'any.required': 'El email es obligatorio'
     }),
 
   password: Joi.string()
     .min(6)
     .required()
     .messages({
-      'string.min': VALIDATION_MESSAGES.PASSWORD_MIN_6_CHARS,
-      'string.empty': VALIDATION_MESSAGES.PASSWORD_REQUIRED,
-      'any.required': VALIDATION_MESSAGES.PASSWORD_REQUIRED
+      'string.min': 'La contraseña debe tener al menos 6 caracteres',
+      'string.empty': 'La contraseña es obligatoria',
+      'any.required': 'La contraseña es obligatoria'
     })
 });
 
@@ -30,31 +28,31 @@ const registerSchema = Joi.object({
     .email()
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMAIL]: VALIDATION_MESSAGES.EMAIL_INVALID,
-      'string.empty': VALIDATION_MESSAGES.EMAIL_REQUIRED,
-      'any.required': VALIDATION_MESSAGES.EMAIL_REQUIRED
+      'string.email': 'Debe ser un email válido',
+      'string.empty': 'El email es obligatorio',
+      'any.required': 'El email es obligatorio'
     }),
 
   password: Joi.string()
     .min(6)
     .max(50)
-    .pattern(SERVICE_MESSAGES.PASSWORD_PATTERN)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .required()
     .messages({
-      'string.min': VALIDATION_MESSAGES.PASSWORD_MIN_6_CHARS,
-      'string.max': VALIDATION_MESSAGES.PASSWORD_MAX_50_CHARS,
-      'string.pattern.base': VALIDATION_MESSAGES.PASSWORD_PATTERN_INVALID,
-      'string.empty': VALIDATION_MESSAGES.PASSWORD_REQUIRED,
-      'any.required': VALIDATION_MESSAGES.PASSWORD_REQUIRED
+      'string.min': 'La contraseña debe tener al menos 6 caracteres',
+      'string.max': 'La contraseña no puede tener más de 50 caracteres',
+      'string.pattern.base': 'La contraseña debe tener al menos: 1 minúscula, 1 mayúscula y 1 número',
+      'string.empty': 'La contraseña es obligatoria',
+      'any.required': 'La contraseña es obligatoria'
     }),
 
   confirmPassword: Joi.string()
-    .valid(Joi.ref(SERVICE_MESSAGES.PASSWORD_FIELD))
+    .valid(Joi.ref('password'))
     .required()
     .messages({
-      [JOI_ERROR_KEYS.ANY_ONLY]: VALIDATION_MESSAGES.PASSWORDS_DO_NOT_MATCH,
-      'string.empty': VALIDATION_MESSAGES.PASSWORD_CONFIRMATION_REQUIRED,
-      'any.required': VALIDATION_MESSAGES.PASSWORD_CONFIRMATION_REQUIRED
+      'any.only': 'Las contraseñas no coinciden',
+      'string.empty': 'Confirma tu contraseña',
+      'any.required': 'Confirma tu contraseña'
     })
 });
 */

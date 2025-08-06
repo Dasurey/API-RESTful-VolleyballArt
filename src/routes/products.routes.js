@@ -1,5 +1,3 @@
-const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, CACHE_CONFIG, PAGINATION_CONFIG } = require('../config/paths.config');
-const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
 const { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct } = require('../controllers/products.controller');
 const { authentication } = require('../middlewares/authentication.middleware');
 const { validate } = require('../middlewares/validation.middleware');
@@ -9,6 +7,7 @@ const { idParamSchema, validateParams } = require('../schemas/common.schema');
 const { createLimiter } = require('../config/security.config');
 const { cacheMiddleware, cacheHeaders } = require('../config/cache.config');
 const { throttleConfigs } = require('../config/optimization.config');
+const { Router } = require('express');
 
 const router = Router();
 

@@ -1,9 +1,7 @@
-const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, VALIDATION_TYPES } = require('../config/paths.config.js');
-const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
-const categoryController = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_CATEGORY);
-const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
-const { authentication } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_AUTH);
-const { categoriesQueryProcessor, subcategoriesQueryProcessor } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_QUERY);
+const categoryController = require('../controllers/category.controller');
+const { validate } = require('../middlewares/validation.middleware');
+const { authentication } = require('../middlewares/authentication.middleware');
+const { categoriesQueryProcessor, subcategoriesQueryProcessor } = require('../middlewares/query.middleware');
 const {
   createCategorySchema,
   createSubcategorySchema,
@@ -15,8 +13,9 @@ const {
   categoryParentIdSchema,
   categorySubcategoryParamsSchema,
   deleteQuerySchema
-} = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_CATEGORY);
+} = require('../schemas/category.schema');
 
+const { Router } = require('express');
 const router = Router();
 
 /**
@@ -146,7 +145,7 @@ const router = Router();
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoriesQueryProcessor, categoryController.getCategoryHierarchy);
+router.get('/hierarchy', categoriesQueryProcessor, categoryController.getCategoryHierarchy);
 
 /**
  * @swagger
@@ -212,7 +211,7 @@ router.get(API_ENDPOINTS.CATEGORY_HIERARCHY, categoriesQueryProcessor, categoryC
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_ROOT, categoriesQueryProcessor, categoryController.getAllCategory);
+router.get('/', categoriesQueryProcessor, categoryController.getAllCategory);
 
 /**
  * @swagger
@@ -284,7 +283,7 @@ router.get(API_ENDPOINTS.CATEGORY_ROOT, categoriesQueryProcessor, categoryContro
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_ALL, subcategoriesQueryProcessor, categoryController.getAllSubcategory);
+router.get('/subcategory', subcategoriesQueryProcessor, categoryController.getAllSubcategory);
 
 /**
  * @swagger
@@ -337,7 +336,7 @@ router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_ALL, subcategoriesQueryProcessor, 
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.post(API_ENDPOINTS.CATEGORY_CREATE, authentication, validate(createCategorySchema), categoryController.createCategory);
+router.post('/create', authentication, validate(createCategorySchema), categoryController.createCategory);
 
 /**
  * @swagger
@@ -371,11 +370,7 @@ router.post(API_ENDPOINTS.CATEGORY_CREATE, authentication, validate(createCatego
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_BY_ID, 
-  categoriesQueryProcessor,
-  validate(categoryIdSchema, VALIDATION_TYPES.PARAMS), 
-  categoryController.getCategoryById
-);
+router.get('/:id', categoriesQueryProcessor,validate(categoryIdSchema, 'params'), categoryController.getCategoryById);
 
 /**
  * @swagger
@@ -427,9 +422,9 @@ router.get(API_ENDPOINTS.CATEGORY_BY_ID,
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.put(API_ENDPOINTS.CATEGORY_BY_ID,
+router.put('/:id',
   authentication,
-  // validate(categoryIdSchema, VALIDATION_TYPES.PARAMS),
+  // validate(categoryIdSchema, 'params'),
   validate(updateCategorySchema),
   categoryController.updateCategory
 );
@@ -487,12 +482,7 @@ router.put(API_ENDPOINTS.CATEGORY_BY_ID,
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
-  authentication,
-  validate(categoryIdSchema, VALIDATION_TYPES.PARAMS),
-  validate(deleteQuerySchema, VALIDATION_TYPES.QUERY),
-  categoryController.deleteCategory
-);
+router.delete('/:id', authentication, validate(categoryIdSchema, 'params'), validate(deleteQuerySchema, 'query'), categoryController.deleteCategory);
 
 /**
  * @swagger
@@ -567,11 +557,7 @@ router.delete(API_ENDPOINTS.CATEGORY_BY_ID,
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY, 
-  subcategoriesQueryProcessor,
-  validate(parentCategoryIdSchema, VALIDATION_TYPES.PARAMS), 
-  categoryController.getSubcategoryByParent
-);
+router.get('/:parentId/subcategory', subcategoriesQueryProcessor,validate(parentCategoryIdSchema, 'params'), categoryController.getSubcategoryByParent);
 
 /**
  * @swagger
@@ -619,12 +605,7 @@ router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
-  authentication,
-  validate(parentCategoryIdSchema, VALIDATION_TYPES.PARAMS),
-  validate(createSubcategorySchema),
-  categoryController.createSubcategory
-);
+router.post('/:parentId/subcategory', authentication, validate(parentCategoryIdSchema, 'params'), validate(createSubcategorySchema), categoryController.createSubcategory);
 
 /**
  * @swagger
@@ -667,9 +648,9 @@ router.post(API_ENDPOINTS.CATEGORY_SUBCATEGORY,
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
+router.get('/:categoryId/subcategory/:subcategoryId',
   subcategoriesQueryProcessor,
-  // validate(categorySubcategoryParamsSchema, VALIDATION_TYPES.PARAMS),
+  // validate(categorySubcategoryParamsSchema, 'params'),
   categoryController.getSubcategorySpecific
 );
 
@@ -736,9 +717,9 @@ router.get(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.put(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
+router.put('/:categoryId/subcategory/:subcategoryId',
   authentication,
-  // validate(categorySubcategoryParamsSchema, VALIDATION_TYPES.PARAMS),
+  // validate(categorySubcategoryParamsSchema, 'params'),
   validate(updateSubcategorySchema),
   categoryController.updateSubcategorySpecific
 );
@@ -788,9 +769,9 @@ router.put(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.delete(API_ENDPOINTS.CATEGORY_SUBCATEGORY_BY_IDS,
+router.delete('/:categoryId/subcategory/:subcategoryId',
   authentication,
-  // validate(categorySubcategoryParamsSchema, VALIDATION_TYPES.PARAMS),
+  // validate(categorySubcategoryParamsSchema, 'params'),
   categoryController.deleteSubcategorySpecific
 );
 

@@ -1,11 +1,9 @@
-const { EXTERNAL_PACKAGES } = require('./paths.config.js');
-const { config } = require(EXTERNAL_PACKAGES.DOTENV);
-config();
-const { getFirestore } = require(EXTERNAL_PACKAGES.FIREBASE_FIRESTORE);
-const { getAuth } = require(EXTERNAL_PACKAGES.FIREBASE_AUTH);
+const { getFirestore } = require('firebase/firestore');
+const { getAuth } = require('firebase/auth');
+require('dotenv').config();
 
 // Import the functions you need from the SDKs you need
-const { initializeApp } = require(EXTERNAL_PACKAGES.FIREBASE_APP);
+const { initializeApp } = require('firebase/app');
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 

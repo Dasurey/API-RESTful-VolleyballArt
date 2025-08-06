@@ -1,20 +1,19 @@
-const { EXTERNAL_PACKAGES, RELATIVE_PATHS, ENV_CONFIG, HTTP_STATUS, LOGGING } = require('../config/paths.config.js');
-const { LOGGING_MESSAGES } = require('../utils/messages.utils.js');
-const morgan = require(EXTERNAL_PACKAGES.MORGAN);
-const { Logger } = require('../utils/log.utils.js');
+const { Logger } = require('../utils/log.utils');
+
+const morgan = require('morgan');
 
 // Formato personalizado para Morgan que incluye más información útil
-const customFormat = LOGGING.MORGAN_FORMAT_CUSTOM;
+const customFormat = ':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] ":referrer" ":user-agent" - :response-time ms';
 
 // Función para determinar si logear o no según el código de estado
 const skip = (req, res) => {
   // En desarrollo, logear todo
-  if (process.env.NODE_ENV === ENV_CONFIG.NODE_ENV_DEVELOPMENT) {
+  if (process.env.NODE_ENV === 'development') {
     return false;
   }
   
   // En producción, solo logear errores y requests importantes
-  return res.statusCode < HTTP_STATUS.BAD_REQUEST;
+  return res.statusCode < 400;
 };
 
 // Configurar Morgan con nuestro logger personalizado
@@ -24,7 +23,7 @@ const httpLogger = morgan(customFormat, {
 });
 
 // Morgan para desarrollo con formato más simple y colorido
-const devLogger = morgan(LOGGING.MORGAN_FORMAT_DEV, {
+const devLogger = morgan('dev', {
   stream: Logger.stream,
 });
 
@@ -33,13 +32,13 @@ const requestLogger = (req, res, next) => {
   const startTime = Date.now();
   
   // Información básica del request
-  Logger.info(`${LOGGING_MESSAGES.REQUEST_PREFIX} ${req.method} ${req.originalUrl}`, {
+  Logger.info(`📨 [REQUEST] ${req.method} ${req.originalUrl}`, {
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
-    userAgent: req.get(LOGGING.USER_AGENT_HEADER),
+    userAgent: req.get('User-Agent'),
     apiVersion: req.apiVersion,
-    userId: req.user?.id || LOGGING.ANONYMOUS_USER,
+    userId: req.user?.id || 'anonymous',
     timestamp: new Date().toISOString()
   });
   
@@ -49,11 +48,11 @@ const requestLogger = (req, res, next) => {
     const endTime = Date.now();
     const duration = endTime - startTime;
     
-    Logger.info(`${LOGGING_MESSAGES.RESPONSE_PREFIX} ${req.method} ${req.originalUrl}${LOGGING.LOG_SEPARATOR}${res.statusCode}`, {
+    Logger.info(`📤 [RESPONSE] ${req.method} ${req.originalUrl} - ${res.statusCode}`, {
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,
-      duration: `${duration}${LOGGING.TIME_UNIT}`,
+      duration: `${duration}ms`,
       responseSize: data ? data.length : 0,
       timestamp: new Date().toISOString()
     });

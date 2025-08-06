@@ -1,7 +1,6 @@
 
 const { productsCacheManager } = require('../config/cache.config');
 const productsModel = require('../model/products.model');
-const { structureProducts } = productsModel;
 const { InternalServerError } = require('../utils/error.utils');
 const { logDatabase } = require('../utils/log.utils');
 const { collection, getDocs } = require('firebase/firestore');
@@ -38,7 +37,7 @@ const generateNextId = async () => {
 const getProductsWithQuery = async (queryProcessor) => {
   try {
     const productsRaw = await productsModel.getAllProducts();
-    let products = structureProducts(productsRaw);
+    let products = productsModel.structureProducts(productsRaw);
     // Búsqueda
     if (queryProcessor && queryProcessor.search && queryProcessor.search.term) {
       const searchTerm = queryProcessor.search.term.toLowerCase();
@@ -131,7 +130,7 @@ const getAllProducts = async (queryProcessor = null) => {
   }
   try {
     const productsRaw = await productsModel.getAllProducts();
-    let products = structureProducts(productsRaw);
+    let products = productsModel.structureProducts(productsRaw);
     products.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     productsCacheManager.set(cacheKey, products, CACHE_TTL);
     logDatabase('📦 Productos obtenidos desde Firebase y cacheados', { count: products.length, cached: true, ttl: CACHE_TTL });
@@ -151,7 +150,7 @@ const getProductById = async (id) => {
   try {
     const productRaw = await productsModel.getProductById(id);
     if (productRaw) {
-      const product = structureProducts(productRaw);
+      const product = productsModel.structureProducts(productRaw);
       productsCacheManager.set(cacheKey, product, CACHE_TTL);
       logDatabase('📦 Producto obtenido desde Firebase y cacheado', { productId: id, cached: true, ttl: CACHE_TTL });
       return product;
@@ -176,7 +175,7 @@ const createProduct = async (productData) => {
     };
     const created = await productsModel.createProduct(newId, productWithTimestamps);
     productsCacheManager.invalidateAll();
-    const newProduct = structureProducts(created);
+    const newProduct = productsModel.structureProducts(created);
     logDatabase('✅ Producto creado exitosamente', { productId: newId, ...productWithTimestamps, cacheInvalidated: true });
     return newProduct;
   } catch (error) {
@@ -189,7 +188,7 @@ const updateProduct = async (id, data) => {
     const updated = await productsModel.updateProduct(id, data);
     productsCacheManager.invalidateProduct(id);
     logDatabase('✅ Producto actualizado exitosamente', { productId: id, updatedFields: Object.keys(data), cacheInvalidated: true });
-    return structureProducts(updated);
+    return productsModel.structureProducts(updated);
   } catch (error) {
     throw new InternalServerError(undefined, { operation: 'updateProduct', productId: id, originalError: error.message });
   }

@@ -1,45 +1,23 @@
-const { RELATIVE_PATHS } = require('../config/paths.config.js');
-const { CATEGORIES_MESSAGES, CATEGORY_CONSTANTS } = require('../utils/messages.utils.js');
-const CategoryService = require(RELATIVE_PATHS.FROM_CONTROLLERS.SERVICES_CATEGORY);
-const { controllerWrapper } = require('../utils/async.utils.js');
-const { 
-  ValidationError, 
-  NotFoundError, 
-  ConflictError, 
-  InternalServerError 
-} = require('../utils/error.utils.js');
+const CategoryService = require('../services/category.service');
+const { controllerWrapper } = require('../utils/async.utils');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../utils/error.utils');
 
 /**
  * Obtener todas las categoria padre
  */
-const getAllCategories = controllerWrapper(async (req, res) => {
-  const categories = await CategoryService.getAllCategories();
-  
-  if (!categories || categories.length === 0) {
-    throw new NotFoundError();
-  }
-  
-  res.status(200).json({
-    success: true,
-    message: CATEGORIES_MESSAGES.GET_ALL_SUCCESS,
-    resource: CATEGORIES_MESSAGES.RESOURCE_CATEGORIES,
-    data: categories
-  });
-});
-
 const getAllCategory = controllerWrapper(async (req, res) => {
-  const categories = await CategoryService.getAllCategory(req.queryProcessor);
+  const category = await CategoryService.getAllCategory(req.queryProcessor);
   
   // Solo lanzar error si no hay queryProcessor (consulta básica) y no hay categorías
-  if (!categories || (categories.length === 0 && !req.queryProcessor)) {
+  if (!category || (category.length === 0 && !req.queryProcessor)) {
     throw new NotFoundError();
   }
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.GET_ALL_SUCCESS,
-    resource: CATEGORIES_MESSAGES.RESOURCE_CATEGORIES,
-    data: categories || []
+    message: '📋 Categorías obtenidas exitosamente',
+    resource: 'category',
+    data: category || []
   });
 });
 
@@ -57,8 +35,8 @@ const getCategoryById = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.GET_BY_ID_SUCCESS,
-    resource: CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
+    message: '📂 Categoría obtenida exitosamente',
+    resource: 'category',
     data: category
   });
 });
@@ -77,8 +55,8 @@ const getSubcategoryByParent = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_SUCCESS,
-    resource: CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
+    message: '📂 Subcategorías obtenidas exitosamente',
+    resource: 'subcategory',
     data: subcategories
   });
 });
@@ -96,8 +74,8 @@ const getAllSubcategory = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.GET_SUBCATEGORIES_SUCCESS,
-    resource: CATEGORY_CONSTANTS.SUBCATEGORIES_PLURAL,
+    message: '📂 Subcategorías obtenidas exitosamente',
+    resource: 'subcategory',
     data: subcategories || []
   });
 });
@@ -116,8 +94,8 @@ const getSubcategorySpecific = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.GET_BY_ID_SUCCESS,
-    resource: CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
+    message: '📂 Categoría obtenida exitosamente',
+    resource: 'subcategory',
     data: subcategory
   });
 });
@@ -130,8 +108,8 @@ const createCategory = controllerWrapper(async (req, res) => {
   
   res.status(201).json({
     success: true,
-    message: CATEGORIES_MESSAGES.CREATE_CATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
+    message: '✅ Categoría creada exitosamente',
+    resource: 'category',
     data: newCategory
   });
 });
@@ -146,8 +124,8 @@ const createSubcategory = controllerWrapper(async (req, res) => {
   
   res.status(201).json({
     success: true,
-    message: CATEGORIES_MESSAGES.CREATE_SUBCATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
+    message: '✅ Subcategoría creada exitosamente',
+    resource: 'subcategory',
     data: newSubcategory
   });
 });
@@ -162,8 +140,8 @@ const createSubcategorySimple = controllerWrapper(async (req, res) => {
   
   res.status(201).json({
     success: true,
-    message: CATEGORIES_MESSAGES.CREATE_SUBCATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
+    message: '✅ Subcategoría creada exitosamente',
+    resource: 'subcategory',
     data: newSubcategory
   });
 });
@@ -182,8 +160,8 @@ const updateCategory = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.UPDATE_CATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
+    message: '✅ Categoría actualizada exitosamente',
+    resource: 'category',
     data: updatedCategory
   });
 });
@@ -202,8 +180,8 @@ const updateCategorySpecific = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.UPDATE_CATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.CATEGORY_SINGULAR,
+    message: '✅ Categoría actualizada exitosamente',
+    resource: 'category',
     data: updatedCategory
   });
 });
@@ -222,8 +200,8 @@ const updateSubcategorySpecific = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.UPDATE_SUBCATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR,
+    message: '✅ Subcategoría actualizada exitosamente',
+    resource: 'subcategory',
     data: updatedSubcategory
   });
 });
@@ -236,7 +214,7 @@ const deleteCategory = controllerWrapper(async (req, res) => {
   const { deleteSubcategory } = req.query; // Query parameter opcional
   
   const result = await CategoryService.deleteCategory(id, { 
-    deleteSubcategory: deleteSubcategory === CATEGORY_CONSTANTS.BOOLEAN_TRUE 
+    deleteSubcategory: deleteSubcategory === 'true' 
   });
   
   if (!result) {
@@ -245,8 +223,8 @@ const deleteCategory = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.DELETE_CATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.CATEGORY_SINGULAR
+    message: '✅ Categoría eliminada exitosamente',
+    resource: 'category'
   });
 });
 
@@ -258,7 +236,7 @@ const deleteCategorySpecific = controllerWrapper(async (req, res) => {
   const { deleteSubcategory } = req.query; // Query parameter opcional
   
   const result = await CategoryService.deleteCategory(id, { 
-    deleteSubcategory: deleteSubcategory === CATEGORY_CONSTANTS.BOOLEAN_TRUE 
+    deleteSubcategory: deleteSubcategory === 'true' 
   });
   
   if (!result) {
@@ -267,8 +245,8 @@ const deleteCategorySpecific = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.DELETE_CATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.CATEGORY_SINGULAR
+    message: '✅ Categoría eliminada exitosamente',
+    resource: 'category'
   });
 });
 
@@ -286,8 +264,8 @@ const deleteSubcategorySpecific = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.DELETE_SUBCATEGORY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.SUBCATEGORY_SINGULAR
+    message: '✅ Subcategoría eliminada exitosamente',
+    resource: 'subcategory'
   });
 });
 
@@ -303,8 +281,8 @@ const getCategoryHierarchy = controllerWrapper(async (req, res) => {
   
   res.status(200).json({
     success: true,
-    message: CATEGORIES_MESSAGES.GET_HIERARCHY_SUCCESS,
-    resource: CATEGORY_CONSTANTS.CATEGORY_HIERARCHY,
+    message: '🌳 Jerarquía de categorías obtenida exitosamente',
+    resource: 'Jerarquía de categoria',
     data: hierarchy
   });
 });

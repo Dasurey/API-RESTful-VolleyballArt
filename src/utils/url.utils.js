@@ -64,15 +64,15 @@ function updateSwaggerUrl(req, res, next) {
 function getEndpointUrls(baseUrl) {
   return {
     api: `${baseUrl}${API_ENDPOINTS.API_ROOT}`,
-    documentation: `${baseUrl}${API_ENDPOINTS.API_DOCS}`,
-    products: `${baseUrl}${API_ENDPOINTS.PRODUCTS_BASE}`,
+    documentation: `${baseUrl}${'/api/docs'}`,
+    products: `${baseUrl}${'/products'}`,
     categoryHierarchy: `${baseUrl}${API_ENDPOINTS.CATEGORY_HIERARCHY_FULL}`,
     system: `${baseUrl}${API_ENDPOINTS_PATHS.STATUS}`,
     cache: `${baseUrl}${API_ENDPOINTS.CACHE_STATS}`,
     health: `${baseUrl}${API_ENDPOINTS.HEALTH}`,
     metrics: `${baseUrl}${API_ENDPOINTS.METRICS}`,
     debug: `${baseUrl}${API_ENDPOINTS.DEBUG}`,
-    swagger: `${baseUrl}${API_ENDPOINTS.SWAGGER_JSON}`
+    swagger: `${baseUrl}${'/api/swagger.json'}`
   };
 }
 

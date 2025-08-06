@@ -2,9 +2,9 @@
  * Controlador temporal simplificado para backup
  * Para diagnosticar problemas de importación
  */
-const { ValidationError, InternalServerError, ConflictError, NotFoundError } = require('../utils/error.utils.js');
-const { controllerWrapper } = require('../utils/async.utils.js');
-const { createSuccessWithLog } = require('../utils/success.utils.js');
+const { ValidationError, InternalServerError, ConflictError, NotFoundError } = require('../utils/error.utils');
+const { controllerWrapper } = require('../utils/async.utils');
+const { createSuccessWithLog } = require('../utils/success.utils');
 
 const createBackup = controllerWrapper(async (req, res) => {
   try {

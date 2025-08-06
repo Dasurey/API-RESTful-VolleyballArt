@@ -4,6 +4,7 @@ const { logDatabase } = require('../utils/log.utils');
 const { generateNextCategoryId, generateNextSubcategoryId } = require('../services/category.service');
 const { processQuery, getQueryProcessingInfo } = require('../middlewares/query.middleware');
 const { InternalServerError } = require('../utils/error.utils');
+
 const { collection, doc, getDoc, getDocs, setDoc, deleteDoc } = require('firebase/firestore');
 
 const COLLECTION_NAME = 'category';

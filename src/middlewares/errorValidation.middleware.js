@@ -1,12 +1,10 @@
-const { SERVICE_MESSAGES, ERROR_VALIDATION_MIDDLEWARE_CONSTANTS } = require('../utils/messages.utils.js');
-const { RELATIVE_PATHS } = require('../config/paths.config.js');
-const { ValidationError } = require(RELATIVE_PATHS.FROM_UTILS.UTILS_ERROR_PATH);
+const { ValidationError } = require('../error.utils');
 
 /**
  * Middleware para convertir errores de express-validator en ValidationError
  */
 const handleValidationErrors = (req, res, next) => {
-    const { validationResult } = require(ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.EXPRESS_VALIDATOR_PACKAGE);
+    const { validationResult } = require('express-validator');
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -18,9 +16,9 @@ const handleValidationErrors = (req, res, next) => {
         }));
 
         throw new ValidationError(
-            SERVICE_MESSAGES.VALIDATION_ERROR_DEFAULT,
+            undefined,
             { validationErrors: errorDetails },
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.EXPRESS_VALIDATOR_ERROR_CODE
+            'EXPRESS_VALIDATOR_ERROR'
         );
     }
 
@@ -33,16 +31,16 @@ const handleValidationErrors = (req, res, next) => {
 const handleJoiValidationErrors = (error, req, res, next) => {
     if (error.isJoi) {
         const errorDetails = error.details.map(detail => ({
-            field: detail.path.join(ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.JOI_PATH_SEPARATOR),
+            field: detail.path.join('.'),
             message: detail.message,
             value: detail.context?.value,
             type: detail.type
         }));
 
         const validationError = new ValidationError(
-            SERVICE_MESSAGES.VALIDATION_ERROR_DEFAULT,
+            undefined,
             { validationErrors: errorDetails },
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.JOI_VALIDATION_ERROR_CODE
+            'JOI_VALIDATION_ERROR'
         );
 
         return next(validationError);
@@ -55,33 +53,33 @@ const handleJoiValidationErrors = (error, req, res, next) => {
  * Middleware para manejar errores de límite de archivo
  */
 const handleMulterErrors = (error, req, res, next) => {
-    if (error.code === ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.MULTER_LIMIT_FILE_SIZE) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
         throw new ValidationError(
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.FILE_TOO_LARGE_MESSAGE,
+            'El archivo es demasiado grande',
             {
                 maxSize: error.limit,
                 field: error.field
             },
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.FILE_TOO_LARGE_CODE
+            'FILE_TOO_LARGE'
         );
     }
 
-    if (error.code === ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.MULTER_LIMIT_FILE_COUNT) {
+    if (error.code === 'LIMIT_FILE_COUNT') {
         throw new ValidationError(
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.TOO_MANY_FILES_MESSAGE,
+            'Demasiados archivos',
             {
                 maxFiles: error.limit,
                 field: error.field
             },
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.TOO_MANY_FILES_CODE
+            'TOO_MANY_FILES'
         );
     }
 
-    if (error.code === ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.MULTER_LIMIT_UNEXPECTED_FILE) {
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
         throw new ValidationError(
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.UNEXPECTED_FILE_FIELD_MESSAGE,
+            'Campo de archivo inesperado',
             { field: error.field },
-            ERROR_VALIDATION_MIDDLEWARE_CONSTANTS.UNEXPECTED_FILE_FIELD_CODE
+            'UNEXPECTED_FILE_FIELD'
         );
     }
 

@@ -10,9 +10,6 @@
  * - Agregaciones básicas
  */
 
-const { QUERY_CONSTANTS, SWAGGER_CONSTANTS } = require('../utils/messages.utils.js');
-const { InternalServerError } = require('../utils/error.utils.js');
-
 /**
  * Middleware principal de query processing
  */
