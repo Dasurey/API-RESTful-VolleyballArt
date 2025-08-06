@@ -15,7 +15,7 @@
       documentation: '/api/v1/docs',
       changelog: [
         '✅ Autenticación con Firebase',
-        '✅ CRUD de productos con IDs secuenciales (VA-XXXXX)',
+        '✅ CRUD de productos con IDs secuenciales (VA-XXXXXXX)',
         '✅ Sistema completo de categorías y subcategorías',
         '✅ IDs jerárquicos para categorías (CAT-XXXX-YYYY)',
         '✅ Rutas públicas y privadas',

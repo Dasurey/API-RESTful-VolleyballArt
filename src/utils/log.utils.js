@@ -1,5 +1,3 @@
-const { LOG_FILES } = require('../config/paths.config.js');
-
 // ============================================================
 /**
  * 📊 Sistema Unificado de Logging
@@ -50,7 +48,7 @@ try {
 
         // File transport para errores (siempre activo)
         new winston.transports.File({
-            filename: LOG_FILES.ERROR_LOG_FILE,
+            filename: 'logs/error.log',
             level: 'error',
             format: winston.format.combine(
                 winston.format.timestamp(),
@@ -60,7 +58,7 @@ try {
 
         // File transport para todos los logs
         new winston.transports.File({
-            filename: LOG_FILES.COMBINED_LOG_FILE,
+            filename: 'logs/combined.log',
             format: winston.format.combine(
                 winston.format.timestamp(),
                 winston.format.json()

@@ -3,6 +3,79 @@ const { logAndExecute } = require('../utils/log.utils');
 const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../utils/error.utils');
 
 /**
+ * Generar el próximo ID para categoría padre
+ * Formato: CAT-XXXX-0000
+ */
+const generateNextCategoryId = async () => {
+  return executeFirebaseOperation(
+    async () => {
+      const categoryCollection = collection(db, COLLECTION_NAME);
+      const snapshot = await getDocs(categoryCollection);
+
+      if (snapshot.empty) {
+        return 'CAT-0001-0000';
+      }
+
+      // Obtener todas las categoria padre (terminan en -0000)
+      let maxNumber = 0;
+      snapshot.forEach((doc) => {
+        const id = doc.id;
+        if (id.startsWith('CAT-') && id.endsWith('-0000')) {
+          const number = parseInt(id.split('-')[1]);
+          if (number > maxNumber) {
+            maxNumber = number;
+          }
+        }
+      });
+
+      const nextNumber = maxNumber + 1;
+      return `CAT-${nextNumber.toString().padStart(4, '0')}-0000`;
+    },
+    'generateCategoryId',
+    COLLECTION_NAME,
+    { operation: 'generateParentCategoryId' }
+  );
+};
+
+/**
+ * Generar el próximo ID para subcategoría
+ * Formato: CAT-XXXX-YYYY (donde XXXX es de la categoría padre)
+ * @param {string} parentCategoryId - ID de la categoría padre (ej: CAT-0001-0000)
+ */
+const generateNextSubcategoryId = async (parentCategoryId) => {
+  return executeFirebaseOperation(
+    async () => {
+      // Extraer el número de la categoría padre
+      const parentNumber = parentCategoryId.split('-')[1];
+
+      const categoryCollection = collection(db, COLLECTION_NAME);
+      const snapshot = await getDocs(categoryCollection);
+
+      // Buscar todas las subcategoria de esta categoría padre
+      let maxSubNumber = 0;
+      snapshot.forEach((doc) => {
+        const id = doc.id;
+        if (id.startsWith(`CAT-${parentNumber}-`) && !id.endsWith('-0000')) {
+          const subNumber = parseInt(id.split('-')[2]);
+          if (subNumber > maxSubNumber) {
+            maxSubNumber = subNumber;
+          }
+        }
+      });
+
+      const nextSubNumber = maxSubNumber + 1;
+      return `CAT-${parentNumber}-${nextSubNumber.toString().padStart(4, '0')}`;
+    },
+    'generateSubcategoryId',
+    COLLECTION_NAME,
+    {
+      operation: 'generateSubcategoryId',
+      parentCategoryId
+    }
+  );
+};
+
+/**
  * Obtener todas las categoria padre
  */
 const getAllCategory = async (queryProcessor = null) => {
@@ -366,6 +439,8 @@ const getCategoryHierarchy = async () => {
 };
 
 module.exports = {
+  generateNextSubcategoryId, 
+  generateNextCategoryId,
   getAllCategory,
   getCategoryById,
   getSubcategoryByParent,

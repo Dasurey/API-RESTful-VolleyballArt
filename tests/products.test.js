@@ -17,7 +17,7 @@ const mockAuth = (req, res, next) => {
 // Mock de productos en memoria
 let mockProducts = [
   {
-    id: 'VA-00001',
+    id: 'VA-0000001',
     name: 'Pelota de Volleyball',
     description: 'Pelota oficial',
     price: 150.00,
@@ -37,11 +37,11 @@ app.get('/products', (req, res) => {
 app.get('/products/:id', (req, res) => {
   const { id } = req.params;
   
-  // Validar formato ID VA-XXXXX
-  if (!/^VA-\d{5}$/.test(id)) {
+  // Validar formato ID VA-XXXXXXX
+  if (!/VA-\d{7}$/.test(id)) {
     return res.status(400).json({
       message: 'ID inválido',
-      errors: ['ID debe tener formato VA-XXXXX']
+      errors: ['ID debe tener formato VA-XXXXXXX']
     });
   }
   
@@ -102,10 +102,10 @@ app.post('/products/create', mockAuth, (req, res) => {
 app.put('/products/:id', mockAuth, (req, res) => {
   const { id } = req.params;
   
-  if (!/^VA-\d{5}$/.test(id)) {
+  if (!/VA-\d{7}$/.test(id)) {
     return res.status(400).json({
       message: 'ID inválido',
-      errors: ['ID debe tener formato VA-XXXXX']
+      errors: ['ID debe tener formato VA-XXXXXXX']
     });
   }
   
@@ -117,10 +117,10 @@ app.put('/products/:id', mockAuth, (req, res) => {
 app.delete('/products/:id', mockAuth, (req, res) => {
   const { id } = req.params;
   
-  if (!/^VA-\d{5}$/.test(id)) {
+  if (!/VA-\d{7}$/.test(id)) {
     return res.status(400).json({
       message: 'ID inválido',
-      errors: ['ID debe tener formato VA-XXXXX']
+      errors: ['ID debe tener formato VA-XXXXXXX']
     });
   }
   
@@ -146,7 +146,7 @@ describe('🏐 Products Endpoints', () => {
 
   describe('GET /products/:id', () => {
     it('debería obtener un producto específico', async () => {
-      const productId = 'VA-00001';
+      const productId = 'VA-0000001';
       
       const response = await request(app)
         .get(`/products/${productId}`);
@@ -220,7 +220,7 @@ describe('🏐 Products Endpoints', () => {
     };
 
     it('debería actualizar producto con autenticación', async () => {
-      const productId = 'VA-00001';
+      const productId = 'VA-0000001';
       
       const response = await request(app)
         .put(`/products/${productId}`)
@@ -232,7 +232,7 @@ describe('🏐 Products Endpoints', () => {
     });
 
     it('debería rechazar actualización sin autenticación', async () => {
-      const productId = 'VA-00001';
+      const productId = 'VA-0000001';
       
       const response = await request(app)
         .put(`/products/${productId}`)
@@ -244,7 +244,7 @@ describe('🏐 Products Endpoints', () => {
 
   describe('DELETE /products/:id', () => {
     it('debería eliminar producto con autenticación', async () => {
-      const productId = 'VA-00001';
+      const productId = 'VA-0000001';
       
       const response = await request(app)
         .delete(`/products/${productId}`)
@@ -255,7 +255,7 @@ describe('🏐 Products Endpoints', () => {
     });
 
     it('debería rechazar eliminación sin autenticación', async () => {
-      const productId = 'VA-00001';
+      const productId = 'VA-0000001';
       
       const response = await request(app)
         .delete(`/products/${productId}`);

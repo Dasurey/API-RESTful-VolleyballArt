@@ -1,6 +1,4 @@
-const { EXTERNAL_PACKAGES } = require('../config/paths.config.js');
-const { JOI_ERROR_KEYS, VALIDATION_MESSAGES } = require('../utils/messages.utils.js');
-const Joi = require(EXTERNAL_PACKAGES.JOI);
+const Joi = require('joi');
 
 // Esquema para validar productos
 const productSchema = Joi.object({
@@ -9,47 +7,47 @@ const productSchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_TITLE_REQUIRED,
-      'string.min': VALIDATION_MESSAGES.PRODUCT_TITLE_MIN,
-      'string.max': VALIDATION_MESSAGES.PRODUCT_TITLE_MAX
+      'string.empty': '❗ El título es obligatorio',
+      'string.min': '📝 El título debe tener al menos 3 caracteres',
+      'string.max': '📝 El título debe tener como máximo 100 caracteres'
     }),
 
   img: Joi.array()
     .items(
       Joi.object({
         src: Joi.string().uri().required().messages({
-          [JOI_ERROR_KEYS.STRING_URI]: VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_INVALID,
-          [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_IMAGE_URL_REQUIRED
+          'string.uri': '🖼️ La URL de la imagen debe ser válida',
+          'string.empty': '🖼️ La URL de la imagen es requerida'
         }),
         alt: Joi.string().min(1).required().messages({
-          [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_IMAGE_ALT_REQUIRED
+          'string.empty': '🖼️ El texto alternativo de la imagen es requerido'
         }),
         carousel: Joi.boolean().required().messages({
-          [JOI_ERROR_KEYS.BOOLEAN_BASE]: VALIDATION_MESSAGES.PRODUCT_IMAGE_CAROUSEL_BOOLEAN
+          'boolean.base': '🎠 El campo carousel debe ser un booleano'
         })
       })
     )
     .min(1)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.ARRAY_MIN]: VALIDATION_MESSAGES.PRODUCT_IMAGES_MIN,
-      [JOI_ERROR_KEYS.ARRAY_BASE]: VALIDATION_MESSAGES.PRODUCT_IMAGES_ARRAY
+      'array.min': '🖼️ Se requiere al menos una imagen',
+      'array.base': '🖼️ Las imágenes deben ser un array'
     }),
 
   price: Joi.number()
     .min(0)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.NUMBER_MIN]: VALIDATION_MESSAGES.PRODUCT_PRICE_NEGATIVE,
-      [JOI_ERROR_KEYS.NUMBER_BASE]: VALIDATION_MESSAGES.PRODUCT_PRICE_NUMBER
+      'number.min': '💸 El precio no puede ser negativo',
+      'number.base': '💸 El precio debe ser un número'
     }),
 
   previous_price: Joi.number()
     .min(0)
     .allow(null)
     .messages({
-      [JOI_ERROR_KEYS.NUMBER_MIN]: VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NEGATIVE,
-      [JOI_ERROR_KEYS.NUMBER_BASE]: VALIDATION_MESSAGES.PRODUCT_PREVIOUS_PRICE_NUMBER
+      'number.min': '💸 El precio anterior no puede ser negativo',
+      'number.base': '💸 El precio anterior debe ser un número o null'
     }),
 
   description: Joi.string()
@@ -57,50 +55,82 @@ const productSchema = Joi.object({
     .max(500)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_REQUIRED,
-      'string.min': VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MIN,
-      'string.max': VALIDATION_MESSAGES.PRODUCT_DESCRIPTION_MAX
+      'string.empty': '📝 La descripción del producto es requerida',
+      'string.min': '📝 La descripción del producto debe tener al menos 10 caracteres',
+      'string.max': '📝 La descripción del producto debe tener como máximo 500 caracteres'
     }),
 
   category: Joi.string()
     .pattern(/^CAT-\d{4}-0000$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_CATEGORY_REQUIRED,
-      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PRODUCT_CATEGORY_INVALID_FORMAT
+      'string.empty': '🏷️ La categoría es obligatoria',
+      'string.pattern.base': '🏷️ La categoría debe tener el formato CAT-XXXX-0000'
     }),
 
   subcategory: Joi.string()
     .pattern(/^CAT-\d{4}-\d{4}$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_EMPTY]: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_REQUIRED,
-      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PRODUCT_SUBCATEGORY_INVALID_FORMAT
+      'string.empty': '🏷️ La subcategoría es obligatoria',
+      'string.pattern.base': '🏷️ La subcategoría debe tener el formato CAT-XXXX-YYYY'
     }),
 
   outstanding: Joi.boolean()
     .required()
     .messages({
-      [JOI_ERROR_KEYS.BOOLEAN_BASE]: VALIDATION_MESSAGES.PRODUCT_OUTSTANDING_BOOLEAN
+      'boolean.base': '⭐ El campo destacado debe ser un valor booleano'
     })
 });
 
 // Esquema para actualizar productos (campos opcionales)
 const updateProductSchema = Joi.object({
-  title: Joi.string().min(3).max(100),
+  title: Joi.string().min(3).max(100).messages({
+    'string.empty': '❗ El título es obligatorio',
+    'string.min': '📝 El título debe tener al menos 3 caracteres',
+    'string.max': '📝 El título debe tener como máximo 100 caracteres'
+  }),
   img: Joi.array().items(
     Joi.object({
-      src: Joi.string().uri().required(),
-      alt: Joi.string().min(1).required(),
-      carousel: Joi.boolean().required()
+      src: Joi.string().uri().required().messages({
+        'string.uri': '🖼️ La URL de la imagen debe ser válida',
+        'string.empty': '🖼️ La URL de la imagen es requerida'
+      }),
+      alt: Joi.string().min(1).required().messages({
+        'string.empty': '🖼️ El texto alternativo de la imagen es requerido'
+      }),
+      carousel: Joi.boolean().required().messages({
+        'boolean.base': '🎠 El campo carousel debe ser un booleano'
+      })
     })
-  ).min(1),
-  price: Joi.number().min(0),
-  previous_price: Joi.number().min(0).allow(null),
-  description: Joi.string().min(10).max(500),
-  category: Joi.string().pattern(/^CAT-\d{4}-0000$/),
-  subcategory: Joi.string().pattern(/^CAT-\d{4}-\d{4}$/),
-  outstanding: Joi.boolean()
+  ).min(1).messages({
+    'array.min': '🖼️ Se requiere al menos una imagen',
+    'array.base': '🖼️ Las imágenes deben ser un array'
+  }),
+  price: Joi.number().min(0).messages({
+    'number.min': '💸 El precio no puede ser negativo',
+    'number.base': '💸 El precio debe ser un número'
+  }),
+  previous_price: Joi.number().min(0).allow(null).messages({
+    'number.min': '💸 El precio anterior no puede ser negativo',
+    'number.base': '💸 El precio anterior debe ser un número o null'
+  }),
+  description: Joi.string().min(10).max(500).messages({
+    'string.empty': '📝 La descripción del producto es requerida',
+    'string.min': '📝 La descripción del producto debe tener al menos 10 caracteres',
+    'string.max': '📝 La descripción del producto debe tener como máximo 500 caracteres'
+  }),
+  category: Joi.string().pattern(/^CAT-\d{4}-0000$/).messages({
+    'string.empty': '🏷️ La categoría es obligatoria',
+    'string.pattern.base': '🏷️ La categoría debe tener el formato CAT-XXXX-0000'
+  }),
+  subcategory: Joi.string().pattern(/^CAT-\d{4}-\d{4}$/).messages({
+    'string.empty': '🏷️ La subcategoría es obligatoria',
+    'string.pattern.base': '🏷️ La subcategoría debe tener el formato CAT-XXXX-YYYY'
+  }),
+  outstanding: Joi.boolean().messages({
+    'boolean.base': '⭐ El campo destacado debe ser un valor booleano'
+  })
 }).min(1); // Al menos un campo debe estar presente
 
 module.exports = {

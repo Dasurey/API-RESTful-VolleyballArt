@@ -51,8 +51,8 @@ const categoryRoutes = require('./routes/category.routes');
 
 const { authentication } = require('./middlewares/authentication.middleware');
 const { GENERAL_MESSAGES,  SYSTEM_MESSAGES, HEALTH_CONSTANTS, METRICS_CONSTANTS } = require('./utils/messages.utils');
-const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require(PATHS.MIDDLEWARES.VERSION);
-const { getVersionInfo } = require(PATHS.CONFIG.API_VERSIONS);
+const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware');
+const { getVersionInfo } = require('./config/apiVersions.config');
 
 // 🏥 Importar utilidades de health checks avanzados
 const { 

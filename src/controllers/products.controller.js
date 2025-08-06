@@ -1,19 +1,13 @@
-const { RELATIVE_PATHS } = require('../config/paths.config.js');
-const { PRODUCTS_MESSAGES } = require('../utils/messages.utils.js');
-const productsService = require(RELATIVE_PATHS.FROM_CONTROLLERS.SERVICES_PRODUCTS);
-const { controllerWrapper } = require('../utils/async.utils.js');
-const { 
-  ValidationError, 
-  InternalServerError, 
-  NotFoundError 
-} = require('../utils/error.utils.js');
+const productsService = require('../services/products.service');
+const { controllerWrapper } = require('../utils/async.utils');
+const { ValidationError, InternalServerError, NotFoundError } = require('../utils/error.utils');
 
 const getAllProducts = controllerWrapper(async (req, res) => {
   try {
     const result = await productsService.getAllProducts(req.queryProcessor);
     return res.json({
       success: true,
-      message: PRODUCTS_MESSAGES.GET_ALL_SUCCESS,
+      message: '📋 Productos obtenidos exitosamente',
       data: result
     });
   } catch (error) {
@@ -23,7 +17,6 @@ const getAllProducts = controllerWrapper(async (req, res) => {
 
 const getProductById = controllerWrapper(async (req, res) => {
   const { id } = req.params;
-  
   try {
     const result = await productsService.getProductById(id);
     if (!result) {
@@ -31,7 +24,7 @@ const getProductById = controllerWrapper(async (req, res) => {
     }
     return res.json({
       success: true,
-      message: PRODUCTS_MESSAGES.GET_BY_ID_SUCCESS,
+      message: '🏐 Producto obtenido exitosamente',
       data: result
     });
   } catch (error) {
@@ -51,7 +44,7 @@ const createProduct = controllerWrapper(async (req, res) => {
     const result = await productsService.createProduct(req.body);
     return res.status(201).json({
       success: true,
-      message: PRODUCTS_MESSAGES.CREATE_SUCCESS,
+      message: '✅ Producto creado exitosamente',
       data: result
     });
   } catch (error) {
@@ -68,12 +61,11 @@ const createProduct = controllerWrapper(async (req, res) => {
 
 const updateProduct = controllerWrapper(async (req, res) => {
   const { id } = req.params;
-  
   try {
-    const updatedProduct = await productsService.updateProduct(id, req.body, res);
+    const updatedProduct = await productsService.updateProduct(id, req.body);
     return res.json({
       success: true,
-      message: PRODUCTS_MESSAGES.UPDATE_SUCCESS,
+      message: '🔄 Producto actualizado exitosamente',
       data: updatedProduct
     });
   } catch (error) {
@@ -91,12 +83,11 @@ const updateProduct = controllerWrapper(async (req, res) => {
 
 const deleteProduct = controllerWrapper(async (req, res) => {
   const { id } = req.params;
-  
   try {
-    await productsService.deleteProduct(id, res);
+    await productsService.deleteProduct(id);
     return res.json({
       success: true,
-      message: PRODUCTS_MESSAGES.DELETE_SUCCESS,
+      message: '🗑️ Producto eliminado exitosamente',
       data: { deleted: true, id }
     });
   } catch (error) {

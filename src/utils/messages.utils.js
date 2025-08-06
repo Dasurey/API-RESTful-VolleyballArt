@@ -286,7 +286,7 @@ const SYSTEM_MESSAGES = {
 
   // Constantes de changelog
   CHANGELOG_AUTH_FIREBASE: '✅ Autenticación con Firebase',
-  CHANGELOG_CRUD_PRODUCTS: '✅ CRUD de productos con IDs secuenciales (VA-XXXXX)',
+  CHANGELOG_CRUD_PRODUCTS: '✅ CRUD de productos con IDs secuenciales (VA-XXXXXXX)',
   CHANGELOG_CATEGORY_SYSTEM: '✅ Sistema completo de categorías y subcategorías',
   CHANGELOG_HIERARCHICAL_IDS: '✅ IDs jerárquicos para categorías (CAT-XXXX-YYYY)',
   CHANGELOG_PUBLIC_PRIVATE_ROUTES: '✅ Rutas públicas y privadas',
@@ -918,8 +918,8 @@ const SWAGGER_CONSTANTS = {
   SCHEMA_REF_SUBCATEGORY: '#/components/schemas/Subcategory',
   
   // Descripciones específicas
-  ID_DESCRIPTION: 'Identificador único del producto (formato VA-XXXXX)',
-  EXAMPLE_PRODUCT_ID: 'VA-00001',
+  ID_DESCRIPTION: 'Identificador único del producto (formato VA-XXXXXXX)',
+  EXAMPLE_PRODUCT_ID: 'VA-0000001',
   
   // Formatos y tipos adicionales
   FORMAT_EMAIL: 'email',
@@ -976,7 +976,7 @@ const SWAGGER_CONSTANTS = {
   ERROR_DETAILS_DESCRIPTION: 'Detalles técnicos del error',
   
   // Descripciones específicas de productos
-  PRODUCT_ID_DESCRIPTION: 'ID único del producto (formato VA-XXXXX)',
+  PRODUCT_ID_DESCRIPTION: 'ID único del producto (formato VA-XXXXXXX)',
   PRODUCT_ID_EXAMPLE: 'VA-0000001',
   PRODUCT_TITLE_DESCRIPTION: 'Título del producto',
   PRODUCT_TITLE_EXAMPLE: 'Zapatilla Asics Metarise Tokyo Men',

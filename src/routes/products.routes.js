@@ -1,20 +1,14 @@
-const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, CACHE_CONFIG, PAGINATION_CONFIG } = require('../config/paths.config.js');
+const { EXTERNAL_PACKAGES, API_ENDPOINTS, RELATIVE_PATHS, CACHE_CONFIG, PAGINATION_CONFIG } = require('../config/paths.config');
 const { Router } = require(EXTERNAL_PACKAGES.EXPRESS);
-const {
-  getAllProducts,
-  getProductById,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-} = require(RELATIVE_PATHS.FROM_ROUTES.CONTROLLERS_PRODUCTS);
-const { authentication } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_AUTH);
-const { validate } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_VALIDATION);
-const { productsQueryProcessor } = require(RELATIVE_PATHS.FROM_ROUTES.MIDDLEWARES_QUERY);
-const { productSchema, updateProductSchema } = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_PRODUCTS);
-const { idParamSchema, validateParams } = require(RELATIVE_PATHS.FROM_ROUTES.SCHEMAS_COMMON);
-const { createLimiter } = require(RELATIVE_PATHS.FROM_ROUTES.CONFIG_SECURITY);
-const { cacheMiddleware, cacheHeaders } = require(RELATIVE_PATHS.FROM_ROUTES.CONFIG_CACHE);
-const { throttleConfigs } = require(RELATIVE_PATHS.FROM_ROUTES.CONFIG_OPTIMIZATION);
+const { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct } = require('../controllers/products.controller');
+const { authentication } = require('../middlewares/authentication.middleware');
+const { validate } = require('../middlewares/validation.middleware');
+const { productsQueryProcessor } = require('../middlewares/query.middleware');
+const { productSchema, updateProductSchema } = require('../schemas/products.schema');
+const { idParamSchema, validateParams } = require('../schemas/common.schema');
+const { createLimiter } = require('../config/security.config');
+const { cacheMiddleware, cacheHeaders } = require('../config/cache.config');
+const { throttleConfigs } = require('../config/optimization.config');
 
 const router = Router();
 
@@ -158,7 +152,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get(API_ENDPOINTS.PRODUCTS_ROOT, 
+router.get('/', 
   cacheHeaders(1800), // Cache por 30 minutos
   cacheMiddleware(1800), // Cache en memoria por 30 minutos
   throttleConfigs.read, // Throttling para lectura
@@ -197,7 +191,7 @@ router.get(API_ENDPOINTS.PRODUCTS_ROOT,
  *                   properties:
  *                     id:
  *                       type: string
- *                       example: VA-00001
+ *                       example: VA-0000001
  *       400:
  *         description: Datos de entrada inválidos
  *         content:
@@ -217,7 +211,7 @@ router.get(API_ENDPOINTS.PRODUCTS_ROOT,
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post(API_ENDPOINTS.PRODUCTS_CREATE, 
+router.post('/create', 
   createLimiter, 
   authentication, 
   throttleConfigs.write, // Throttling para escritura
@@ -238,9 +232,9 @@ router.post(API_ENDPOINTS.PRODUCTS_CREATE,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: '^VA-\d{5}$'
- *         description: ID del producto (formato VA-XXXXX)
- *         example: VA-00001
+ *           pattern: 'VA-\d{7}$'
+ *         description: ID del producto (formato VA-XXXXXXX)
+ *         example: VA-0000001
  *     responses:
  *       200:
  *         description: Producto encontrado
@@ -267,7 +261,7 @@ router.post(API_ENDPOINTS.PRODUCTS_CREATE,
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get(API_ENDPOINTS.PRODUCTS_BY_ID, 
+router.get('/:id', 
   productsQueryProcessor,
   validateParams(idParamSchema),
   cacheHeaders(3600), // Cache por 1 hora para productos individuales
@@ -291,9 +285,9 @@ router.get(API_ENDPOINTS.PRODUCTS_BY_ID,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: '^VA-\d{5}$'
- *         description: ID del producto (formato VA-XXXXX)
- *         example: VA-00001
+ *           pattern: 'VA-\d{7}$'
+ *         description: ID del producto (formato VA-XXXXXXX)
+ *         example: VA-0000001
  *     requestBody:
  *       required: true
  *       content:
@@ -378,9 +372,9 @@ router.get(API_ENDPOINTS.PRODUCTS_BY_ID,
  *         required: true
  *         schema:
  *           type: string
- *           pattern: '^VA-\d{5}$'
- *         description: ID del producto (formato VA-XXXXX)
- *         example: VA-00001
+ *           pattern: '^VA-\d{7}$'
+ *         description: ID del producto (formato VA-XXXXXXX)
+ *         example: VA-0000001
  *     responses:
  *       200:
  *         description: Producto eliminado exitosamente
@@ -407,7 +401,7 @@ router.get(API_ENDPOINTS.PRODUCTS_BY_ID,
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put(API_ENDPOINTS.PRODUCTS_BY_ID, 
+router.put('/:id', 
   validateParams(idParamSchema), 
   authentication, 
   throttleConfigs.write, // Throttling para escritura
@@ -415,7 +409,7 @@ router.put(API_ENDPOINTS.PRODUCTS_BY_ID,
   updateProduct
 );
 
-router.delete(API_ENDPOINTS.PRODUCTS_BY_ID, 
+router.delete('/:id', 
   validateParams(idParamSchema), 
   authentication, 
   throttleConfigs.write, // Throttling para escritura

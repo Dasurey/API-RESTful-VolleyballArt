@@ -1,6 +1,4 @@
-const { EXTERNAL_PACKAGES } = require('../config/paths.config');
-const { JOI_ERROR_KEYS, VALIDATION_MESSAGES, SERVICE_MESSAGES } = require('../utils/messages.utils');
-const Joi = require(EXTERNAL_PACKAGES.JOI);
+const Joi = require('joi');
 
 /**
  * Esquema de validación para crear subcategoría
@@ -12,10 +10,10 @@ const createSubcategorySchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      'string.empty': 'El título de la subcategoría es requerido',
-      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
-      'any.required': 'El título de la subcategoría es requerido'
+      'string.empty': '📛 El título de la subcategoría es requerido',
+      'string.min': '📝 El título debe tener al menos 2 caracteres',
+      'string.max': '📝 El título debe tener como máximo 100 caracteres',
+      'any.required': '📛 El título de la subcategoría es requerido'
     }),
     
   text: Joi.string()
@@ -23,9 +21,9 @@ const createSubcategorySchema = Joi.object({
     .max(5000)
     .required()
     .messages({
-      'string.max': VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS,
-      'string.empty': VALIDATION_MESSAGES.SUBCATEGORY_TEXT_REQUIRED,
-      'any.required': VALIDATION_MESSAGES.SUBCATEGORY_TEXT_REQUIRED
+      'string.max': '📝 El texto no puede exceder 5000 caracteres',
+      'string.empty': '📝 El texto descriptivo de la subcategoría es requerido',
+      'any.required': '📝 El texto descriptivo de la subcategoría es requerido'
     }),
     
   img: Joi.array()
@@ -35,16 +33,16 @@ const createSubcategorySchema = Joi.object({
           .uri()
           .required()
           .messages({
-            [JOI_ERROR_KEYS.STRING_URI]: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
-            'any.required': VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
+            'string.uri': '🖼️ La URL de la imagen debe ser válida',
+            'any.required': '🖼️ La URL de la imagen es requerida'
           }),
         alt: Joi.string()
           .trim()
           .max(200)
           .required()
           .messages({
-            'string.max': VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
-            'any.required': VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
+            'string.max': '🖼️ El texto alternativo no puede exceder 200 caracteres',
+            'any.required': '🖼️ El texto alternativo es requerido'
           })
       })
     )
@@ -52,9 +50,9 @@ const createSubcategorySchema = Joi.object({
     .max(10)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.ARRAY_MAX]: VALIDATION_MESSAGES.MAX_10_IMAGES,
-      [JOI_ERROR_KEYS.ARRAY_MIN]: VALIDATION_MESSAGES.MIN_1_IMAGE,
-      'any.required': VALIDATION_MESSAGES.SUBCATEGORY_IMG_REQUIRED
+      'array.max': '🖼️ No se pueden agregar más de 10 imágenes',
+      'array.min': '🖼️ Se requiere al menos una imagen',
+      'any.required': '🖼️ Las imágenes de la subcategoría son requeridas'
     })
 });
 
@@ -68,10 +66,10 @@ const createCategorySchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      'string.empty': VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED,
-      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
-      'any.required': VALIDATION_MESSAGES.CATEGORY_TITLE_REQUIRED
+      'string.empty': '📛 El título de la categoría es requerido',
+      'string.min': '📝 El título debe tener al menos 2 caracteres',
+      'string.max': '📝 El título no puede exceder 100 caracteres',
+      'any.required': '📛 El título de la categoría es requerido'
     }),
     
   subcategory: Joi.array()
@@ -79,7 +77,7 @@ const createCategorySchema = Joi.object({
     .max(20)
     .optional()
     .messages({
-      [JOI_ERROR_KEYS.ARRAY_MAX]: VALIDATION_MESSAGES.MAX_20_SUBCATEGORIES
+      'array.max': '📚 No se pueden agregar más de 20 subcategorías'
     })
 });
 
@@ -93,10 +91,10 @@ const createSubcategorySimpleSchema = Joi.object({
     .max(100)
     .required()
     .messages({
-      'string.empty': 'El título de la subcategoría es requerido',
-      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS,
-      'any.required': 'El título de la subcategoría es requerido'
+      'string.empty': '📛 El título de la subcategoría es requerido',
+      'string.min': '📝 El título debe tener al menos 2 caracteres',
+      'string.max': '📝 El título no puede exceder 100 caracteres',
+      'any.required': '📛 El título de la subcategoría es requerido'
     }),
     
   text: Joi.string()
@@ -105,7 +103,7 @@ const createSubcategorySimpleSchema = Joi.object({
     .allow('', null)
     .optional()
     .messages({
-      'string.max': VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
+      'string.max': '📝 El texto no puede exceder 5000 caracteres'
     }),
     
   img: Joi.array()
@@ -115,23 +113,23 @@ const createSubcategorySimpleSchema = Joi.object({
           .uri()
           .required()
           .messages({
-            [JOI_ERROR_KEYS.STRING_URI]: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
-            'any.required': VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
+            'string.uri': '🖼️ La URL de la imagen debe ser válida',
+            'any.required': '🖼️ La URL de la imagen es requerida'
           }),
         alt: Joi.string()
           .trim()
           .max(200)
           .required()
           .messages({
-            'string.max': VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS,
-            'any.required': VALIDATION_MESSAGES.ALT_TEXT_REQUIRED
+            'string.max': '🖼️ El texto alternativo no puede exceder 200 caracteres',
+            'any.required': '🖼️ El texto alternativo es requerido'
           })
       })
     )
     .max(10)
     .optional()
     .messages({
-      [JOI_ERROR_KEYS.ARRAY_MAX]: VALIDATION_MESSAGES.MAX_10_IMAGES
+      'array.max': '🖼️ No se pueden agregar más de 10 imágenes'
     })
 });
 
@@ -145,12 +143,12 @@ const updateCategorySchema = Joi.object({
     .max(100)
     .optional()
     .messages({
-      'string.empty': VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
-      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
+      'string.empty': '📛 El título no puede estar vacío',
+      'string.min': '📝 El título debe tener al menos 2 caracteres',
+      'string.max': '📝 El título no puede exceder 100 caracteres'
     })
 }).min(1).messages({
-  [JOI_ERROR_KEYS.OBJECT_MIN]: VALIDATION_MESSAGES.PROVIDE_AT_LEAST_ONE_FIELD
+  'object.min': '📝 Debe proporcionar al menos un campo para actualizar'
 });
 
 /**
@@ -163,9 +161,9 @@ const updateSubcategorySchema = Joi.object({
     .max(100)
     .optional()
     .messages({
-      'string.empty': VALIDATION_MESSAGES.TITLE_CANNOT_BE_EMPTY,
-      'string.min': VALIDATION_MESSAGES.TITLE_MIN_2_CHARS,
-      'string.max': VALIDATION_MESSAGES.TITLE_MAX_100_CHARS
+      'string.empty': '📛 El título no puede estar vacío',
+      'string.min': '📝 El título debe tener al menos 2 caracteres',
+      'string.max': '📝 El título no puede exceder 100 caracteres'
     }),
     
   text: Joi.string()
@@ -174,7 +172,7 @@ const updateSubcategorySchema = Joi.object({
     .allow('', null)
     .optional()
     .messages({
-      'string.max': VALIDATION_MESSAGES.TEXT_MAX_5000_CHARS
+      'string.max': '📝 El texto no puede exceder 5000 caracteres'
     }),
     
   img: Joi.array()
@@ -184,8 +182,8 @@ const updateSubcategorySchema = Joi.object({
           .uri()
           .required()
           .messages({
-            [JOI_ERROR_KEYS.STRING_URI]: VALIDATION_MESSAGES.IMAGE_URL_INVALID,
-            'any.required': VALIDATION_MESSAGES.IMAGE_URL_REQUIRED
+            'string.uri': '🖼️ La URL de la imagen debe ser válida',
+            'any.required': '🖼️ La URL de la imagen es requerida'
           }),
         alt: Joi.string()
           .trim()
@@ -193,7 +191,7 @@ const updateSubcategorySchema = Joi.object({
           .allow('', null)
           .optional()
           .messages({
-            'string.max': VALIDATION_MESSAGES.ALT_TEXT_MAX_200_CHARS
+            'string.max': '🖼️ El texto alternativo no puede exceder 200 caracteres'
           })
       })
     )
@@ -201,10 +199,10 @@ const updateSubcategorySchema = Joi.object({
     .optional()
     .default([])
     .messages({
-      [JOI_ERROR_KEYS.ARRAY_MAX]: VALIDATION_MESSAGES.MAX_10_IMAGES
+      'array.max': '🖼️ No se pueden agregar más de 10 imágenes'
     })
 }).min(1).messages({
-  [JOI_ERROR_KEYS.OBJECT_MIN]: VALIDATION_MESSAGES.PROVIDE_AT_LEAST_ONE_FIELD
+  'object.min': '📝 Debe proporcionar al menos un campo para actualizar'
 });
 
 /**
@@ -215,8 +213,8 @@ const categoryIdSchema = Joi.object({
     .pattern(/^CAT-\d{4}-(0000|\d{4})$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.CATEGORY_ID_FORMAT_INVALID,
-      'any.required': VALIDATION_MESSAGES.CATEGORY_ID_REQUIRED
+      'string.pattern.base': '🆔 El ID de categoría debe tener el formato CAT-XXXX-YYYY',
+      'any.required': '🆔 El ID de categoría es requerido'
     })
 });
 
@@ -228,8 +226,8 @@ const parentCategoryIdSchema = Joi.object({
     .pattern(/^CAT-\d{4}-0000$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
-      'any.required': VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
+      'string.pattern.base': '🆔 El ID de categoría padre debe tener el formato CAT-XXXX-0000',
+      'any.required': '🆔 El ID de categoría padre es requerido'
     })
 });
 
@@ -241,8 +239,8 @@ const categoryParentIdSchema = Joi.object({
     .pattern(/^CAT-\d{4}-0000$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
-      'any.required': VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
+      'string.pattern.base': '🆔 El ID de categoría padre debe tener el formato CAT-XXXX-0000',
+      'any.required': '🆔 El ID de categoría padre es requerido'
     })
 });
 
@@ -254,21 +252,21 @@ const categorySubcategoryParamsSchema = Joi.object({
     .pattern(/^CAT-\d{4}-0000$/)
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.PARENT_CATEGORY_ID_FORMAT_INVALID,
-      'any.required': VALIDATION_MESSAGES.PARENT_CATEGORY_ID_REQUIRED
+      'string.pattern.base': '🆔 El ID de categoría padre debe tener el formato CAT-XXXX-0000',
+      'any.required': '🆔 El ID de categoría padre es requerido'
     }),
   subcategoryId: Joi.string()
     .pattern(/^CAT-\d{4}-\d{4}$/)
     .custom((value, helpers) => {
       if (value.endsWith('-0000')) {
-        return helpers.error('any.custom', { message: VALIDATION_MESSAGES.ID_CANNOT_END_0000 });
+        return helpers.error('any.custom', { message: 'El ID no puede terminar en -0000 (es un ID de categoría padre)' });
       }
       return value;
     })
     .required()
     .messages({
-      [JOI_ERROR_KEYS.STRING_PATTERN_BASE]: VALIDATION_MESSAGES.SUBCATEGORY_ID_FORMAT_INVALID,
-      'any.required': VALIDATION_MESSAGES.SUBCATEGORY_ID_REQUIRED
+      'string.pattern.base': '🆔 El ID de subcategoría debe tener el formato CAT-XXXX-YYYY',
+      'any.required': '🆔 El ID de subcategoría es requerido'
     })
 });
 
@@ -277,10 +275,10 @@ const categorySubcategoryParamsSchema = Joi.object({
  */
 const deleteQuerySchema = Joi.object({
   deleteSubcategory: Joi.string()
-    .valid(SERVICE_MESSAGES.TRUE_STRING, SERVICE_MESSAGES.FALSE_STRING)
+    .valid('true', 'false')
     .optional()
     .messages({
-      [JOI_ERROR_KEYS.ANY_ONLY]: VALIDATION_MESSAGES.DELETE_SUBCATEGORY_VALID_VALUES
+      'any.only': '🗑️ deleteSubcategory debe ser "true" o "false"'
     })
 });
 
