@@ -1,4 +1,4 @@
-const { Logger } = require('../utils/log.utils');
+const { Logger, logInfo } = require('../config/log');
 
 const morgan = require('morgan');
 
@@ -32,7 +32,7 @@ const requestLogger = (req, res, next) => {
   const startTime = Date.now();
   
   // Información básica del request
-  Logger.info(`📨 [REQUEST] ${req.method} ${req.originalUrl}`, {
+  logInfo(`📨 [REQUEST] ${req.method} ${req.originalUrl}`, {
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
@@ -48,7 +48,7 @@ const requestLogger = (req, res, next) => {
     const endTime = Date.now();
     const duration = endTime - startTime;
     
-    Logger.info(`📤 [RESPONSE] ${req.method} ${req.originalUrl} - ${res.statusCode}`, {
+    logInfo(`📤 [RESPONSE] ${req.method} ${req.originalUrl} - ${res.statusCode}`, {
       method: req.method,
       url: req.originalUrl,
       statusCode: res.statusCode,

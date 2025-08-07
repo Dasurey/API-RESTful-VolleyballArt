@@ -1,5 +1,5 @@
-const { db } = require('../config/db.config');
-const { InternalServerError } = require('../utils/error.utils');
+const { db } = require('../config/db');
+const { InternalServerError } = require('../middlewares/error');
 
 const { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } = require('firebase/firestore');
 

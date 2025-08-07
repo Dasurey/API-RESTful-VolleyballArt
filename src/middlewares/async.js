@@ -10,26 +10,31 @@
  * - Pasar errores al middleware global de manejo de errores
  */
 
-/**
- * Wrapper básico para funciones async que automáticamente captura errores
- * y los pasa al middleware de manejo de errores
- */
-const asyncHandler = (fn) => {
-  return (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
+const { logAndExecute } = require('../config/log');
 
 /**
- * Wrapper para controladores con contexto adicional
+ * Wrapper avanzado para controladores/middlewares async
+ * - Captura errores
+ * - Agrega contexto (nombre, requestId)
+ * - Hace logging automático
  */
-const controllerWrapper = (fn, controllerName = 'Unknown') => {
+const controllerWrapper = (fn, name = 'Unknown') => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch((error) => {
-      // Agregar contexto del controlador sin modificar el error original
-      error.controllerContext = controllerName;
-      error.requestId = req.id || generateRequestId();
-      
+      // Agregar contexto útil
+      error.controllerContext = name;
+      error.requestId = req.id || (typeof generateRequestId === 'function' ? generateRequestId() : undefined);
+
+      // Logging automático
+      logAndExecute('error', `🚨 Async error [${name.toUpperCase()}]`, {
+        name,
+        error: error.message,
+        stack: error.stack,
+        url: req.originalUrl || req.url,
+        method: req.method,
+        requestId: error.requestId
+      }, 'ERROR');
+
       // Pasar el error al middleware global de manejo de errores
       next(error);
     });
@@ -38,7 +43,7 @@ const controllerWrapper = (fn, controllerName = 'Unknown') => {
 
 /**
  * Wrapper para servicios de base de datos
- * Solo agrega contexto y re-lanza el error para que error.utils.js lo maneje
+ * Solo agrega contexto y re-lanza el error para que error.js lo maneje
  */
 const dbServiceWrapper = (fn, serviceName = 'Unknown') => {
   return async (...args) => {
@@ -49,7 +54,7 @@ const dbServiceWrapper = (fn, serviceName = 'Unknown') => {
       error.serviceContext = serviceName;
       error.serviceArgs = args.length > 0 ? JSON.stringify(args).slice(0, 200) : null;
       
-      // Re-lanzar el error original para que error.utils.js lo maneje globalmente
+      // Re-lanzar el error original para que error.js lo maneje globalmente
       throw error;
     }
   };
@@ -92,13 +97,12 @@ const withContext = async (fn, context = {}) => {
     // Agregar contexto proporcionado al error
     Object.assign(error, context);
     
-    // Re-lanzar el error para que error.utils.js lo maneje globalmente
+    // Re-lanzar el error para que error.js lo maneje globalmente
     throw error;
   }
 };
 
 module.exports = {
-  asyncHandler,
   controllerWrapper,
   dbServiceWrapper,
   validateAndThrow,

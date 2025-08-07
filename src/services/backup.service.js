@@ -1,9 +1,9 @@
-const backupUtils = require('../utils/backup.utils');
+const backupUtils = require('../utils/backup');
 const path = require('path');
 const fs = require('fs').promises;
-const { ValidationError, ConflictError, InternalServerError, NotFoundError } = require('../utils/error.utils');
-const { createSuccessWithLog } = require('../utils/success.utils');
-const { logAndExecute } = require('../utils/log.utils');
+const { ValidationError, ConflictError, InternalServerError, NotFoundError } = require('../middlewares/error');
+const { createSuccessWithLog } = require('../utils/success');
+const { logAndExecute } = require('../config/log');
 
 // Estado global del sistema de backup
 let backupState = {

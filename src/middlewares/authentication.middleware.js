@@ -1,6 +1,6 @@
-const { verifyToken } = require('../config/jwt.config');
-const { AuthenticationError } = require('../utils/error.utils');
-const { Logger } = require('../utils/log.utils');
+const { verifyToken } = require('../config/jwt');
+const { AuthenticationError } = require('../middlewares/error');
+const { Logger } = require('../config/log');
 
 const authentication = (req, res, next) => {
   try {

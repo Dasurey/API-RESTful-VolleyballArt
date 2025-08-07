@@ -1,5 +1,5 @@
-const { ValidationError, NotFoundError } = require('../utils/error.utils');
-const { API_CONFIG, getVersionInfo } = require('../config/apiVersions.config');
+const { ValidationError, NotFoundError } = require('../middlewares/error');
+const { API_CONFIG, getVersionInfo } = require('../config/api.versions');
 
 /**
  * Extrae la versión de la URL
@@ -94,7 +94,7 @@ const registerVersionedRoutes = (app, basePath, routes, additionalMiddlewares = 
   });
   
   // Registrar sin versión con prefijo /api
-  const compatibilityPath = `/api/${basePath}`;
+  const compatibilityPath = `/api${basePath}`;
   console.log(`✅ Registrando ruta (sin versión): ${compatibilityPath}`);
   app.use(compatibilityPath, ...additionalMiddlewares, routes);
 };

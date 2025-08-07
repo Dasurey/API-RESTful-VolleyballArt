@@ -1,10 +1,8 @@
 // Importar constantes centralizadas primero
-const { CONFIG_VALUES, API_ENDPOINTS, API_ENDPOINTS_PATHS } = require('../config/paths.config');
-const { logError } = require('./log.utils');
-// Importar swaggerSpec de forma lazy para evitar dependencias circulares
-    const { swaggerSpec } = require('../config/swagger.config');
+const { CONFIG_VALUES } = require('../config/paths');
+const { logError } = require('../config/log');
+const { swaggerSpec } = require('../config/swagger');
 
-// Usar paquetes centralizados
 const { dirname, join } = require('path');
 require('dotenv').config();
 
@@ -63,16 +61,16 @@ function updateSwaggerUrl(req, res, next) {
  */
 function getEndpointUrls(baseUrl) {
   return {
-    api: `${baseUrl}${API_ENDPOINTS.API_ROOT}`,
-    documentation: `${baseUrl}${'/api/docs'}`,
-    products: `${baseUrl}${'/products'}`,
-    categoryHierarchy: `${baseUrl}${API_ENDPOINTS.CATEGORY_HIERARCHY_FULL}`,
-    system: `${baseUrl}${API_ENDPOINTS_PATHS.STATUS}`,
-    cache: `${baseUrl}${API_ENDPOINTS.CACHE_STATS}`,
-    health: `${baseUrl}${API_ENDPOINTS.HEALTH}`,
-    metrics: `${baseUrl}${API_ENDPOINTS.METRICS}`,
-    debug: `${baseUrl}${API_ENDPOINTS.DEBUG}`,
-    swagger: `${baseUrl}${'/api/swagger.json'}`
+    api: `${baseUrl}/api`,
+    documentation: `${baseUrl}/api/docs`,
+    products: `${baseUrl}/api/products`,
+    categoryHierarchy: `${baseUrl}/api/category/hierarchy`,
+    system: `${baseUrl}/api/status`,
+    cache: `${baseUrl}/api/cache/stats`,
+    health: `${baseUrl}/api/health`,
+    metrics: `${baseUrl}/api/metrics`,
+    debug: `${baseUrl}/api/debug`,
+    swagger: `${baseUrl}/api/swagger.json`
   };
 }
 

@@ -1,5 +1,5 @@
-const { ValidationError } = require('../utils/error.utils');
-const { logError } = require('../utils/log.utils');
+const { ValidationError } = require('./error');
+const { logError } = require('../config/log');
 const { body, validationResult } = require('express-validator');
 
 // Middleware personalizado para sanitizar datos de entrada evitando problemas con req.query

@@ -8,7 +8,7 @@
  * - Throughput
  */
 
-const { getCacheStats } = require('../config/cache.config');
+const { getCacheStats } = require('../config/cache');
 
 /**
  * Métricas globales de rendimiento

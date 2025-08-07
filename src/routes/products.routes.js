@@ -1,17 +1,16 @@
 const { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct } = require('../controllers/products.controller');
 const { authentication } = require('../middlewares/authentication.middleware');
-const { validate } = require('../middlewares/validation.middleware');
-const { productsQueryProcessor } = require('../middlewares/query.middleware');
+const { handleJoiValidationErrors } = require('../middlewares/error.validation');
+const { productsQueryProcessor } = require('../utils/query');
 const { productSchema, updateProductSchema } = require('../schemas/products.schema');
 const { idParamSchema, validateParams } = require('../schemas/common.schema');
-const { createLimiter } = require('../config/security.config');
-const { cacheMiddleware, cacheHeaders } = require('../config/cache.config');
-const { throttleConfigs } = require('../config/optimization.config');
+const { createLimiter } = require('../middlewares/security');
+const { createCacheMiddleware, cacheHeaders, productsCacheManager } = require('../config/cache');
+const { throttleConfigs } = require('../middlewares/optimization');
+
 const { Router } = require('express');
 
 const router = Router();
-
-
 
 /**
  * @swagger
@@ -153,7 +152,7 @@ const router = Router();
  */
 router.get('/', 
   cacheHeaders(1800), // Cache por 30 minutos
-  cacheMiddleware(1800), // Cache en memoria por 30 minutos
+  createCacheMiddleware(productsCacheManager, { ttl: 1800, middlewareName: 'products' }), // Cache en memoria por 30 minutos
   throttleConfigs.read, // Throttling para lectura
   productsQueryProcessor, // Sistema avanzado de query processing
   getAllProducts
@@ -214,7 +213,7 @@ router.post('/create',
   createLimiter, 
   authentication, 
   throttleConfigs.write, // Throttling para escritura
-  validate(productSchema), 
+  handleJoiValidationErrors(productSchema), 
   createProduct
 );
 
@@ -264,7 +263,7 @@ router.get('/:id',
   productsQueryProcessor,
   validateParams(idParamSchema),
   cacheHeaders(3600), // Cache por 1 hora para productos individuales
-  cacheMiddleware(3600), // Cache en memoria por 1 hora
+  createCacheMiddleware(productsCacheManager, { ttl: 3600, middlewareName: 'products' }), // Cache en memoria por 1 hora
   throttleConfigs.read, // Throttling para lectura
   getProductById
 );
@@ -404,7 +403,7 @@ router.put('/:id',
   validateParams(idParamSchema), 
   authentication, 
   throttleConfigs.write, // Throttling para escritura
-  validate(updateProductSchema), 
+  handleJoiValidationErrors(updateProductSchema), 
   updateProduct
 );
 

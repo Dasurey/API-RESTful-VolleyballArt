@@ -1,4 +1,4 @@
-const { ValidationError } = require('../utils/error.utils.js');
+const { ValidationError } = require('../middlewares/error.js');
 const Joi = require('joi');
 
 // Validación para parámetros de ID
@@ -38,7 +38,7 @@ const querySchema = Joi.object({
 // Middleware para validar parámetros de URL
 const validateParams = (schema) => {
   return (req, res, next) => {
-    const { error, value } = schema.validate(req.params);
+    const { error, value } = schema.handleJoiValidationErrors(req.params);
     
     if (error) {
       const validationError = new ValidationError();
@@ -54,8 +54,8 @@ const validateParams = (schema) => {
 // Middleware para validar query parameters
 const validateQuery = (schema) => {
   return (req, res, next) => {
-    const { error, value } = schema.validate(req.query);
-    
+    const { error, value } = schema.handleJoiValidationErrors(req.query);
+
     if (error) {
       const validationError = new ValidationError();
       validationError.details = error.details;

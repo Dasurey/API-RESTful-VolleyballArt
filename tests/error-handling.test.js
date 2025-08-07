@@ -118,7 +118,7 @@ describe('Sistema de Manejo de Errores Global', () => {
     // Middleware de validación
     const validateData = (schema) => {
       return (req, res, next) => {
-        const { error } = schema.validate(req.body);
+        const { error } = schema.handleJoiValidationErrors(req.body);
         if (error) {
           const err = new AppError(error.details[0].message, 400);
           return next(err);

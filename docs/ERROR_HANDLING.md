@@ -11,7 +11,7 @@ Sistema avanzado de manejo de errores que proporciona:
 
 ## 🏗️ Arquitectura
 
-### 1. Clases de Error Personalizadas (`error.utils.js`)
+### 1. Clases de Error Personalizadas (`error.js`)
 
 #### `AppError` - Clase Base
 ```javascript
@@ -75,7 +75,7 @@ validateAndThrow(
 
 ```javascript
 const { controllerWrapper, validateAndThrow } = require('../utils/async.utils.js');
-const { NotFoundError, ValidationError } = require('../utils/error.utils.js');
+const { NotFoundError, ValidationError } = require('../middlewares/error.js');
 
 const getProduct = controllerWrapper(async (req, res) => {
   const { id } = req.params;
@@ -107,7 +107,7 @@ const getProduct = controllerWrapper(async (req, res) => {
 
 ```javascript
 const { dbServiceWrapper } = require('../utils/async.utils.js');
-const { DatabaseError } = require('../utils/error.utils.js');
+const { DatabaseError } = require('../middlewares/error.js');
 
 const createProduct = dbServiceWrapper(async (productData) => {
   try {
@@ -122,7 +122,7 @@ const createProduct = dbServiceWrapper(async (productData) => {
 ### En Middlewares de Validación
 
 ```javascript
-const { handleValidationErrors } = require('../middlewares/errorValidation.middleware.js');
+const { handleValidationErrors } = require('../middlewares/error.validation.js');
 
 router.post('/products',
   [

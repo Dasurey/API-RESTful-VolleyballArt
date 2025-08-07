@@ -1,4 +1,4 @@
-const { AuthenticationError } = require('../utils/error.utils.js');
+const { AuthenticationError } = require('../middlewares/error');
 
 const jwt = require('jsonwebtoken');
 

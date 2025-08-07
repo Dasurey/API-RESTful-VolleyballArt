@@ -1,6 +1,6 @@
 const CategoryService = require('../services/category.service');
-const { controllerWrapper } = require('../utils/async.utils');
-const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../utils/error.utils');
+const { controllerWrapper } = require('../middlewares/async');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../middlewares/error');
 
 /**
  * Obtener todas las categoria padre

@@ -1,5 +1,5 @@
-const { SystemError } = require('./error.utils');
-const { logAndExecute } = require('./log.utils');
+const { SystemError } = require('../middlewares/error');
+const { logAndExecute } = require('../config/log');
 
 /**
  * Clase base para respuestas exitosas de la aplicación
@@ -194,7 +194,7 @@ const addPerformanceInfo = (meta = {}, startTime = null) => {
 const createSuccessWithLog = (res, statusCode, message, payload = null, meta = null, logLevel = 'info') => {
     const response = createSuccess(statusCode, message, payload, meta);
 
-    // Log automático usando log.utils.js
+    // Log automático usando log.js
     try {
         logAndExecute(logLevel, message, {
             statusCode,
@@ -202,7 +202,7 @@ const createSuccessWithLog = (res, statusCode, message, payload = null, meta = n
             responseTime: meta?.responseTime || 0
         }, 'SUCCESS');
     } catch (error) {
-        // Si hay error al importar o usar log.utils.js, usar error global
+        // Si hay error al importar o usar log.js, usar error global
         const logError = new SystemError('Error en sistema de logging de respuestas exitosas', {
             originalError: error.message,
             context: 'createSuccessWithLog',

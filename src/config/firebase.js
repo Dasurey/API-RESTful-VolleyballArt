@@ -1,5 +1,5 @@
-const { logDatabase } = require('./log.utils.js');
-const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('./error.utils.js');
+const { logDatabase } = require('./log');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../middlewares/error');
 const { collection, getDocs, query, where: whereClause, orderBy: orderByClause, limit: limitClause, doc, getDoc, setDoc, updateDoc, deleteDoc } = require('firebase/firestore');
 
 /**
@@ -58,9 +58,7 @@ async function createDocument(db, collectionName, data, options = {}) {
             }
 
             // Añadir timestamp si se requiere
-            const documentData = includeTimestamp
-                ? { ...data, createdAt: new Date().toISOString() }
-                : data;
+            const documentData = includeTimestamp ? { ...data, createdAt: new Date().toISOString() } : data;
 
             const docRef = await db.collection(collectionName).add(documentData);
 

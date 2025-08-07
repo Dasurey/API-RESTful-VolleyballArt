@@ -1,18 +1,18 @@
 // �📊 Sistema de logging
-const { httpLogger, devLogger, requestLogger } = require('./middlewares/logger.middleware');
-const { requestIdMiddleware } = require('./utils/async.utils');
+const { httpLogger, devLogger, requestLogger } = require('./middlewares/log.middleware');
+const { requestIdMiddleware, controllerWrapper } = require('./middlewares/async');
 
 // 🛡️ Sistema de seguridad
-const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require('./config/security.config');
-const { sanitizeInput, sanitizeHtml } = require('./middlewares/sanitization.middleware');
+const { helmetConfig, generalLimiter, authLimiter, createLimiter } = require('./middlewares/security');
+const { sanitizeInput, sanitizeHtml } = require('./middlewares/sanitization');
 
 // ⚡ Sistema de cache y optimización
-const { compressionMiddleware, optimizeResponse, minifyJson, performanceHeaders } = require('./config/optimization.config');
-const { getCacheStats, resetCacheStats } = require('./config/cache.config');
-const { performanceMonitor, getPerformanceMetrics, healthCheckWithMetrics } = require('./middlewares/performance.middleware');
+const { compressionMiddleware, optimizeResponse, minifyJson, performanceHeaders } = require('./middlewares/optimization');
+const { getCacheStats, resetCacheStats } = require('./config/cache');
+const { performanceMonitor, getPerformanceMetrics, healthCheckWithMetrics } = require('./middlewares/performance');
 
 // 📚 Sistema de documentación
-const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./config/swagger.config');
+const { swaggerSpec, swaggerUi, swaggerUiOptions } = require('./config/swagger');
 
 const productsRoutes = require('./routes/products.routes');
 const authRoutes = require('./routes/auth.routes');
@@ -20,7 +20,7 @@ const categoryRoutes = require('./routes/category.routes');
 
 const { authentication } = require('./middlewares/authentication.middleware');
 const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware');
-const { getVersionInfo } = require('./config/apiVersions.config');
+const { getVersionInfo } = require('./config/api.versions');
 
 // 🏥 Importar utilidades de health checks avanzados
 const { runFullHealthCheck, quickHealthCheck, getHealthHistory,calculatePerformanceMetrics,formatMetricsForPrometheus } = require('./utils/health.utils');
@@ -32,15 +32,15 @@ const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl, getEndpointUr
 // Nota: getEndpointUrls movido a url.utils
 
 // 🔧 Clases de logs globalizadas
-const { logInfo, logSystem, logError } = require('./utils/log.utils');
+const { logInfo, logSystem, logError } = require('./config/log');
 
 // 🔧 Clases de respuesta exitosa globalizadas
-const { SuccessResponse, DataResponse } = require('./utils/success.utils');
+const { SuccessResponse, DataResponse } = require('./utils/success');
 
 // 🔧 Clases de error personalizadas
-const { InternalServerError, ValidationError, NotFoundError, AppError, formatDatabaseError, formatJWTError } = require('./utils/error.utils');
+const { InternalServerError, ValidationError, NotFoundError, AppError, formatDatabaseError, formatJWTError } = require('./middlewares/error');
 
-const { ENV_CONFIG } = require('./config/paths.config');
+const { CONFIG_VALUES } = require('./config/paths');
 
 const express = require('express');
 require('dotenv').config();
@@ -53,13 +53,14 @@ if (!process.env.NODE_ENV) {
 
 // 🌐 Configuración de variables de entorno
 // Ya configurado con require('dotenv').config() arriba
-const PORT = process.env.PORT || ENV_CONFIG.PORT_DEFAULT;
+const PORT = process.env.PORT || CONFIG_VALUES.PORT_DEFAULT;
 
 const app = express();
 
 // � Manejador de errores no capturados (especialmente importante en Vercel)
 process.on('uncaughtException', (error) => {
-  const internalError = new InternalServerError(error.message);
+  console.error('🚨 Uncaught Exception (raw):', error);
+  const internalError = new InternalServerError(error.message, { stack: error.stack });
   logError('🚨 Uncaught Exception: ', internalError.details);
   process.exit(1);
 });
@@ -292,15 +293,11 @@ app.get('/api/health', (req, res) => {
  *                 alerts:
  *                   type: array
  */
-app.get('/api/health/full', async (req, res, next) => {
-  try {
-    const healthReport = await runFullHealthCheck();
-    const statusCode = healthReport.status === 'healthy' ? 200 : healthReport.status === 'degraded' ? 200 : 503;
-    res.status(statusCode).json(healthReport);
-  } catch (error) {
-    next(new InternalServerError());
-  }
-});
+app.get('/api/health/full', controllerWrapper(async (req, res, next) => {
+  const healthReport = await runFullHealthCheck();
+  const statusCode = healthReport.status === 'healthy' ? 200 : healthReport.status === 'degraded' ? 200 : 503;
+  res.status(statusCode).json(healthReport);
+}));
 
 /**
  * @swagger
@@ -391,17 +388,13 @@ app.get('/api/health/history', authentication, (req, res) => {
  *                 cache:
  *                   type: object
  */
-app.get('/api/metrics', authentication, async (req, res, next) => {
-  try {
-    const metrics = await calculatePerformanceMetrics();
-    res.json({
-      timestamp: new Date().toISOString(),
-      ...metrics
-    });
-  } catch (error) {
-    next(new InternalServerError());
-  }
-});
+app.get('/api/metrics', authentication, controllerWrapper(async (req, res, next) => {
+  const metrics = await calculatePerformanceMetrics();
+  res.json({
+    timestamp: new Date().toISOString(),
+    ...metrics
+  });
+}));
 
 /**
  * @swagger
@@ -428,16 +421,13 @@ app.get('/api/metrics', authentication, async (req, res, next) => {
  *                 # TYPE api_requests_total counter
  *                 api_requests_total 1234
  */
-app.get('/api/metrics/prometheus', authentication, async (req, res, next) => {
-  try {
-    const metrics = await calculatePerformanceMetrics();
-    const prometheusFormat = formatMetricsForPrometheus(metrics);
-    res.set('Content-Type', 'text/plain');
-    res.send(prometheusFormat);
-  } catch (error) {
-    next(new InternalServerError());
-  }
-});
+app.get('/api/metrics/prometheus', authentication, controllerWrapper(async (req, res, next) => {
+  const metrics = await calculatePerformanceMetrics();
+  const prometheusFormat = formatMetricsForPrometheus(metrics);
+  res.set('Content-Type', 'text/plain');
+  res.send(prometheusFormat);
+}));
+
 
 /**
  * @swagger
@@ -534,7 +524,7 @@ app.get('/api/debug/info', authentication, (req, res) => {
     uptime: process.uptime(),
     workingDirectory: process.cwd(),
     config: {
-      port: process.env.PORT || ENV_CONFIG.PORT_DEFAULT,
+      port: process.env.PORT || CONFIG_VALUES.PORT_DEFAULT,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       locale: Intl.DateTimeFormat().resolvedOptions().locale
     },
@@ -642,7 +632,6 @@ app.get('/api/cache/stats', authentication, (req, res) => {
  */
 app.post('/api/cache/clear', authentication, (req, res) => {
   resetCacheStats();
-  const { logInfo } = require('./utils/log.utils.js');
   logInfo('🗑️ Cache limpiado por usuario', {
     userId: req.user?.uid,
     timestamp: new Date().toISOString()
@@ -682,30 +671,8 @@ app.use((req, res, next) => {
 });
 
 // 🚨 Middleware global de manejo de errores (debe ir al final)
-app.use((error, req, res, next) => {
-  // Convertir errores nativos a AppError si es necesario
-  let appError = error;
-  if (!(error instanceof AppError)) {
-    if (error.code === 11000 || // MongoDB duplicate key error
-        error.name === 'ValidationError' || 
-        error.name === 'CastError') {
-      appError = formatDatabaseError(error);
-    } else if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      appError = formatJWTError(error);
-    } else {
-      appError = new InternalServerError(error.message);
-    }
-  }
-
-  // Respuesta usando completamente el método toJSON() del AppError
-  const errorResponse = appError.toJSON();
-  
-  // Agregar información del request a la respuesta
-  errorResponse.path = req.originalUrl;
-  errorResponse.method = req.method;
-  
-  res.status(appError.statusCode).json(errorResponse);
-});
+const { globalErrorHandler } = require('./middlewares/error');
+app.use(globalErrorHandler);
 
 // 🎧 Iniciar servidor
 app.listen(PORT, () => {

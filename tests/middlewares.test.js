@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { JWT_EXPIRATION } = require('../src/config/jwt.config.js');
+const { JWT_EXPIRATION } = require('../src/config/jwt.js');
 
 describe('🛡️ Middlewares', () => {
   describe('Authentication Middleware Simulation', () => {

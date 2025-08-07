@@ -1,6 +1,6 @@
 const productsService = require('../services/products.service');
-const { controllerWrapper } = require('../utils/async.utils');
-const { ValidationError, InternalServerError, NotFoundError } = require('../utils/error.utils');
+const { controllerWrapper } = require('../middlewares/async');
+const { ValidationError, InternalServerError, NotFoundError } = require('../middlewares/error');
 
 const getAllProducts = controllerWrapper(async (req, res) => {
   try {
@@ -40,24 +40,13 @@ const getProductById = controllerWrapper(async (req, res) => {
 });
 
 const createProduct = controllerWrapper(async (req, res) => {
-  try {
     const result = await productsService.createProduct(req.body);
     return res.status(201).json({
       success: true,
       message: '✅ Producto creado exitosamente',
       data: result
     });
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      throw error;
-    }
-    throw new InternalServerError(undefined, {
-      operation: 'createProduct',
-      productData: req.body,
-      originalError: error.message
-    });
-  }
-});
+}, 'createProduct');
 
 const updateProduct = controllerWrapper(async (req, res) => {
   const { id } = req.params;

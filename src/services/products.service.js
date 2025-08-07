@@ -1,8 +1,9 @@
 
-const { productsCacheManager } = require('../config/cache.config');
+const { productsCacheManager } = require('../config/cache');
 const productsModel = require('../model/products.model');
-const { InternalServerError } = require('../utils/error.utils');
-const { logDatabase } = require('../utils/log.utils');
+const { InternalServerError } = require('../middlewares/error');
+const { logDatabase } = require('../config/log');
+const { applyFilters } = require('../utils/query');
 const { collection, getDocs } = require('firebase/firestore');
 
 const COLLECTION_NAME = 'products';
@@ -53,36 +54,7 @@ const getProductsWithQuery = async (queryProcessor) => {
     }
     // Filtros
     if (queryProcessor && queryProcessor.filters) {
-      Object.entries(queryProcessor.filters).forEach(([field, filterArray]) => {
-        filterArray.forEach(({ operator, value }) => {
-          switch (operator) {
-            case '==':
-              products = products.filter(product => product[field] === value);
-              break;
-            case '!=':
-              products = products.filter(product => product[field] !== value);
-              break;
-            case '>':
-              products = products.filter(product => product[field] > value);
-              break;
-            case '>=':
-              products = products.filter(product => product[field] >= value);
-              break;
-            case '<':
-              products = products.filter(product => product[field] < value);
-              break;
-            case '<=':
-              products = products.filter(product => product[field] <= value);
-              break;
-            case 'in':
-              products = products.filter(product => value.includes(product[field]));
-              break;
-            case 'not-in':
-              products = products.filter(product => !value.includes(product[field]));
-              break;
-          }
-        });
-      });
+      applyFilters(products, queryProcessor.filters)
     }
     // Ordenamiento
     if (queryProcessor && queryProcessor.sorting && queryProcessor.sorting.length > 0) {

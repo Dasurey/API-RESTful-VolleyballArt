@@ -26,7 +26,7 @@ describe('Sistema de Validación de Datos Avanzada', () => {
     // Middleware de validación con Joi
     const validateWithJoi = (schema) => {
       return (req, res, next) => {
-        const { error, value } = schema.validate(req.body, { 
+        const { error, value } = schema.handleJoiValidationErrors(req.body, { 
           abortEarly: false,
           stripUnknown: true,
           convert: true

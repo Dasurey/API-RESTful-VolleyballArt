@@ -1,7 +1,7 @@
 const categoryController = require('../controllers/category.controller');
-const { validate } = require('../middlewares/validation.middleware');
+const { handleJoiValidationErrors } = require('../middlewares/error.validation');
 const { authentication } = require('../middlewares/authentication.middleware');
-const { categoriesQueryProcessor, subcategoriesQueryProcessor } = require('../middlewares/query.middleware');
+const { categoriesQueryProcessor, subcategoriesQueryProcessor } = require('../utils/query');
 const {
   createCategorySchema,
   createSubcategorySchema,
@@ -336,7 +336,7 @@ router.get('/subcategory', subcategoriesQueryProcessor, categoryController.getAl
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.post('/create', authentication, validate(createCategorySchema), categoryController.createCategory);
+router.post('/create', authentication, handleJoiValidationErrors(createCategorySchema), categoryController.createCategory);
 
 /**
  * @swagger
@@ -370,7 +370,7 @@ router.post('/create', authentication, validate(createCategorySchema), categoryC
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get('/:id', categoriesQueryProcessor,validate(categoryIdSchema, 'params'), categoryController.getCategoryById);
+router.get('/:id', categoriesQueryProcessor, handleJoiValidationErrors(categoryIdSchema, 'params'), categoryController.getCategoryById);
 
 /**
  * @swagger
@@ -424,8 +424,8 @@ router.get('/:id', categoriesQueryProcessor,validate(categoryIdSchema, 'params')
  */
 router.put('/:id',
   authentication,
-  // validate(categoryIdSchema, 'params'),
-  validate(updateCategorySchema),
+  // handleJoiValidationErrors(categoryIdSchema, 'params'),
+  handleJoiValidationErrors(updateCategorySchema),
   categoryController.updateCategory
 );
 
@@ -482,7 +482,7 @@ router.put('/:id',
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.delete('/:id', authentication, validate(categoryIdSchema, 'params'), validate(deleteQuerySchema, 'query'), categoryController.deleteCategory);
+router.delete('/:id', authentication, handleJoiValidationErrors(categoryIdSchema, 'params'), handleJoiValidationErrors(deleteQuerySchema, 'query'), categoryController.deleteCategory);
 
 /**
  * @swagger
@@ -557,7 +557,7 @@ router.delete('/:id', authentication, validate(categoryIdSchema, 'params'), vali
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.get('/:parentId/subcategory', subcategoriesQueryProcessor,validate(parentCategoryIdSchema, 'params'), categoryController.getSubcategoryByParent);
+router.get('/:parentId/subcategory', subcategoriesQueryProcessor, handleJoiValidationErrors(parentCategoryIdSchema, 'params'), categoryController.getSubcategoryByParent);
 
 /**
  * @swagger
@@ -605,7 +605,7 @@ router.get('/:parentId/subcategory', subcategoriesQueryProcessor,validate(parent
  *       500:
  *         description: 🚨 Error interno del servidor
  */
-router.post('/:parentId/subcategory', authentication, validate(parentCategoryIdSchema, 'params'), validate(createSubcategorySchema), categoryController.createSubcategory);
+router.post('/:parentId/subcategory', authentication, handleJoiValidationErrors(parentCategoryIdSchema, 'params'), handleJoiValidationErrors(createSubcategorySchema), categoryController.createSubcategory);
 
 /**
  * @swagger
@@ -650,7 +650,7 @@ router.post('/:parentId/subcategory', authentication, validate(parentCategoryIdS
  */
 router.get('/:categoryId/subcategory/:subcategoryId',
   subcategoriesQueryProcessor,
-  // validate(categorySubcategoryParamsSchema, 'params'),
+  // handleJoiValidationErrors(categorySubcategoryParamsSchema, 'params'),
   categoryController.getSubcategorySpecific
 );
 
@@ -719,8 +719,8 @@ router.get('/:categoryId/subcategory/:subcategoryId',
  */
 router.put('/:categoryId/subcategory/:subcategoryId',
   authentication,
-  // validate(categorySubcategoryParamsSchema, 'params'),
-  validate(updateSubcategorySchema),
+  // handleJoiValidationErrors(categorySubcategoryParamsSchema, 'params'),
+  handleJoiValidationErrors(updateSubcategorySchema),
   categoryController.updateSubcategorySpecific
 );
 
@@ -771,7 +771,7 @@ router.put('/:categoryId/subcategory/:subcategoryId',
  */
 router.delete('/:categoryId/subcategory/:subcategoryId',
   authentication,
-  // validate(categorySubcategoryParamsSchema, 'params'),
+  // handleJoiValidationErrors(categorySubcategoryParamsSchema, 'params'),
   categoryController.deleteSubcategorySpecific
 );
 

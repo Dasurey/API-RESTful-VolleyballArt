@@ -9,14 +9,14 @@
  * - Reportes de estado detallados
  */
 
-const { getPerformanceMetrics } = require('../middlewares/performance.middleware');
-const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('./error.utils.js');
+const { getPerformanceMetrics } = require('../middlewares/performance');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../middlewares/error');
 
 // Importar funciones de Firestore v9+
 const { collection, getDocs, limit, query } = require('firebase/firestore');
-const { db } = require('../config/db.config');
+const { db } = require('../config/db');
 
-const { getCacheStats } = require('../config/cache.config');
+const { getCacheStats } = require('../config/cache');
 
 /**
  * Estado global de health checks

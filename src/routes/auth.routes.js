@@ -1,5 +1,5 @@
 const { loginUser /*, registerUser*/ } = require('../controllers/auth.controller');
-const { validate } = require('../middlewares/validation.middleware');
+const { handleJoiValidationErrors } = require('../middlewares/error.validation');
 const { loginSchema /*, registerSchema*/ } = require('../schemas/auth.schema');
 
 const express = require('express');
@@ -50,7 +50,7 @@ const router = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', validate(loginSchema), loginUser);
+router.post('/login', handleJoiValidationErrors(loginSchema), loginUser);
 
 /**
  * REGISTRO TEMPORALMENTE DESHABILITADO
@@ -89,7 +89,7 @@ router.post('/login', validate(loginSchema), loginUser);
 //             schema:
 //               $ref: '#/components/schemas/Error'
 
-router.post('/register', validate(registerSchema), registerUser);
+router.post('/register', handleJoiValidationErrors(registerSchema), registerUser);
 */
 
-module.exports = router;;
+module.exports = router;

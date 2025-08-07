@@ -1,4 +1,4 @@
-const { ValidationError } = require('../error.utils');
+const { ValidationError } = require('./error');
 
 /**
  * Middleware para convertir errores de express-validator en ValidationError
@@ -28,8 +28,15 @@ const handleValidationErrors = (req, res, next) => {
 /**
  * Middleware para convertir errores de Joi en ValidationError
  */
-const handleJoiValidationErrors = (error, req, res, next) => {
-    if (error.isJoi) {
+const handleJoiValidationErrors = (schema, source = 'body') => (req, res, next) => {
+    // Validar la fuente de datos especificada (body, params, query)
+    const dataToValidate = req[source];
+    const { error } = schema.validate(dataToValidate, {
+        abortEarly: false,  // Recolectar todos los errores
+        stripUnknown: true  // Remover campos no definidos en el schema
+    });
+
+    if (error) {
         const errorDetails = error.details.map(detail => ({
             field: detail.path.join('.'),
             message: detail.message,
@@ -37,16 +44,13 @@ const handleJoiValidationErrors = (error, req, res, next) => {
             type: detail.type
         }));
 
-        const validationError = new ValidationError(
+        return next(new ValidationError(
             undefined,
             { validationErrors: errorDetails },
             'JOI_VALIDATION_ERROR'
-        );
-
-        return next(validationError);
+        ));
     }
-
-    next(error);
+    next();
 };
 
 /**

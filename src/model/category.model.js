@@ -1,9 +1,9 @@
-const { db } = require('../config/db.config');
-const { getDocumentById, executeFirebaseOperation } = require('../utils/firebase.utils');
-const { logDatabase } = require('../utils/log.utils');
+const { db } = require('../config/db');
+const { getDocumentById, executeFirebaseOperation } = require('../config/firebase');
+const { logDatabase } = require('../config/log');
 const { generateNextCategoryId, generateNextSubcategoryId } = require('../services/category.service');
-const { processQuery, getQueryProcessingInfo } = require('../middlewares/query.middleware');
-const { InternalServerError } = require('../utils/error.utils');
+const { processQuery, getQueryProcessingInfo } = require('../utils/query');
+const { InternalServerError } = require('../middlewares/error');
 
 const { collection, doc, getDoc, getDocs, setDoc, deleteDoc } = require('firebase/firestore');
 

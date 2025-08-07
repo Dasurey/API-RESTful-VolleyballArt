@@ -1,6 +1,6 @@
 const CategoryModel = require('../model/category.model');
-const { logAndExecute } = require('../utils/log.utils');
-const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../utils/error.utils');
+const { logAndExecute } = require('../config/log');
+const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../middlewares/error');
 
 /**
  * Generar el próximo ID para categoría padre
