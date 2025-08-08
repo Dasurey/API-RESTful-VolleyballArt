@@ -1,7 +1,7 @@
-const { db } = require('../config/db');
-const { InternalServerError } = require('../middlewares/error');
 
-const { collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc } = require('firebase/firestore');
+const { db } = require('../config/db');
+const { getAllDocuments, getDocumentById, createDocument, updateDocument, deleteDocument } = require('../config/firebase');
+const { dbServiceWrapper } = require('../middlewares/async');
 
 const COLLECTION_NAME = 'products';
 
@@ -35,63 +35,27 @@ const structureProducts = (productsData) => {
 
 // Solo acceso a datos puro, sin lógica de negocio ni logs
 
-const getAllProducts = async () => {
-  try {
-    const productsCollection = collection(db, COLLECTION_NAME);
-    const snapshot = await getDocs(productsCollection);
-    const products = [];
-    snapshot.forEach((doc) => {
-      products.push({ id: doc.id, ...doc.data() });
-    });
-    return products;
-  } catch (error) {
-    throw new InternalServerError(undefined, { operation: 'getAllProducts', originalError: error.message });
-  }
-};
+const getAllProducts = dbServiceWrapper(async () => {
+  return await getAllDocuments(db, COLLECTION_NAME);
+}, 'getAllProducts');
 
-const getProductById = async (id) => {
-  try {
-    const docRef = doc(db, COLLECTION_NAME, id);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      return { id: docSnap.id, ...docSnap.data() };
-    } else {
-      return null;
-    }
-  } catch (error) {
-    throw new InternalServerError(undefined, { operation: 'getProductById', productId: id, originalError: error.message });
-  }
-};
+const getProductById = dbServiceWrapper(async (id) => {
+  return await getDocumentById(db, COLLECTION_NAME, id);
+}, 'getProductById');
 
-const createProduct = async (id, productData) => {
-  try {
-    const productsCollection = collection(db, COLLECTION_NAME);
-    await setDoc(doc(productsCollection, id), productData);
-    return { id, ...productData };
-  } catch (error) {
-    throw new InternalServerError(undefined, { operation: 'createProduct', originalError: error.message, productData });
-  }
-};
+const createProduct = dbServiceWrapper(async (id, productData) => {
+  // createDocument genera un ID automático, pero aquí se respeta el ID recibido
+  // Por lo tanto, usamos updateDocument para crear con ID específico
+  return await updateDocument(db, COLLECTION_NAME, id, productData, { includeTimestamp: true, merge: false });
+}, 'createProduct');
 
-const updateProduct = async (id, data) => {
-  try {
-    const docRef = doc(db, COLLECTION_NAME, id);
-    await updateDoc(docRef, data);
-    return { id, ...data };
-  } catch (error) {
-    throw new InternalServerError(undefined, { operation: 'updateProduct', productId: id, originalError: error.message });
-  }
-};
+const updateProduct = dbServiceWrapper(async (id, data) => {
+  return await updateDocument(db, COLLECTION_NAME, id, data, { includeTimestamp: true, merge: true });
+}, 'updateProduct');
 
-const deleteProduct = async (id) => {
-  try {
-    const docRef = doc(db, COLLECTION_NAME, id);
-    await deleteDoc(docRef);
-    return true;
-  } catch (error) {
-    throw new InternalServerError(undefined, { operation: 'deleteProduct', productId: id, originalError: error.message });
-  }
-};
+const deleteProduct = dbServiceWrapper(async (id) => {
+  return await deleteDocument(db, COLLECTION_NAME, id);
+}, 'deleteProduct');
 
 module.exports = {
   structureProducts,

@@ -25,7 +25,7 @@ const createBackup = async (options) => {
   const { type = 'full', collections = null, compression = true, requestedBy = 'system' } = options;
 
   if (backupState.inProgress) {
-    throw new ConflictError('Ya hay un backup en progreso');
+    throw new ConflictError('⏳ Ya hay un backup en progreso');
   }
 
   backupState.inProgress = true;
@@ -40,7 +40,7 @@ const createBackup = async (options) => {
   try {
     let result;
     if (type === 'full') {
-      logAndExecute('info', 'Iniciando backup completo...');
+      logAndExecute('info', '💾 Iniciando backup completo...');
       result = await backupUtils.createFullBackup({
         collections: collections || ['products', 'users', 'orders', 'category'],
         compression,
@@ -50,7 +50,7 @@ const createBackup = async (options) => {
         }
       });
     } else if (type === 'incremental') {
-      logAndExecute('info', 'Iniciando backup incremental...');
+      logAndExecute('info', '📦 Iniciando backup incremental...');
       result = await backupUtils.createIncrementalBackup({
         collections: collections || ['products', 'users', 'orders', 'category'],
         compression,
@@ -60,7 +60,7 @@ const createBackup = async (options) => {
         }
       });
     } else {
-      throw new ValidationError('Tipo de backup inválido');
+      throw new ValidationError('❌ Tipo de backup inválido');
     }
 
     backupState.lastBackup = {
@@ -71,9 +71,9 @@ const createBackup = async (options) => {
       success: true
     };
 
-    logAndExecute('info', `${type === 'full' ? '💾 Backup completo creado exitosamente' : 'Backup incremental finalizado:'} ${result.filename}`);
-    logAndExecute('info', `Tamaño del backup: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
-    logAndExecute('info', `Duración del backup: ${result.duration}`);
+    logAndExecute('info', `${type === 'full' ? '💾 Backup completo creado exitosamente' : '📦 Backup incremental finalizado:'} ${result.filename}`);
+    logAndExecute('info', `📏 Tamaño del backup: ${(result.size / 1024 / 1024).toFixed(2)} MB`);
+    logAndExecute('info', `⏱️ Duración del backup: ${result.duration}`);
 
     return result;
 
@@ -89,7 +89,7 @@ const createBackup = async (options) => {
     if (error instanceof ValidationError || error instanceof ConflictError) {
       throw error;
     }
-    throw new InternalServerError('Error inesperado al crear backup', {
+    throw new InternalServerError('🚨 Error inesperado al crear backup', {
       operation: 'createBackup',
       backupType: type,
       originalError: error.message
@@ -133,14 +133,14 @@ const listBackups = async (options = {}) => {
         filteredBackups.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }
     const limitedBackups = filteredBackups.slice(0, limit);
-    logAndExecute('info', `Listando backups: total=${filteredBackups.length}, devueltos=${limitedBackups.length}`);
+    logAndExecute('info', `📋 Listando backups: total=${filteredBackups.length}, devueltos=${limitedBackups.length}`);
     return {
       backups: limitedBackups,
       total: filteredBackups.length,
       totalAllTypes: backups.length
     };
   } catch (error) {
-    throw new InternalServerError('Error inesperado al listar backups', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado al listar backups', { originalError: error.message });
   }
 };
 
@@ -157,7 +157,7 @@ const getBackupStatus = async () => {
     const timestamps = backups.map(b => new Date(b.timestamp)).sort();
     const oldestBackup = timestamps.length > 0 ? timestamps[0] : null;
     const newestBackup = timestamps.length > 0 ? timestamps[timestamps.length - 1] : null;
-    logAndExecute('info', `Estado del sistema de backup consultado. Total backups: ${backups.length}`);
+    logAndExecute('info', `📊 Estado del sistema de backup consultado. Total backups: ${backups.length}`);
     return {
       inProgress: backupState.inProgress,
       currentOperation: backupState.currentOperation,
@@ -172,7 +172,7 @@ const getBackupStatus = async () => {
       }
     };
   } catch (error) {
-    throw new InternalServerError('Error inesperado al obtener estado del backup', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado al obtener estado del backup', { originalError: error.message });
   }
 };
 
@@ -185,15 +185,15 @@ const getBackupInfo = async (backupId) => {
   try {
     const info = await backupUtils.getBackupInfo(backupId);
     if (!info) {
-      throw new NotFoundError('Backup no encontrado');
+      throw new NotFoundError('❓ Backup no encontrado');
     }
-    logAndExecute('info', `Información de backup consultada: ${backupId}`);
+    logAndExecute('info', `ℹ️ Información de backup consultada: ${backupId}`);
     return info;
   } catch (error) {
     if (error instanceof NotFoundError) {
       throw error;
     }
-    throw new InternalServerError('Error inesperado al obtener información del backup', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado al obtener información del backup', { originalError: error.message });
   }
 };
 
@@ -234,13 +234,13 @@ const restoreFromBackup = async (options) => {
     logAndExecute('info', `🔄 Iniciando recuperación desde backup ${backupId}`);
     // Validar backup si se solicita
     if (validateFirst && !force) {
-      logAndExecute('info', 'Validando backup antes de restaurar...');
+      logAndExecute('info', '🔎 Validando backup antes de restaurar...');
       const validation = await backupUtils.validateBackup(backupId);
       if (!validation) {
-        throw new NotFoundError('Backup no encontrado para restaurar');
+        throw new NotFoundError('❓ Backup no encontrado para restaurar');
       }
       if (!validation.valid) {
-        throw new ValidationError(`El backup está corrupto o es inválido: ${validation.issues?.join(', ')}`);
+        throw new ValidationError(`❌ El backup está corrupto o es inválido: ${validation.issues?.join(', ')}`);
       }
       logAndExecute('info', '✅ Validación de backup exitosa');
     }
@@ -251,14 +251,14 @@ const restoreFromBackup = async (options) => {
         backupState.currentOperation.currentCollection = collection;
       }
     });
-    logAndExecute('info', `Recuperación completada exitosamente para backup: ${backupId}`);
-    logAndExecute('info', `Estadísticas de recuperación: ${result.totalDocuments} documentos restaurados`);
+    logAndExecute('info', `✅ Recuperación completada exitosamente para backup: ${backupId}`);
+    logAndExecute('info', `📈 Estadísticas de recuperación: ${result.totalDocuments} documentos restaurados`);
     return result;
   } catch (error) {
     if (error instanceof NotFoundError || error instanceof ValidationError || error instanceof ConflictError) {
       throw error;
     }
-    throw new InternalServerError('Error inesperado en el proceso de recuperación', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado en el proceso de recuperación', { originalError: error.message });
   } finally {
     backupState.inProgress = false;
     backupState.currentOperation = null;
@@ -274,15 +274,15 @@ const validateBackup = async (backupId) => {
   try {
     const validation = await backupUtils.validateBackup(backupId);
     if (!validation) {
-      throw new NotFoundError('Backup no encontrado para validar');
+      throw new NotFoundError('❓ Backup no encontrado para validar');
     }
-    logAndExecute('info', `Validación de backup consultada: ${backupId}`);
+    logAndExecute('info', `🔎 Validación de backup consultada: ${backupId}`);
     return validation;
   } catch (error) {
     if (error instanceof NotFoundError) {
       throw error;
     }
-    throw new InternalServerError('Error inesperado al validar backup', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado al validar backup', { originalError: error.message });
   }
 };
 
@@ -295,7 +295,7 @@ const deleteBackup = async (backupId) => {
   try {
     const deleted = await backupUtils.deleteBackup(backupId);
     if (!deleted) {
-      throw new NotFoundError('Backup no encontrado para eliminar');
+      throw new NotFoundError('❓ Backup no encontrado para eliminar');
     }
     logAndExecute('info', `🗑️ Backup eliminado exitosamente: ${backupId}`);
     return deleted;
@@ -303,7 +303,7 @@ const deleteBackup = async (backupId) => {
     if (error instanceof NotFoundError) {
       throw error;
     }
-    throw new InternalServerError('Error inesperado al eliminar backup', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado al eliminar backup', { originalError: error.message });
   }
 };
 
@@ -329,13 +329,13 @@ const cleanupOldBackups = async (options = {}) => {
       dryRun
     });
     if (dryRun) {
-      logAndExecute('info', `Simulación completada: ${result.deleted.length} backups serían eliminados`);
+      logAndExecute('info', `🧪 Simulación completada: ${result.deleted.length} backups serían eliminados`);
     } else {
       logAndExecute('info', `🧹 Limpieza de backups completada exitosamente: ${result.deleted.length} backups eliminados`);
     }
     return result;
   } catch (error) {
-    throw new InternalServerError('Error inesperado en limpieza de backups', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado en limpieza de backups', { originalError: error.message });
   }
 };
 
@@ -346,7 +346,7 @@ const cleanupOldBackups = async (options = {}) => {
  */
 const scheduleAutomaticBackups = async (schedule = {}) => {
   try {
-    logAndExecute('info', 'Programando backup automático');
+    logAndExecute('info', '⏰ Programando backup automático');
     return {
       fullBackupInterval: schedule.fullBackupInterval || 24 * 60 * 60 * 1000,
       incrementalBackupInterval: schedule.incrementalBackupInterval || 60 * 60 * 1000,
@@ -355,7 +355,7 @@ const scheduleAutomaticBackups = async (schedule = {}) => {
       nextIncrementalBackup: new Date(Date.now() + (schedule.incrementalBackupInterval || 60 * 60 * 1000))
     };
   } catch (error) {
-    throw new InternalServerError('Error inesperado en backup automático', { originalError: error.message });
+    throw new InternalServerError('🚨 Error inesperado en backup automático', { originalError: error.message });
   }
 };
 

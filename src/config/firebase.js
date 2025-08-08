@@ -175,17 +175,18 @@ async function getAllDocuments(db, collectionName, options = {}) {
                 return result;
             });
 
-            return documents;
+            const metadata = {
+                totalDocuments: documents.length,
+                hasFilters: !!where,
+                hasOrdering: !!orderBy,
+                hasLimit: !!limit
+            };
+
+            return { documents, metadata };
         },
         'read',
-        collectionName,
-        {
-            totalDocuments: snapshot?.size || 0,
-            hasFilters: !!where,
-            hasOrdering: !!orderBy,
-            hasLimit: !!limit
-        }
-    );
+        collectionName
+    ).then(result => result.documents);
 }
 
 /**

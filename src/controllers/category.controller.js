@@ -1,24 +1,20 @@
 const CategoryService = require('../services/category.service');
 const { controllerWrapper } = require('../middlewares/async');
 const { ValidationError, NotFoundError, ConflictError, InternalServerError } = require('../middlewares/error');
+const { DataResponse, CreatedResponse, UpdatedResponse, DeletedResponse } = require('../utils/success');
 
 /**
  * Obtener todas las categoria padre
  */
 const getAllCategory = controllerWrapper(async (req, res) => {
-  const category = await CategoryService.getAllCategory(req.queryProcessor);
+  const categories = await CategoryService.queries.getAllParent(req.queryProcessor);
   
   // Solo lanzar error si no hay queryProcessor (consulta básica) y no hay categorías
-  if (!category || (category.length === 0 && !req.queryProcessor)) {
-    throw new NotFoundError();
+  if (!categories || (categories.length === 0 && !req.queryProcessor)) {
+    throw new NotFoundError('🔍 No se encontraron categorías');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '📋 Categorías obtenidas exitosamente',
-    resource: 'category',
-    data: category || []
-  });
+  return new DataResponse('📋 Categorías obtenidas exitosamente', categories).send(res);
 });
 
 /**
@@ -27,18 +23,13 @@ const getAllCategory = controllerWrapper(async (req, res) => {
 const getCategoryById = controllerWrapper(async (req, res) => {
   const { id } = req.params;
   
-  const category = await CategoryService.getCategoryById(id);
+  const category = await CategoryService.queries.getById(id);
   
   if (!category) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 Categoría no encontrada');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '📂 Categoría obtenida exitosamente',
-    resource: 'category',
-    data: category
-  });
+  return new DataResponse('📂 Categoría obtenida exitosamente', category).send(res);
 });
 
 /**
@@ -47,37 +38,27 @@ const getCategoryById = controllerWrapper(async (req, res) => {
 const getSubcategoryByParent = controllerWrapper(async (req, res) => {
   const { parentId } = req.params;
   
-  const subcategories = await CategoryService.getSubcategoryByParent(parentId, req.queryProcessor);
+  const subcategories = await CategoryService.queries.getSubcategories(parentId, req.queryProcessor);
   
   if (!subcategories || subcategories.length === 0) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 No se encontraron subcategorías para esta categoría');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '📂 Subcategorías obtenidas exitosamente',
-    resource: 'subcategory',
-    data: subcategories
-  });
+  return new DataResponse('📂 Subcategorías obtenidas exitosamente', subcategories).send(res);
 });
 
 /**
  * Obtener todas las subcategorías
  */
 const getAllSubcategory = controllerWrapper(async (req, res) => {
-  const subcategories = await CategoryService.getAllSubcategory(req.queryProcessor);
+  const subcategories = await CategoryService.queries.getAllSubcategories(req.queryProcessor);
   
   // Solo lanzar error si no hay queryProcessor (consulta básica) y no hay subcategorías
   if (!subcategories || (subcategories.length === 0 && !req.queryProcessor)) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 No se encontraron subcategorías');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '📂 Subcategorías obtenidas exitosamente',
-    resource: 'subcategory',
-    data: subcategories || []
-  });
+  return new DataResponse('📂 Subcategorías obtenidas exitosamente', subcategories).send(res);
 });
 
 /**
@@ -86,32 +67,28 @@ const getAllSubcategory = controllerWrapper(async (req, res) => {
 const getSubcategorySpecific = controllerWrapper(async (req, res) => {
   const { categoryId, subcategoryId } = req.params;
   
-  const subcategory = await CategoryService.getSubcategorySpecific(categoryId, subcategoryId);
+  const subcategory = await CategoryService.queries.getSpecificSubcategory(categoryId, subcategoryId, req.queryProcessor);
   
   if (!subcategory) {
-    throw new NotFoundError();
+    // Verificar si es un error de validación basado en el formato del ID
+    const parentNumber = categoryId.split('-')[1];
+    if (!subcategoryId.startsWith(`CAT-${parentNumber}-`)) {
+      throw new ValidationError(`La subcategoría ${subcategoryId} no pertenece a la categoría padre ${categoryId}`);
+    }
+    // Si no es error de validación, entonces es un 404
+    throw new NotFoundError(`🔍 Subcategoría con ID ${subcategoryId} no encontrada en categoría padre ${categoryId}`);
   }
   
-  res.status(200).json({
-    success: true,
-    message: '📂 Categoría obtenida exitosamente',
-    resource: 'subcategory',
-    data: subcategory
-  });
+  return new DataResponse('📂 Subcategoría obtenida exitosamente', subcategory).send(res);
 });
 
 /**
  * Crear nueva categoría padre
  */
 const createCategory = controllerWrapper(async (req, res) => {
-  const newCategory = await CategoryService.createCategory(req.body);
+  const newCategory = await CategoryService.creation.createParent(req.body);
   
-  res.status(201).json({
-    success: true,
-    message: '✅ Categoría creada exitosamente',
-    resource: 'category',
-    data: newCategory
-  });
+  return new CreatedResponse('✅ Categoría creada exitosamente', newCategory).send(res);
 });
 
 /**
@@ -120,14 +97,13 @@ const createCategory = controllerWrapper(async (req, res) => {
 const createSubcategory = controllerWrapper(async (req, res) => {
   const { parentId } = req.params;
   
-  const newSubcategory = await CategoryService.createSubcategory(parentId, req.body);
+  const newSubcategory = await CategoryService.creation.createSubcategory(parentId, req.body);
   
-  res.status(201).json({
-    success: true,
-    message: '✅ Subcategoría creada exitosamente',
-    resource: 'subcategory',
-    data: newSubcategory
-  });
+  if (!newSubcategory) {
+    throw new NotFoundError('🔍 Categoría padre no encontrada');
+  }
+  
+  return new CreatedResponse('✅ Subcategoría creada exitosamente', newSubcategory).send(res);
 });
 
 /**
@@ -136,14 +112,13 @@ const createSubcategory = controllerWrapper(async (req, res) => {
 const createSubcategorySimple = controllerWrapper(async (req, res) => {
   const { id } = req.params; // Obtener parentId de la URL
   
-  const newSubcategory = await CategoryService.createSubcategory(id, req.body);
+  const newSubcategory = await CategoryService.creation.createSubcategory(id, req.body);
   
-  res.status(201).json({
-    success: true,
-    message: '✅ Subcategoría creada exitosamente',
-    resource: 'subcategory',
-    data: newSubcategory
-  });
+  if (!newSubcategory) {
+    throw new NotFoundError('🔍 Categoría padre no encontrada');
+  }
+  
+  return new CreatedResponse('✅ Subcategoría creada exitosamente', newSubcategory).send(res);
 });
 
 /**
@@ -152,18 +127,13 @@ const createSubcategorySimple = controllerWrapper(async (req, res) => {
 const updateCategory = controllerWrapper(async (req, res) => {
   const { id } = req.params;
   
-  const updatedCategory = await CategoryService.updateCategory(id, req.body);
+  const updatedCategory = await CategoryService.modification.update(id, req.body);
   
   if (!updatedCategory) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 Categoría no encontrada');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '✅ Categoría actualizada exitosamente',
-    resource: 'category',
-    data: updatedCategory
-  });
+  return new UpdatedResponse('✅ Categoría actualizada exitosamente', updatedCategory).send(res);
 });
 
 /**
@@ -172,18 +142,13 @@ const updateCategory = controllerWrapper(async (req, res) => {
 const updateCategorySpecific = controllerWrapper(async (req, res) => {
   const { id } = req.params;
   
-  const updatedCategory = await CategoryService.updateCategory(id, req.body);
+  const updatedCategory = await CategoryService.modification.update(id, req.body);
   
   if (!updatedCategory) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 Categoría no encontrada');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '✅ Categoría actualizada exitosamente',
-    resource: 'category',
-    data: updatedCategory
-  });
+  return new UpdatedResponse('✅ Categoría actualizada exitosamente', updatedCategory).send(res);
 });
 
 /**
@@ -192,18 +157,13 @@ const updateCategorySpecific = controllerWrapper(async (req, res) => {
 const updateSubcategorySpecific = controllerWrapper(async (req, res) => {
   const { categoryId, subcategoryId } = req.params;
   
-  const updatedSubcategory = await CategoryService.updateCategory(subcategoryId, req.body);
+  const updatedSubcategory = await CategoryService.modification.update(subcategoryId, req.body);
   
   if (!updatedSubcategory) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 Subcategoría no encontrada');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '✅ Subcategoría actualizada exitosamente',
-    resource: 'subcategory',
-    data: updatedSubcategory
-  });
+  return new UpdatedResponse('✅ Subcategoría actualizada exitosamente', updatedSubcategory).send(res);
 });
 
 /**
@@ -213,19 +173,15 @@ const deleteCategory = controllerWrapper(async (req, res) => {
   const { id } = req.params;
   const { deleteSubcategory } = req.query; // Query parameter opcional
   
-  const result = await CategoryService.deleteCategory(id, { 
-    deleteSubcategory: deleteSubcategory === 'true' 
+  const result = await CategoryService.modification.delete(id, { 
+    deleteSubcategories: deleteSubcategory === 'true' 
   });
   
   if (!result) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 Categoría no encontrada o tiene subcategorías');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '✅ Categoría eliminada exitosamente',
-    resource: 'category'
-  });
+  return new DeletedResponse('✅ Categoría eliminada exitosamente').send(res);
 });
 
 /**
@@ -235,19 +191,15 @@ const deleteCategorySpecific = controllerWrapper(async (req, res) => {
   const { id } = req.params;
   const { deleteSubcategory } = req.query; // Query parameter opcional
   
-  const result = await CategoryService.deleteCategory(id, { 
-    deleteSubcategory: deleteSubcategory === 'true' 
+  const result = await CategoryService.modification.delete(id, { 
+    deleteSubcategories: deleteSubcategory === 'true' 
   });
   
   if (!result) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 Categoría no encontrada o tiene subcategorías');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '✅ Categoría eliminada exitosamente',
-    resource: 'category'
-  });
+  return new DeletedResponse('✅ Categoría eliminada exitosamente').send(res);
 });
 
 /**
@@ -256,35 +208,30 @@ const deleteCategorySpecific = controllerWrapper(async (req, res) => {
 const deleteSubcategorySpecific = controllerWrapper(async (req, res) => {
   const { categoryId, subcategoryId } = req.params;
   
-  const result = await CategoryService.deleteCategory(subcategoryId);
+  const result = await CategoryService.modification.delete(subcategoryId);
   
   if (!result) {
-    throw new NotFoundError();
+    throw new NotFoundError('🔍 Subcategoría no encontrada');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '✅ Subcategoría eliminada exitosamente',
-    resource: 'subcategory'
-  });
+  return new DeletedResponse('✅ Subcategoría eliminada exitosamente').send(res);
 });
 
 /**
  * Obtener jerarquía completa de categoria con subcategoria
  */
 const getCategoryHierarchy = controllerWrapper(async (req, res) => {
-  const hierarchy = await CategoryService.getCategoryHierarchy();
+  const hierarchy = await CategoryService.queries.hierarchy(req.queryProcessor);
   
-  if (!hierarchy) {
-    throw new NotFoundError();
+  if (!hierarchy || hierarchy.length === 0) {
+    throw new NotFoundError('🔍 No se encontró ninguna categoría');
   }
   
-  res.status(200).json({
-    success: true,
-    message: '🌳 Jerarquía de categorías obtenida exitosamente',
-    resource: 'Jerarquía de categoria',
-    data: hierarchy
-  });
+  return new DataResponse(
+    '🌳 Jerarquía de categorías obtenida exitosamente', 
+    hierarchy, 
+    hierarchy.length
+  ).send(res);
 });
 
 module.exports = {
