@@ -150,6 +150,9 @@ class AppLog {
 
 /**
  * Log de información (INFO)
+ * @param {string} [message='Información general'] - Mensaje de información.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='INFO'] - Categoría del log.
  */
 class InfoLog extends AppLog {
     constructor(message = 'Información general', metadata = null, category = 'INFO') {
@@ -159,6 +162,9 @@ class InfoLog extends AppLog {
 
 /**
  * Log de advertencia (WARN)
+ * @param {string} [message='Advertencia del sistema'] - Mensaje de advertencia.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='WARN'] - Categoría del log.
  */
 class WarnLog extends AppLog {
     constructor(message = 'Advertencia del sistema', metadata = null, category = 'WARN') {
@@ -168,6 +174,9 @@ class WarnLog extends AppLog {
 
 /**
  * Log de error (ERROR)
+ * @param {string} [message='Error del sistema'] - Mensaje de error.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='ERROR'] - Categoría del log.
  */
 class ErrorLog extends AppLog {
     constructor(message = 'Error del sistema', metadata = null, category = 'ERROR') {
@@ -177,6 +186,9 @@ class ErrorLog extends AppLog {
 
 /**
  * Log de depuración (DEBUG)
+ * @param {string} [message='Información de depuración'] - Mensaje de depuración.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='DEBUG'] - Categoría del log.
  */
 class DebugLog extends AppLog {
     constructor(message = 'Información de depuración', metadata = null, category = 'DEBUG') {
@@ -186,6 +198,9 @@ class DebugLog extends AppLog {
 
 /**
  * Log de éxito (SUCCESS)
+ * @param {string} [message='Operación exitosa'] - Mensaje de éxito.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='SUCCESS'] - Categoría del log.
  */
 class SuccessLog extends AppLog {
     constructor(message = 'Operación exitosa', metadata = null, category = 'SUCCESS') {
@@ -195,6 +210,9 @@ class SuccessLog extends AppLog {
 
 /**
  * Log de autenticación (AUTH)
+ * @param {string} [message='Evento de autenticación'] - Mensaje de autenticación.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='AUTH'] - Categoría del log.
  */
 class AuthLog extends AppLog {
     constructor(message = 'Evento de autenticación', metadata = null, category = 'AUTH') {
@@ -204,6 +222,9 @@ class AuthLog extends AppLog {
 
 /**
  * Log de base de datos (DATABASE)
+ * @param {string} [message='Operación de base de datos'] - Mensaje de base de datos.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='DATABASE'] - Categoría del log.
  */
 class DatabaseLog extends AppLog {
     constructor(message = 'Operación de base de datos', metadata = null, category = 'DATABASE') {
@@ -213,6 +234,9 @@ class DatabaseLog extends AppLog {
 
 /**
  * Log de API (API)
+ * @param {string} [message='Evento de API'] - Mensaje de API.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='API'] - Categoría del log.
  */
 class ApiLog extends AppLog {
     constructor(message = 'Evento de API', metadata = null, category = 'API') {
@@ -222,6 +246,9 @@ class ApiLog extends AppLog {
 
 /**
  * Log de caché (CACHE)
+ * @param {string} [message='Operación de caché'] - Mensaje de caché.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='CACHE'] - Categoría del log.
  */
 class CacheLog extends AppLog {
     constructor(message = 'Operación de caché', metadata = null, category = 'CACHE') {
@@ -231,6 +258,9 @@ class CacheLog extends AppLog {
 
 /**
  * Log de sistema (SYSTEM)
+ * @param {string} [message='Evento del sistema'] - Mensaje del sistema.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='SYSTEM'] - Categoría del log.
  */
 class SystemLog extends AppLog {
     constructor(message = 'Evento del sistema', metadata = null, category = 'SYSTEM') {
@@ -240,6 +270,9 @@ class SystemLog extends AppLog {
 
 /**
  * Log de rendimiento (PERFORMANCE)
+ * @param {string} [message='Métrica de rendimiento'] - Mensaje de rendimiento.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='PERFORMANCE'] - Categoría del log.
  */
 class PerformanceLog extends AppLog {
     constructor(message = 'Métrica de rendimiento', metadata = null, category = 'PERFORMANCE') {
@@ -249,6 +282,9 @@ class PerformanceLog extends AppLog {
 
 /**
  * Log de seguridad (SECURITY)
+ * @param {string} [message='Evento de seguridad'] - Mensaje de seguridad.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='SECURITY'] - Categoría del log.
  */
 class SecurityLog extends AppLog {
     constructor(message = 'Evento de seguridad', metadata = null, category = 'SECURITY') {
@@ -257,9 +293,14 @@ class SecurityLog extends AppLog {
 }
 
 /**
- * Función para crear logs específicos según el nivel
+ * Crea una instancia de log según el nivel especificado.
+ * @param {string} level - Nivel de log ('info', 'warn', 'error', etc.)
+ * @param {string} message - Mensaje del log.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales para el log.
+ * @param {string} - Categoría del log.
+ * @returns {AppLog} Instancia de log correspondiente.
  */
-const createLog = (level, message, metadata = null, category = 'GENERAL') => {
+const createLog = (level, message, metadata = null, category) => {
     switch (level.toLowerCase()) {
         case 'info':
             return new InfoLog(message, metadata, category);
@@ -291,81 +332,160 @@ const createLog = (level, message, metadata = null, category = 'GENERAL') => {
 };
 
 /**
- * Función para loggear y ejecutar inmediatamente
+ * Crea y ejecuta un log inmediatamente.
+ * @param {string} level - Nivel de log ('info', 'warn', 'error', etc.)
+ * @param {string} message - Mensaje del log.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales para el log.
+ * @param {string} [category] - Categoría del log.
+ * @returns {AppLog} Instancia de log ejecutada.
  */
-const logAndExecute = (level, message, metadata = null, category = 'GENERAL') => {
+const logAndExecute = (level, message, metadata = null, category) => {
     const logInstance = createLog(level, message, metadata, category);
     logInstance.execute();
     return logInstance;
 };
 
 /**
- * Funciones de conveniencia para logging directo
+ * Loguea un mensaje de advertencia.
+ * @param {string} message - Mensaje de advertencia.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='WARN'] - Categoría del log.
+ * @returns {AppLog}
  */
-const logInfo = (message, metadata = null, category = 'INFO') => {
-    return logAndExecute('info', message, metadata, category);
-};
-
 const logWarn = (message, metadata = null, category = 'WARN') => {
     return logAndExecute('warn', message, metadata, category);
 };
 
+/**
+ * Loguea un mensaje de error.
+ * @param {string} message - Mensaje de error.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='ERROR'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logError = (message, metadata = null, category = 'ERROR') => {
     return logAndExecute('error', message, metadata, category);
 };
 
+/**
+ * Loguea un mensaje de depuración.
+ * @param {string} message - Mensaje de depuración.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='DEBUG'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logDebug = (message, metadata = null, category = 'DEBUG') => {
     return logAndExecute('debug', message, metadata, category);
 };
 
+/**
+ * Loguea un mensaje de éxito.
+ * @param {string} message - Mensaje de éxito.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='SUCCESS'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logSuccess = (message, metadata = null, category = 'SUCCESS') => {
     return logAndExecute('success', message, metadata, category);
 };
 
+/**
+ * Loguea un evento de autenticación.
+ * @param {string} message - Mensaje de autenticación.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='AUTH'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logAuth = (message, metadata = null, category = 'AUTH') => {
     return logAndExecute('auth', message, metadata, category);
 };
 
+/**
+ * Loguea una operación de base de datos.
+ * @param {string} message - Mensaje de base de datos.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='DATABASE'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logDatabase = (message, metadata = null, category = 'DATABASE') => {
     return logAndExecute('database', message, metadata, category);
 };
 
+/**
+ * Loguea un evento de API.
+ * @param {string} message - Mensaje de API.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='API'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logApi = (message, metadata = null, category = 'API') => {
     return logAndExecute('api', message, metadata, category);
 };
 
+/**
+ * Loguea una operación de caché.
+ * @param {string} message - Mensaje de caché.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='CACHE'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logCache = (message, metadata = null, category = 'CACHE') => {
     return logAndExecute('cache', message, metadata, category);
 };
 
+/**
+ * Loguea un evento del sistema.
+ * @param {string} message - Mensaje del sistema.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='SYSTEM'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logSystem = (message, metadata = null, category = 'SYSTEM') => {
     return logAndExecute('system', message, metadata, category);
 };
 
+/**
+ * Loguea una métrica de rendimiento.
+ * @param {string} message - Mensaje de rendimiento.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='PERFORMANCE'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logPerformance = (message, metadata = null, category = 'PERFORMANCE') => {
     return logAndExecute('performance', message, metadata, category);
 };
 
+/**
+ * Loguea un evento de seguridad.
+ * @param {string} message - Mensaje de seguridad.
+ * @param {Object|null} [metadata=null] - Metadatos adicionales.
+ * @param {string} [category='SECURITY'] - Categoría del log.
+ * @returns {AppLog}
+ */
 const logSecurity = (message, metadata = null, category = 'SECURITY') => {
     return logAndExecute('security', message, metadata, category);
 };
 
 /**
- * Función para determinar si el logging está habilitado
+ * Determina si el logging está habilitado según las variables de entorno.
+ * @returns {boolean} True si el logging está habilitado.
  */
 const isLoggingEnabled = () => {
     return process.env.ENABLE_CONSOLE_LOGS === 'true' || process.env.NODE_ENV === 'development';
 };
 
 /**
- * Función para formatear el formato de salida del log
+ * Formatea la salida de un log para mostrar en consola.
+ * @param {AppLog} logInstance - Instancia de log.
+ * @returns {string} Cadena formateada para consola.
  */
 const formatLogOutput = (logInstance) => {
     return `[${logInstance.timestamp}] ${logInstance.level.toUpperCase()}[${logInstance.category}]: ${logInstance.message}`;
 };
 
 /**
- * Función para obtener información del logger Winston
+ * Obtiene información del logger Winston.
+ * @returns {Object} Información sobre el logger Winston.
  */
 const getLoggerInfo = () => {
     if (!Logger) {
@@ -381,7 +501,9 @@ const getLoggerInfo = () => {
 };
 
 /**
- * Función para cambiar el nivel de log dinámicamente
+ * Cambia el nivel de log de Winston dinámicamente.
+ * @param {string} level - Nuevo nivel de log ('error', 'warn', 'info', 'http', 'debug').
+ * @returns {boolean} True si el nivel fue cambiado correctamente.
  */
 const setLogLevel = (level) => {
     if (Logger && ['error', 'warn', 'info', 'http', 'debug'].includes(level)) {
@@ -392,7 +514,8 @@ const setLogLevel = (level) => {
 };
 
 /**
- * Función para forzar la escritura de logs pendientes
+ * Fuerza la escritura de logs pendientes en los transports de Winston.
+ * @returns {Promise<void>} Promesa que se resuelve cuando los logs han sido escritos.
  */
 const flushLogs = () => {
     return new Promise((resolve) => {
@@ -415,8 +538,8 @@ const flushLogs = () => {
 };
 
 /**
- * Función para obtener el logger Winston directamente
- * (Para compatibilidad con middleware HTTP y otros usos directos)
+ * Obtiene el logger Winston directamente.
+ * @returns {Object|null} Instancia del logger Winston o null si no está disponible.
  */
 const getWinstonLogger = () => {
     return Logger;

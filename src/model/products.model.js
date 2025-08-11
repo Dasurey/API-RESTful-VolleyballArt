@@ -46,7 +46,7 @@ const getProductById = dbServiceWrapper(async (id) => {
 const createProduct = dbServiceWrapper(async (id, productData) => {
   // createDocument genera un ID automático, pero aquí se respeta el ID recibido
   // Por lo tanto, usamos updateDocument para crear con ID específico
-  return await updateDocument(db, COLLECTION_NAME, id, productData, { includeTimestamp: true, merge: false });
+  return await createDocument(db, COLLECTION_NAME, id, productData, { includeTimestamp: true, merge: false });
 }, 'createProduct');
 
 const updateProduct = dbServiceWrapper(async (id, data) => {

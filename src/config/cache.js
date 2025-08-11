@@ -1,5 +1,5 @@
 /**
- * �🗄️ Sistema de Cache Profesional
+ * 🗄️ Sistema de Cache Profesional
  * 
  * Implementa múltiples capas de cache:
  * - Cache en memoria para datos frecuentes

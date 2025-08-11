@@ -41,6 +41,10 @@
   }
 };
 
+/**
+ * Obtener información de versión de la API
+ * @param {string|null} version - Versión específica a consultar
+ */
 const getVersionInfo = (version = null) => {
   if (version) {
     return API_CONFIG.versions[version] || null;

@@ -18,7 +18,7 @@ const productsRoutes = require('./routes/products.routes');
 const authRoutes = require('./routes/auth.routes');
 const categoryRoutes = require('./routes/category.routes');
 
-const { authentication } = require('./middlewares/authentication.middleware');
+const { authentication } = require('./middlewares/authentication');
 const { versionMiddleware, registerVersionedRoutes, registerVersionInfoEndpoints } = require('./middlewares/version.middleware');
 const { getVersionInfo } = require('./config/api.versions');
 
@@ -32,7 +32,7 @@ const { __dirname: projectDir, join, updateSwaggerUrl, getBaseUrl, getEndpointUr
 // Nota: getEndpointUrls movido a url.utils
 
 // 🔧 Clases de logs globalizadas
-const { logInfo, logSystem, logError } = require('./config/log');
+const { InfoLog, logSystem, logError } = require('./config/log');
 
 // 🔧 Clases de respuesta exitosa globalizadas
 const { SuccessResponse, DataResponse } = require('./utils/success');
@@ -632,7 +632,7 @@ app.get('/api/cache/stats', authentication, (req, res) => {
  */
 app.post('/api/cache/clear', authentication, (req, res) => {
   resetCacheStats();
-  logInfo('🗑️ Cache limpiado por usuario', {
+  InfoLog('🗑️ Cache limpiado por usuario', {
     userId: req.user?.uid,
     timestamp: new Date().toISOString()
   });
@@ -642,7 +642,7 @@ app.post('/api/cache/clear', authentication, (req, res) => {
 // Redirigir la ruta raíz a la documentación de la API
 app.get('/', (req, res, next) => {
   try {
-    logInfo('🏠 Acceso a ruta raíz, redirigiendo a /api');
+    InfoLog('🏠 Acceso a ruta raíz, redirigiendo a /api');
     res.redirect('/api');
   } catch (error) {
     next(new InternalServerError());

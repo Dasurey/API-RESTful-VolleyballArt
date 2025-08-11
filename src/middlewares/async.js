@@ -14,9 +14,9 @@ const { logAndExecute } = require('../config/log');
 
 /**
  * Wrapper avanzado para controladores/middlewares async
- * - Captura errores
- * - Agrega contexto (nombre, requestId)
- * - Hace logging automático
+ * @param {Function} fn - Función async del controlador
+ * @param {string} [name='Unknown'] - Nombre para contexto/logging
+ * @returns {Function} Middleware Express
  */
 const controllerWrapper = (fn, name = 'Unknown') => {
   return (req, res, next) => {
@@ -43,7 +43,9 @@ const controllerWrapper = (fn, name = 'Unknown') => {
 
 /**
  * Wrapper para servicios de base de datos
- * Solo agrega contexto y re-lanza el error para que error.js lo maneje
+ * @param {Function} fn - Función async del servicio
+ * @param {string} [serviceName='Unknown'] - Nombre para contexto/logging
+ * @returns {Function} Función async con manejo de errores
  */
 const dbServiceWrapper = (fn, serviceName = 'Unknown') => {
   return async (...args) => {
@@ -61,8 +63,11 @@ const dbServiceWrapper = (fn, serviceName = 'Unknown') => {
 };
 
 /**
- * Función de utilidad para validar condiciones y lanzar errores
- * (sin crear nuevos errores, solo para conveniencia)
+ * Validar condición y lanzar error si se cumple
+ * @param {boolean} condition - Condición a validar
+ * @param {Error} ErrorClass - Clase de error a lanzar
+ * @param {string} message - Mensaje de error
+ * @param {any} [details=null] - Detalles adicionales
  */
 const validateAndThrow = (condition, ErrorClass, message, details = null) => {
   if (condition) {
@@ -72,6 +77,7 @@ const validateAndThrow = (condition, ErrorClass, message, details = null) => {
 
 /**
  * Generar ID único para requests
+ * @returns {string} ID generado
  */
 const generateRequestId = () => {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -79,6 +85,9 @@ const generateRequestId = () => {
 
 /**
  * Middleware para agregar IDs únicos a las requests
+ * @param {Request} req
+ * @param {Response} res
+ * @param {Function} next
  */
 const requestIdMiddleware = (req, res, next) => {
   req.id = generateRequestId();
@@ -87,8 +96,10 @@ const requestIdMiddleware = (req, res, next) => {
 };
 
 /**
- * Wrapper simple para promesas que necesitan contexto adicional
- * Solo agrega contexto y re-lanza el error
+ * Wrapper simple para promesas con contexto adicional
+ * @param {Function} fn - Función async
+ * @param {Object} [context={}] - Contexto adicional para el error
+ * @returns {Promise<any>}
  */
 const withContext = async (fn, context = {}) => {
   try {

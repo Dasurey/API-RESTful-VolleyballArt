@@ -1,5 +1,5 @@
 const backupController = require('../controllers/backup.controller');
-const { authentication } = require('../middlewares/authentication.middleware');
+const { authentication } = require('../middlewares/authentication');
 
 const express = require('express');
 const router = express.Router();

@@ -1,6 +1,4 @@
-const { ValidationError } = require('./error');
 const { logError } = require('../config/log');
-const { body, validationResult } = require('express-validator');
 
 // Middleware personalizado para sanitizar datos de entrada evitando problemas con req.query
 const sanitizeInput = (req, res, next) => {
@@ -94,32 +92,7 @@ const sanitizeHtml = (req, res, next) => {
   next();
 };
 
-// Validadores específicos para campos sensibles
-const sanitizeEmail = body('email')
-  .isEmail()
-  .normalizeEmail()
-  .escape();
-
-const sanitizePassword = body('password')
-  .isLength({ min: 6 })
-  .escape();
-
-// Middleware para verificar errores de validación
-const checkValidationErrors = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const validationError = new ValidationError();
-    validationError.details = errors.array();
-    return next(validationError);
-  }
-  next();
-};
-
-
 module.exports = {
   sanitizeInput,
-  sanitizeHtml,
-  sanitizeEmail,
-  sanitizePassword,
-  checkValidationErrors
+  sanitizeHtml
 };

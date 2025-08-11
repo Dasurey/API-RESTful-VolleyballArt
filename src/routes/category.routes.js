@@ -1,6 +1,6 @@
 const categoryController = require('../controllers/category.controller');
 const { handleJoiValidationErrors } = require('../middlewares/error.validation');
-const { authentication } = require('../middlewares/authentication.middleware');
+const { authentication } = require('../middlewares/authentication');
 const { categoriesQueryProcessor, subcategoriesQueryProcessor } = require('../utils/query');
 const {
   createCategorySchema,

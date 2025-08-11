@@ -1,19 +1,22 @@
 const productsService = require('../services/products.service');
 const { controllerWrapper } = require('../middlewares/async');
 const { ValidationError, InternalServerError, NotFoundError } = require('../middlewares/error');
+const { createSuccessWithLog } = require('../utils/success');
 
 const getAllProducts = controllerWrapper(async (req, res) => {
   try {
     const result = await productsService.getAllProducts(req.queryProcessor);
-    return res.json({
-      success: true,
-      message: '📋 Productos obtenidos exitosamente',
-      data: result
-    });
+    return createSuccessWithLog(
+      res,
+      200,
+      '📋 Productos obtenidos exitosamente',
+      result,
+      { endpoint: 'getAllProducts' }
+    ).send(res);
   } catch (error) {
     throw new InternalServerError();
   }
-});
+}, 'getAllProducts');
 
 const getProductById = controllerWrapper(async (req, res) => {
   const { id } = req.params;
@@ -22,11 +25,13 @@ const getProductById = controllerWrapper(async (req, res) => {
     if (!result) {
       throw new NotFoundError();
     }
-    return res.json({
-      success: true,
-      message: '🏐 Producto obtenido exitosamente',
-      data: result
-    });
+    return createSuccessWithLog(
+      res,
+      200,
+      '🏐 Producto obtenido exitosamente',
+      result,
+      { endpoint: 'getProductById', productId: id }
+    ).send(res);
   } catch (error) {
     if (error instanceof NotFoundError) {
       throw error;
@@ -37,26 +42,30 @@ const getProductById = controllerWrapper(async (req, res) => {
       originalError: error.message
     });
   }
-});
+}, 'getProductById');
 
 const createProduct = controllerWrapper(async (req, res) => {
     const result = await productsService.createProduct(req.body);
-    return res.status(201).json({
-      success: true,
-      message: '✅ Producto creado exitosamente',
-      data: result
-    });
+    return createSuccessWithLog(
+      res,
+      201,
+      '✅ Producto creado exitosamente',
+      result,
+      { endpoint: 'createProduct' }
+    ).send(res);
 }, 'createProduct');
 
 const updateProduct = controllerWrapper(async (req, res) => {
   const { id } = req.params;
   try {
     const updatedProduct = await productsService.updateProduct(id, req.body);
-    return res.json({
-      success: true,
-      message: '🔄 Producto actualizado exitosamente',
-      data: updatedProduct
-    });
+    return createSuccessWithLog(
+      res,
+      200,
+      '🔄 Producto actualizado exitosamente',
+      updatedProduct,
+      { endpoint: 'updateProduct', productId: id }
+    ).send(res);
   } catch (error) {
     if (error instanceof ValidationError || error instanceof NotFoundError) {
       throw error;
@@ -68,17 +77,19 @@ const updateProduct = controllerWrapper(async (req, res) => {
       originalError: error.message
     });
   }
-});
+}, 'updateProduct');
 
 const deleteProduct = controllerWrapper(async (req, res) => {
   const { id } = req.params;
   try {
     await productsService.deleteProduct(id);
-    return res.json({
-      success: true,
-      message: '🗑️ Producto eliminado exitosamente',
-      data: { deleted: true, id }
-    });
+    return createSuccessWithLog(
+      res,
+      200,
+      '🗑️ Producto eliminado exitosamente',
+      { deleted: true, id },
+      { endpoint: 'deleteProduct', productId: id }
+    ).send(res);
   } catch (error) {
     if (error instanceof NotFoundError) {
       throw error;
@@ -89,7 +100,7 @@ const deleteProduct = controllerWrapper(async (req, res) => {
       originalError: error.message
     });
   }
-});
+}, 'deleteProduct');
 
 module.exports = {
   getAllProducts,

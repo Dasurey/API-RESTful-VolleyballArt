@@ -1,5 +1,5 @@
 const { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct } = require('../controllers/products.controller');
-const { authentication } = require('../middlewares/authentication.middleware');
+const { authentication } = require('../middlewares/authentication');
 const { handleJoiValidationErrors } = require('../middlewares/error.validation');
 const { productsQueryProcessor } = require('../utils/query');
 const { productSchema, updateProductSchema } = require('../schemas/products.schema');

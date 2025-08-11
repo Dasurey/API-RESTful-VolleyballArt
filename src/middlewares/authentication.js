@@ -1,6 +1,7 @@
 const { verifyToken } = require('../config/jwt');
-const { AuthenticationError } = require('../middlewares/error');
+const { AuthenticationError } = require('./error');
 const { Logger } = require('../config/log');
+const { createSuccessWithLog } = requiere('../utils/success');
 
 const authentication = (req, res, next) => {
   try {
@@ -33,13 +34,13 @@ const authentication = (req, res, next) => {
 
     const decoded = verifyToken(token);
     
-    Logger.info('✅ Autenticación exitosa', {
-      userId: decoded.id,
-      email: decoded.email,
-      url: req.originalUrl,
-      method: req.method,
-      timestamp: new Date().toISOString()
-    });
+    createSuccessWithLog(
+      res,
+      200,
+      '✅ Autenticación exitosa',
+      { userId: decoded.id, email: decoded.email },
+      { url: req.originalUrl, method: req.method, timestamp: new Date().toISOString() }
+    );
     
     req.user = decoded; // Guardamos la info del usuario decodificada
     next();

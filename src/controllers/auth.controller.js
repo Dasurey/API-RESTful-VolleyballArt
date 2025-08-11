@@ -2,8 +2,6 @@ const authService = require('../services/auth.service');
 const { controllerWrapper } = require('../middlewares/async');
 const { createSuccessWithLog } = require('../utils/success');
 
-const { AuthenticationError, ValidationError, ConflictError, InternalServerError } = require('../middlewares/error');
-
 const loginUser = controllerWrapper(async (req, res) => {
   const { email, password } = req.body;
   const result = await authService.loginUser(email, password);
